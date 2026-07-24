@@ -30,7 +30,7 @@
 - **server**：新增 `server/src/trpc/`（context + procedures + routers），管理面（projects / issues / operations）迁到 tRPC；Sentry envelope 路由保持 raw Fastify；删除 `@fastify/swagger` + `swagger-ui` + 三个 `domains/*/routes.ts`
 - **删除 `@traceability/protocol`** 整个包
 - **删除 `@traceability/client`** 整个包
-- **app renderer**：改用 `@trpc/react-query`；删除 `apis/`、`lib/request.ts`、`lib/ws.ts`；删除 Performance 页面与 Issue 详情 Replay tab、SourceLocation 面板；`Application` / `appId` 全量重命名为 `Project` / `projectId`；`CreateApp` 表单改为 `slug + name`；onboarding 同步
+- **app renderer**：改用 `@trpc/react-query`；删除 `apis/`、`lib/request.ts`、`lib/ws.ts`；删除 Performance 页面与 Issue 详情 Replay tab；`Application` / `appId` 全量重命名为 `Project` / `projectId`；`CreateApp` 表单改为 `slug + name`；onboarding 同步。**`SourceLocation.tsx` 组件源码保留**（本次不在 Issue 详情页挂载，未来 source-map 解析补齐后无缝接回）
 - **app main**：`@trpc/client`（无 React）；两个 builtin extensions（`apps` → `projects`、`issues`）改造为 tRPC 调用；Issue 状态收敛到 3 值
 - **`packages/cli`**：改用 `@trpc/client`；命令 `app` → `project`；`issue fix-request | attach-patch | mark-fixed` 保留命令定义但执行时 `exit 2` 并输出 "not available on this server (v1)" 文案
 - **认证注入**：静态 Bearer token
@@ -42,7 +42,7 @@
 
 ### 2.2 Out of scope
 
-- server 补齐 performance / rrweb replay / source-map / fix loop / WebSocket 能力（后续独立 spec）
+- server 补齐 performance / rrweb replay / **source map 解析（含上传端点 + worker processor + resolved frames 存储）**/ fix loop / WebSocket 能力（后续独立 spec；source-map 单独一个 spec `2026-07-2X-source-map-resolution.md` 计划中）
 - 保留 Swagger / OpenAPI 输出（本次直接放弃 `/api-docs`；未来若需外部 REST 再评估 `trpc-openapi`）
 - `@traceability/core` SDK 重构（envelope 传输链路不变，只把内部类型改用 `@sentry/types`）
 - 旧 SQLite → 新 Postgres 的数据迁移脚本
@@ -69,7 +69,7 @@
 | Issue `count` | Issue `eventCount` |
 | 响应 `{code:0, data, timestamp}` | tRPC `{result:{data}}`（对调用者透明，`useQuery().data` 即业务值） |
 | WS `/api/ws` `issue:*` 事件 | 无；由 react-query focus refetch + 手动 refresh 替代 |
-| `RrwebReplay*` / `PerformanceSummary` / `SourceMapUpload` / `Patch` | 不存在（UI 相应模块整块删除） |
+| `RrwebReplay*` / `PerformanceSummary` / `SourceMapUpload` / `Patch` | 不存在（UI 相应模块整块删除；SourceLocation 组件源码保留待后续 source-map spec 接回） |
 | `Authorization: Bearer traceability`（旧 server 忽略） | `Authorization: Bearer <MANAGEMENT_AUTH_TOKEN>`（强制校验） |
 
 ## 4. 组件与文件结构
@@ -175,10 +175,10 @@ app/src/renderer/
 │   ├── performance/            # 整个目录删除；Sidebar 中的 "Performance" 项一并删
 │   ├── issues/
 │   │   ├── index.tsx           # 删除 onIssueEvent 订阅；字段 count → eventCount；appId → projectId
-│   │   ├── detail.tsx          # 删除 replay tab / SourceLocation 面板；status label/group 收敛
+│   │   ├── detail.tsx          # 删除 replay tab；本次不挂载 SourceLocation 面板（组件源码保留）；status label/group 收敛
 │   │   └── _components/
 │   │       ├── RrwebReplayPlayer.tsx  # 删除
-│   │       └── SourceLocation.tsx     # 删除
+│   │       └── SourceLocation.tsx     # 保留源码，本次仅从 detail.tsx 中解引；待独立 source-map spec 完成后接回
 │   ├── inbox/index.tsx         # 占位保留
 │   └── _layout/_components/
 │       ├── HeaderAppSwitcher.tsx      # 重命名 → HeaderProjectSwitcher；显示 slug 代替 repoUrl
