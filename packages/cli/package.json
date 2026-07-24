@@ -16,6 +16,8 @@
   "dependencies": {
     "@traceability/client": "workspace:*",
     "@traceability/protocol": "workspace:*",
+    "@traceability/server": "workspace:*",
+    "@trpc/client": "^11.18.0",
     "commander": "^12.0.0"
   },
   "devDependencies": {

@@ -2,8 +2,16 @@
   "name": "@traceability/server",
   "version": "1.0.0",
   "private": true,
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./src/index.ts",
+  "exports": {
+    "./trpc": {
+      "types": "./dist/trpc/app-router.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "typecheck": "tsc --noEmit",
@@ -22,6 +30,7 @@
     "@fastify/cors": "^11.3.0",
     "@fastify/swagger": "^9.8.1",
     "@fastify/swagger-ui": "^6.1.0",
+    "@trpc/server": "^11.18.0",
     "bullmq": "^5.81.0",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.45.2",
