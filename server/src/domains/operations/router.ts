@@ -1,7 +1,7 @@
 import { desc } from "drizzle-orm";
 
 import { processingFailures } from "../../db/schema/index.js";
-import { managementProcedure, t } from "../trpc.js";
+import { managementProcedure, t } from "../../trpc/trpc.js";
 
 export const operationsRouter = t.router({
   processingFailures: managementProcedure.query(({ ctx }) => {

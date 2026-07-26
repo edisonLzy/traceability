@@ -32,7 +32,7 @@
 ## 文件结构总览
 
 **server（新增/删除）**
-- 新增 `server/src/trpc/context.ts`、`server/src/trpc/trpc.ts`、`server/src/trpc/routers/{projects,issues,operations}.ts`、`server/src/trpc/app-router.ts`、`server/src/trpc/index.ts`
+- 新增 `server/src/trpc/context.ts`、`server/src/trpc/trpc.ts`、`server/src/domains/{projects,issues,operations}/router.ts`、`server/src/trpc/app-router.ts`、`server/src/trpc/index.ts`
 - 新增 `server/src/trpc/__tests__/router.test.ts`
 - 删除 `server/src/domains/projects/routes.ts`、`server/src/domains/issues/routes.ts`、`server/src/domains/operations/routes.ts`
 - 修改 `server/src/app.ts`（移除 swagger + register*Routes，挂 tRPC plugin）
@@ -284,7 +284,7 @@ git commit -m "feat(server): add trpc context and management auth procedure"
 > 完整 TDD 步骤在执行时展开。下列为每任务的 Files / Interfaces / Commit message。
 
 ### Task 3: server routers（projects / issues / operations）
-- Create: `server/src/trpc/routers/projects.ts`, `issues.ts`, `operations.ts`
+- Create: `server/src/domains/projects/router.ts`, `issues/router.ts`, `operations/router.ts`
 - Create: `server/src/trpc/app-router.ts` (`export const appRouter = router({...}); export type AppRouter = typeof appRouter`)
 - Test: `server/src/trpc/__tests__/router.test.ts`（createCallerFactory，mock db）
 - Interfaces: 用 `managementProcedure.input(zod).query/mutation`，service 来自 `domains/*/service.ts` 已有方法

@@ -1,11 +1,7 @@
 import { z } from "zod";
 
-import {
-  CreateProjectSchema,
-  UpdateProjectPolicySchema,
-  UpdateProjectSchema,
-} from "../../domains/projects/service.js";
-import { managementProcedure, t } from "../trpc.js";
+import { managementProcedure, t } from "../../trpc/trpc.js";
+import { CreateProjectSchema, UpdateProjectPolicySchema, UpdateProjectSchema } from "./service.js";
 
 const projectIdInput = z.string().uuid();
 

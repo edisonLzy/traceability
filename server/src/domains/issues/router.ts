@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { UpdateIssueSchema } from "../../domains/issues/service.js";
-import { managementProcedure, t } from "../trpc.js";
+import { managementProcedure, t } from "../../trpc/trpc.js";
+import { UpdateIssueSchema } from "./service.js";
 
 const issueIdInput = z.string().uuid();
 const listInput = z.object({

@@ -97,7 +97,7 @@ server/src/trpc/
 Router 骨架（示意）：
 
 ```ts
-// server/src/trpc/routers/projects.ts
+// server/src/domains/projects/router.ts
 export const projectsRouter = router({
   list:         managementProcedure.query(({ ctx }) => ctx.services.projects.listProjects()),
   get:          managementProcedure.input(z.string().uuid())
@@ -423,7 +423,7 @@ app / CLI 需要拿到 server 的 `AppRouter` 类型：
 ## 11. 迁移依赖顺序（供 writing-plans 参考）
 
 ```
-① server：新增 tRPC 层（context/trpc/routers），保留旧 REST 并存一次以验证 → app router 类型导出
+① server：新增 tRPC 基础层（context/trpc）与 domain-local routers，保留旧 REST 并存一次以验证 → app router 类型导出
 ② server：删除旧 REST 路由 + Swagger 依赖
 ③ app/CLI 添加 workspace 依赖 "@traceability/server"（仅类型）；turbo pipeline 加 build 依赖
 ④ app renderer：迁 context / hooks / apis 删除 / pages（Application → Project 一次性重命名）
