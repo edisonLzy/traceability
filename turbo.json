@@ -15,7 +15,8 @@
         "components.json",
         "drizzle/**",
         "drizzle.config.ts"
-      ]
+      ],
+      "env": ["VITE_MANAGEMENT_TOKEN"]
     },
     "typecheck": {
       "dependsOn": ["^build"],
@@ -29,6 +30,18 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "@traceability/app#build": {
+      "dependsOn": ["^build", "@traceability/server#build"]
+    },
+    "@traceability/app#typecheck": {
+      "dependsOn": ["^build", "@traceability/server#build"]
+    },
+    "@traceability/cli#build": {
+      "dependsOn": ["^build", "@traceability/server#build"]
+    },
+    "@traceability/cli#typecheck": {
+      "dependsOn": ["^build", "@traceability/server#build"]
     }
   }
 }

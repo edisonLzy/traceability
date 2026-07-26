@@ -79,6 +79,14 @@ export class ProjectService {
     return project ?? null;
   }
 
+  async deleteProject(projectId: string) {
+    const [project] = await this.database.db
+      .delete(projects)
+      .where(eq(projects.id, projectId))
+      .returning();
+    return project ?? null;
+  }
+
   async listKeys(projectId: string) {
     return this.database.db.select().from(projectKeys).where(eq(projectKeys.projectId, projectId));
   }

@@ -1,9 +1,9 @@
 import type { FastifyRequest } from "fastify";
 import { describe, expect, it } from "vitest";
 
-import type { RuntimeConfig } from "../config/index.js";
+import type { RuntimeConfig } from "../../config/index.js";
+import type { PostgresDatabase } from "../../db/postgres.js";
 import type { Context } from "../context.js";
-import type { PostgresDatabase } from "../db/postgres.js";
 import { managementProcedure, t } from "../trpc.js";
 
 function makeConfig(token: string): RuntimeConfig {

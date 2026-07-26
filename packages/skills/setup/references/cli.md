@@ -1,6 +1,6 @@
 # @traceability/cli reference
 
-The `traceability` CLI manages CLI configuration, applications, and issues. It reads credentials from `~/.traceability/config.json` (written by `config set`); app/issue commands do **not** take a `--token` flag.
+The `traceability` CLI manages CLI configuration, projects, and issues. It reads credentials from `~/.traceability/config.json` (written by `config set`); project/issue commands do **not** take a `--token` flag.
 
 ## Invocation
 
@@ -35,50 +35,54 @@ server: http://localhost:3000
 token:  dev-…
 ```
 
-## Applications
+## Projects
 
-### `app create --name <name> --repo-url <url> --branch <branch> [--json]`
+### `project create --slug <slug> --name <name> [--json]`
 
-Creates an application. With `--json`, prints the full `Application` object; its `id` field is the **appId** the SDK needs.
+Creates a project. With `--json`, prints the project record and generated key.
 
 ```json
 {
-  "id": "e4eac53d-846d-4c75-a6a0-402c15c69954",
-  "name": "my-app",
-  "repoUrl": "https://github.com/org/repo",
-  "defaultBranch": "main",
-  "createdAt": "2026-07-15T00:00:00.000Z"
+  "project": {
+    "id": "e4eac53d-846d-4c75-a6a0-402c15c69954",
+    "sentryProjectId": "7f2d4b1c9a6e4f1082d3c4b5a6e7f809",
+    "slug": "my-app",
+    "name": "My App",
+    "platform": "javascript",
+    "enabled": true
+  },
+  "dsn": "http://localhost:3000"
 }
 ```
 
-> Required: `--name`, `--repo-url`, `--branch`. There is no DSN or token on the application - creating it yields an **appId**.
+> Required: `--slug` and `--name`. The response contains both a management `project.id` and an ingest `project.sentryProjectId`.
 
-### `app list [--json]`
+### `project list [--json]`
 
-Lists applications. Use to discover an existing app's `id`.
+Lists projects. Use to discover an existing project's `id`.
 
-### `app show <appId> [--json]`
+### `project show <projectId> [--json]`
 
-Fetches one application. Use to validate a user-provided appId before wiring the SDK.
+Fetches one project. Use to validate a user-provided project id.
 
-### `app update <appId> [--name <n>] [--repo-url <u>] [--branch <b>]`
+### `project update <projectId> [--name <n>] [--enabled <boolean>]`
 
-Updates an application's metadata.
+Updates a project's metadata.
 
-### `app delete <appId>`
+### `project remove <projectId>`
 
-Deletes an application.
+Deletes a project.
 
 ## Issues (verification after setup)
 
-### `issue list --appId <id> [--status <status>] [--limit <n>] [--json]`
+### `issue list --project-id <id> [--limit <n>] [--json]`
 
-Lists issues for an app. `--appId` is **required**. Use after setup to confirm events are arriving.
+Lists issues for a project. `--project-id` is **required**. Use after setup to confirm events are arriving.
 
 ### `issue show <issueId> [--json]`
 
 Fetches one issue (stacktrace, message, context).
 
-### `issue fix-request <issueId>` / `issue attach-patch <issueId> --patch <path> --branch <branch>` / `issue mark-fixed <issueId>`
+### `issue fix-request <issueId>` / `issue attach-patch <issueId>` / `issue mark-fixed <issueId>`
 
-The fix loop - see the `diagnose-issue` skill.
+These commands are reserved for the future fix loop and currently exit with status `2`.

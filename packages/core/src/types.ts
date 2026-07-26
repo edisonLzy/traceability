@@ -1,5 +1,4 @@
 import type { Event } from "@sentry/browser";
-import type { PerformanceMetric } from "@traceability/protocol";
 
 export interface InitOptions {
   /** Full URL of the server ingest endpoint, e.g. http://localhost:3000/api/ingest/envelope */
@@ -37,4 +36,29 @@ export interface ReportData {
   tags?: Record<string, string>;
 }
 
-export type { PerformanceMetric };
+export type PerformanceMetricName =
+  | "FCP"
+  | "LCP"
+  | "CLS"
+  | "INP"
+  | "TTFB"
+  | "DOMContentLoaded"
+  | string;
+
+export interface PerformanceMetric {
+  name: PerformanceMetricName;
+  value: number;
+  unit?: string;
+  timestamp?: string;
+  context?: Record<string, unknown>;
+}
+
+export interface RrwebReplayIngestBody {
+  replayId?: string;
+  sentryEventId?: string;
+  capturedAt?: string;
+  startAt?: number;
+  endAt?: number;
+  events: unknown[];
+  metadata?: Record<string, unknown>;
+}

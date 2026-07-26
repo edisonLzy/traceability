@@ -1,11 +1,11 @@
-import type { Issue } from "@traceability/protocol";
+import type { Issue } from "../../../../shared/trpc-types.js";
 
-export const ISSUES_LIST_TOOL = "issues/list";
-export const ISSUES_GET_TOOL = "issues/get";
+export const ISSUES_LIST_TOOL = "list_issues";
+export const ISSUES_GET_TOOL = "get_issue";
 export const ISSUES_LIST_BLOCK_TYPE = "issues.list";
 
 export interface IssuesListBlockProps {
   issues: Issue[];
-  appId: string;
+  projectId: string;
   nextCursor: string | null;
 }

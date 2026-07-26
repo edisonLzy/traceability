@@ -80,7 +80,7 @@ async function login(email: string, password: string) {
 Trigger the flow once end-to-end. Confirm the events appear in the Inbox UI, or:
 
 ```bash
-traceability issue list --appId <appId>
+  traceability issue list --project-id <projectId>
 ```
 
 Check that the whole flow's events share the `flow: <flow-name>` tag and aggregate into issues by `type`.

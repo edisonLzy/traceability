@@ -43,6 +43,20 @@ describe("runtime app", () => {
     expect(database.ping).not.toHaveBeenCalled();
   });
 
+  it("serves the OpenAPI document and Swagger UI shell", async () => {
+    const app = await createApp({ config, database: createDatabase() });
+    apps.push(app);
+
+    const document = await app.inject({ method: "GET", url: "/api-docs.json" });
+    const ui = await app.inject({ method: "GET", url: "/api-docs" });
+
+    expect(document.statusCode).toBe(200);
+    expect(document.json().openapi).toBe("3.0.3");
+    expect(document.json().paths["/api/trpc/{procedure}"]).toBeDefined();
+    expect(ui.statusCode).toBe(200);
+    expect(ui.body).toContain("swagger-ui");
+  });
+
   it("reports readiness only when PostgreSQL is reachable", async () => {
     const database = createDatabase();
     const app = await createApp({ config, database });
@@ -66,23 +80,18 @@ describe("runtime app", () => {
     expect(response.json()).toEqual({ status: "unavailable" });
   });
 
-  it("maps malformed JSON to a client error instead of an internal error", async () => {
+  it("rejects unauthenticated management requests", async () => {
     const database = createDatabase();
     const app = await createApp({ config, database });
     apps.push(app);
 
     const response = await app.inject({
-      method: "POST",
-      url: "/api/v1/projects",
-      headers: {
-        "content-type": "application/json",
-        authorization: "Bearer traceability-development-token",
-      },
-      payload: "{",
+      method: "GET",
+      url: "/api/trpc/projects.list",
     });
 
-    expect(response.statusCode).toBe(400);
-    expect(response.json()).toEqual({ code: "invalid_request" });
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.data.code).toBe("UNAUTHORIZED");
   });
 });
 

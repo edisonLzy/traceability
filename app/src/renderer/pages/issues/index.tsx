@@ -1,37 +1,32 @@
-import { useCurrentApp } from "@renderer/context/current-app";
-import { useInvalidateIssues, useIssues } from "@renderer/hooks/use-issues";
+import { useCurrentProject } from "@renderer/context/current-project";
+import { useIssues } from "@renderer/hooks/use-issues";
 import { promptAgent } from "@renderer/lib/agent-events";
-import { cn, issueSource, relativeTime, statusGroup, statusLabel } from "@renderer/lib/utils";
-import { onIssueEvent } from "@renderer/lib/ws";
+import { cn, issueSource, relativeTime, statusGroup } from "@renderer/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Search, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-const STATUS_ITEMS: Array<{ value: "all" | "open" | "investigating" | "fixed"; label: string }> = [
+const STATUS_ITEMS: Array<{
+  value: "all" | "unresolved" | "resolved" | "ignored";
+  label: string;
+}> = [
   { value: "all", label: "All statuses" },
-  { value: "open", label: "Open" },
-  { value: "investigating", label: "Investigating" },
-  { value: "fixed", label: "Fixed" },
+  { value: "unresolved", label: "Open" },
+  { value: "resolved", label: "Resolved" },
+  { value: "ignored", label: "Ignored" },
 ];
 
 export function IssuesPage() {
-  const { currentApp, appId } = useCurrentApp();
+  const { currentProject, projectId } = useCurrentProject();
   const nav = useNavigate();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState<"all" | "open" | "investigating" | "fixed">("all");
+  const [status, setStatus] = useState<"all" | "unresolved" | "resolved" | "ignored">("all");
 
-  const invalidateIssues = useInvalidateIssues();
-  const { data, isLoading } = useIssues({ appId, limit: 100 });
-  const issues = data?.items ?? [];
-
-  useEffect(() => {
-    return onIssueEvent(() => {
-      void invalidateIssues();
-    });
-  }, [invalidateIssues]);
+  const { data, isLoading } = useIssues({ projectId, limit: 100 });
+  const issues = data?.data ?? [];
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -46,10 +41,10 @@ export function IssuesPage() {
     });
   }, [issues, status, q]);
 
-  const open = issues.filter((i) => statusGroup(i.status) === "open").length;
-  const investigating = issues.filter((i) => statusGroup(i.status) === "investigating").length;
-  const fixed = issues.filter((i) => statusGroup(i.status) === "fixed").length;
-  const events = issues.reduce((n, i) => n + i.count, 0);
+  const open = issues.filter((i) => statusGroup(i.status) === "unresolved").length;
+  const resolved = issues.filter((i) => statusGroup(i.status) === "resolved").length;
+  const ignored = issues.filter((i) => statusGroup(i.status) === "ignored").length;
+  const events = issues.reduce((n, i) => n + i.eventCount, 0);
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["issues"] });
@@ -57,9 +52,9 @@ export function IssuesPage() {
   };
 
   const askAboutIssues = () => {
-    if (!currentApp) return;
+    if (!currentProject) return;
     promptAgent({
-      context: { appId: currentApp.id, source: "general" },
+      context: { projectId: currentProject.id, source: "general" },
       prompt: "Summarize the current open issues",
     });
   };
@@ -73,8 +68,8 @@ export function IssuesPage() {
           </div>
           <h1 className="m-0 text-[24px] font-[680] leading-[1.12] tracking-[-0.04em]">Issues</h1>
           <p className="mt-1.5 max-w-[620px] text-[12px] text-tertiary">
-            Triage grouped runtime problems for the current application. Select an issue to inspect
-            its evidence or investigate it with the agent.
+            Triage grouped runtime problems for the current project. Select an issue to inspect its
+            evidence or investigate it with the agent.
           </p>
         </div>
         <div className="flex items-center gap-2 pt-1.5">
@@ -102,11 +97,11 @@ export function IssuesPage() {
           value={events.toLocaleString()}
           note="Aggregated by fingerprint"
         />
-        <Metric label="Investigating" value={investigating} note="Agent context can be attached" />
+        <Metric label="Ignored" value={ignored} note="Excluded from active triage" />
         <Metric
-          label="Resolved · 7d"
-          value={fixed}
-          note="Stable compared with last week"
+          label="Resolved"
+          value={resolved}
+          note="Successfully closed issues"
           noteClass="text-success"
           last
         />
@@ -198,7 +193,7 @@ export function IssuesPage() {
                     <StatusBadge group={group} />
                   </td>
                   <td className="border-b border-hairline px-4 py-3 text-[12px] text-muted tabular-nums">
-                    {issue.count.toLocaleString()}
+                    {issue.eventCount.toLocaleString()}
                   </td>
                   <td className="border-b border-hairline px-4 py-3 text-[12px] text-muted">
                     {relativeTime(issue.lastSeen)}
@@ -240,9 +235,10 @@ function Metric({
   );
 }
 
-function StatusBadge({ group }: { group: "open" | "investigating" | "fixed" }) {
-  const dot = group === "open" ? "bg-danger" : group === "investigating" ? "bg-info" : "bg-success";
-  const label = group === "open" ? "Open" : group === "investigating" ? "Investigating" : "Fixed";
+function StatusBadge({ group }: { group: "unresolved" | "resolved" | "ignored" }) {
+  const dot =
+    group === "unresolved" ? "bg-danger" : group === "resolved" ? "bg-success" : "bg-muted";
+  const label = group === "unresolved" ? "Open" : group === "resolved" ? "Resolved" : "Ignored";
   return (
     <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-white/[0.04] px-2 text-[10px] font-[600] text-muted">
       <span className={cn("size-1.5 rounded-full", dot)} />

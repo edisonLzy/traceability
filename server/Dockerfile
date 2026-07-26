@@ -50,6 +50,9 @@ WORKDIR /app
 RUN groupadd --system traceability && useradd --system --gid traceability --home-dir /app traceability
 
 COPY --from=build --chown=traceability:traceability /runtime ./
+# Drizzle migrations are runtime input for `dist/db/migrate.js` and are not
+# included by `pnpm deploy`, which only copies package files and dependencies.
+COPY --from=build --chown=traceability:traceability /workspace/server/drizzle ./drizzle
 
 USER traceability
 EXPOSE 3000

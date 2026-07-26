@@ -60,7 +60,7 @@ export function ChatMessages({
             <Sparkles size={17} />
           </span>
           <strong className="block text-[13px] font-[620] text-ink">
-            Investigate this application
+            Investigate this project
           </strong>
           <p className="mt-1.5 text-[10px] leading-5 text-tertiary">
             Ask about the current issue, performance view, or session replay.

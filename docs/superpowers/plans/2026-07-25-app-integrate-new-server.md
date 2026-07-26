@@ -8,6 +8,12 @@
 
 **Tech Stack:** tRPC v11 (`@trpc/server` `@trpc/client` `@trpc/react-query`)、Fastify v5、React 19、@tanstack/react-query v5（已在 app 用）、drizzle-orm、zod v4、commander v12、electron-vite v5。
 
+> **Implementation status (2026-07-26):** Tasks 1–10 are implemented in the current
+> worktree. Task 11 verification passes with a configured production token; the
+> PostgreSQL ingest integration test also passes when `TEST_DATABASE_URL` points at
+> the local test database. Fix-loop commands remain the explicitly documented exit-2
+> placeholders from the authoritative spec.
+
 ## Global Constraints
 
 - 包管理器**严格使用 pnpm**，禁止 `npx`/`npm`/`yarn`，用 `pnpm exec`。

@@ -23,7 +23,7 @@ k6 VUs --POST /api/{sentryProjectId}/envelope/--> Fastify ingest --> Postgres
 
 Flow:
 
-1. `setup()` calls `POST /api/v1/projects` with `MANAGEMENT_AUTH_TOKEN` to provision a fresh project (`slug: k6-<timestamp>`), returning `{ project, dsn }`.
+1. `setup()` calls the tRPC mutation `POST /api/trpc/projects.create` with `MANAGEMENT_AUTH_TOKEN` to provision a fresh project (`slug: k6-<timestamp>`), returning `{ project, key, dsn }`.
 2. Each iteration builds a Sentry envelope (headers line + `event` item header + error payload) with a unique 32-hex `event_id` derived from `Date.now()` + `__VU` + `__ITER`, then POSTs it as `application/x-sentry-envelope`.
 3. A `constant-arrival-rate` executor holds a steady request rate regardless of latency (open model), so the run measures **server capacity**, not client back-pressure.
 
@@ -32,7 +32,7 @@ Flow:
 | Var                      | Default                 | Meaning                                                   |
 | ------------------------ | ----------------------- | --------------------------------------------------------- |
 | `TARGET_URL`             | `http://127.0.0.1:3000` | Server base URL                                           |
-| `MANAGEMENT_AUTH_TOKEN`  | — (required)            | Bearer token for `POST /api/v1/projects` in `setup()`     |
+| `MANAGEMENT_AUTH_TOKEN`  | — (required)            | Bearer token for the tRPC project creation mutation       |
 | `RATE`                   | `50`                    | Requests per second                                       |
 | `DURATION`               | `15m`                   | Test duration (any k6 duration string, e.g. `30s`, `1h`)  |
 

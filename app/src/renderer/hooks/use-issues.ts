@@ -1,38 +1,36 @@
-import { listIssues } from "@renderer/apis/monitor";
-import type { ListIssuesParams } from "@renderer/apis/monitor";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { IssueStatus } from "@traceability/protocol";
+import { trpc } from "@renderer/lib/trpc";
+import type { RouterOutputs } from "@renderer/lib/trpc-types";
+import { useQueryClient, type UseQueryResult } from "@tanstack/react-query";
+import type { AppRouter } from "@traceability/server/trpc";
+import type { TRPCClientErrorLike } from "@trpc/client";
 import { useCallback } from "react";
 
 export interface UseIssuesParams {
-  appId: string;
-  status?: IssueStatus;
+  projectId: string;
+  cursor?: string;
   limit?: number;
 }
 
-const issuesKey = (params: UseIssuesParams) =>
-  [
-    "issues",
-    { appId: params.appId, status: params.status ?? "all", limit: params.limit ?? 100 },
-  ] as const;
-
-// ── List Issues ──────────────────────────────────────────────────────────────
-
-export function useIssues(params: UseIssuesParams) {
-  return useQuery({
-    queryKey: issuesKey(params),
-    queryFn: () =>
-      listIssues({ appId: params.appId, status: params.status, limit: params.limit ?? 100 }),
-    enabled: Boolean(params.appId),
-    staleTime: 30_000,
-  });
+export function useIssues(
+  params: UseIssuesParams,
+): UseQueryResult<RouterOutputs["issues"]["list"] | undefined, TRPCClientErrorLike<AppRouter>> {
+  return trpc.issues.list.useQuery(
+    {
+      projectId: params.projectId,
+      cursor: params.cursor,
+      limit: params.limit ?? 100,
+    },
+    {
+      enabled: Boolean(params.projectId),
+      staleTime: 15_000,
+    },
+  );
 }
-
-// ── Invalidate (for WS push refresh) ─────────────────────────────────────────
 
 export function useInvalidateIssues() {
   const queryClient = useQueryClient();
-  return useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ["issues"] });
-  }, [queryClient]);
+  return useCallback(
+    async () => queryClient.invalidateQueries({ queryKey: ["issues"] }),
+    [queryClient],
+  );
 }

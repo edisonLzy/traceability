@@ -15,6 +15,6 @@ export function configCommand(program: Command): void {
   cmd.command("show").action(() => {
     const cfg = getConfig();
     console.log(`server: ${cfg.server}`);
-    console.log(`token:  ${cfg.token.slice(0, 4)}…`);
+    console.log(`token:  ${cfg.token ? `${cfg.token.slice(0, 4)}…` : "(empty)"}`);
   });
 }

@@ -15,7 +15,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@renderer/components/ui/dialog";
-import { useCurrentApp } from "@renderer/context/current-app";
+import { useCurrentProject } from "@renderer/context/current-project";
 import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
 import type { Session } from "@renderer/store/agent";
 import { ArrowLeft, MessageCircle } from "lucide-react";
@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 export function CommandPalette() {
   const { invoke } = useElectronIPC();
-  const { currentApp, appId } = useCurrentApp();
+  const { currentProject, projectId } = useCurrentProject();
   const palette = useCommandPalette();
   const commands = useRegisteredCommands();
   const [query, setQuery] = useState("");
@@ -69,10 +69,10 @@ export function CommandPalette() {
   }, [palette.isOpen, palette.view]);
 
   useEffect(() => {
-    if (!palette.isOpen || palette.view !== "sessions" || !appId) return;
+    if (!palette.isOpen || palette.view !== "sessions" || !projectId) return;
 
     let cancelled = false;
-    void invoke("listSessions", appId)
+    void invoke("listSessions", projectId)
       .then((nextSessions) => {
         if (!cancelled) setSessions(nextSessions);
       })
@@ -82,7 +82,7 @@ export function CommandPalette() {
     return () => {
       cancelled = true;
     };
-  }, [appId, invoke, palette.isOpen, palette.view]);
+  }, [invoke, palette.isOpen, palette.view, projectId]);
 
   const runCommand = useCallback(
     (command: CommandDefinition) => {
@@ -116,7 +116,7 @@ export function CommandPalette() {
   const isSessionsView = palette.view === "sessions";
   const title = isSessionsView ? "Switch conversation" : "Commands";
   const description = isSessionsView
-    ? `Search conversations in ${currentApp?.name ?? "application"}`
+    ? `Search conversations in ${currentProject?.name ?? "project"}`
     : "Search registered commands";
 
   return (

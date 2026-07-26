@@ -121,7 +121,7 @@ function SessionActions({ activeSessionId, onCreate, onSelect }: SessionActionsP
         id: "agent.new-session",
         group: { id: "agent", label: "Agent", order: 40 },
         title: "New conversation",
-        description: "Start an agent session for this application",
+        description: "Start an agent session for this project",
         icon: SquarePen,
         shortcut: "⌘ N",
         action: () => {
@@ -266,7 +266,7 @@ function SessionMenu({ activeSessionId, onClose, onSelect, sessions }: SessionMe
 
 // ─── useAgentSession ──────────────────────────────────────────────────
 
-const AGENT_APP_ID = "traceability";
+const AGENT_PROJECT_ID = "traceability";
 
 function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -279,8 +279,8 @@ function useAgentSession() {
 
   const activateSession = useCallback(
     async (session: Session): Promise<boolean> => {
-      if (session.appId !== AGENT_APP_ID) {
-        setError("This conversation belongs to a different application.");
+      if (session.projectId !== AGENT_PROJECT_ID) {
+        setError("This conversation belongs to a different project.");
         return false;
       }
 
@@ -337,7 +337,7 @@ function useAgentSession() {
   const createSession = useCallback(async (): Promise<AgentSession | null> => {
     try {
       setError(null);
-      const session = await invoke("createSession", AGENT_APP_ID);
+      const session = await invoke("createSession", AGENT_PROJECT_ID);
       agentStore.getState().appendSession(session);
       const activated = await activateSession(session);
       return activated ? (agentStore.getState().getSession(session.id) ?? null) : null;
@@ -348,12 +348,12 @@ function useAgentSession() {
   }, [activateSession, invoke]);
 
   const refreshSessions = useCallback(async (): Promise<Session[]> => {
-    const sessions = await invoke("listSessions", AGENT_APP_ID);
+    const sessions = await invoke("listSessions", AGENT_PROJECT_ID);
     const persistedIds = new Set(sessions.map((session) => session.id));
     const optimisticSessions = agentStore
       .getState()
       .sessions.filter(
-        (session) => session.appId === AGENT_APP_ID && !persistedIds.has(session.id),
+        (session) => session.projectId === AGENT_PROJECT_ID && !persistedIds.has(session.id),
       );
     const nextSessions = [...sessions, ...optimisticSessions];
     agentStore.getState().setSessions(nextSessions);

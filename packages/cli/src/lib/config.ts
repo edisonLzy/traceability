@@ -7,17 +7,39 @@ export interface CliConfig {
   token: string;
 }
 
-const CONFIG_DIR = join(homedir(), ".traceability");
-const CONFIG_PATH = join(CONFIG_DIR, "config.json");
+export interface CliConfigOverrides {
+  server?: string;
+  token?: string;
+}
 
-export function getConfig(): CliConfig {
-  if (!existsSync(CONFIG_PATH)) {
-    throw new Error(`No config found. Run: traceability config set --server <url> --token <token>`);
-  }
-  return JSON.parse(readFileSync(CONFIG_PATH, "utf8")) as CliConfig;
+export const DEFAULT_SERVER = "http://localhost:3000";
+export const DEFAULT_TOKEN = "traceability-development-token";
+
+let commandLineOverrides: CliConfigOverrides = {};
+
+export function setConfigOverrides(overrides: CliConfigOverrides): void {
+  commandLineOverrides = { ...overrides };
+}
+
+function configPath(): string {
+  return process.env.TRACEABILITY_CONFIG_PATH ?? join(homedir(), ".traceability", "config.json");
+}
+
+export function getConfig(overrides: CliConfigOverrides = commandLineOverrides): CliConfig {
+  const path = configPath();
+  const stored = existsSync(path)
+    ? (JSON.parse(readFileSync(path, "utf8")) as Partial<CliConfig>)
+    : {};
+  return {
+    server:
+      overrides.server ?? process.env.TRACEABILITY_SERVER_URL ?? stored.server ?? DEFAULT_SERVER,
+    token:
+      overrides.token ?? process.env.TRACEABILITY_MANAGEMENT_TOKEN ?? stored.token ?? DEFAULT_TOKEN,
+  };
 }
 
 export function saveConfig(cfg: CliConfig): void {
-  mkdirSync(CONFIG_DIR, { recursive: true });
-  writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), { mode: 0o600 });
+  const path = configPath();
+  mkdirSync(join(path, ".."), { recursive: true });
+  writeFileSync(path, JSON.stringify(cfg, null, 2), { mode: 0o600 });
 }

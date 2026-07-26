@@ -30,7 +30,6 @@ traceability/
 │   └── package.json              # @traceability/server
 ├── packages/
 │   ├── core/                     # @traceability/core: rrweb recording + Sentry capture
-│   ├── protocol/                 # @traceability/protocol: shared type definitions
 │   ├── electron/                 # @traceability/electron: Electron-specific Sentry integrations
 │   ├── react/                    # @traceability/react: React bindings for traceability
 │   ├── cli/                      # @traceability/cli: command-line interface
@@ -73,7 +72,7 @@ pnpm --filter @traceability/app dev
 | Layer              | Tech                                                             |
 | ------------------ | ---------------------------------------------------------------- |
 | **Electron App**   | Electron 39, React 19, Vite 7 (electron-vite), Tailwind CSS 4    |
-| **Server**         | Express + WebSocket, Pino logging, better-sqlite3, Swagger       |
+| **Server**         | Fastify + tRPC, PostgreSQL/Drizzle, Redis/BullMQ, Pino logging  |
 | **Core Library**   | @rrweb/record + @rrweb/replay, @sentry/browser                   |
 | **React Bindings** | React 19, @sentry/react, @tanstack/react-query, @base-ui/react   |
 | **Package Mgr**    | pnpm 10 (workspace + catalog), node-linker=hoisted               |

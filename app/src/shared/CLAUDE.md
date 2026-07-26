@@ -15,6 +15,6 @@ Three processes import it, each differently:
 ## Rules
 
 - **Portable contracts only.** Keep runtime code out except for small literal allowlists such as `ALLOWED_MAIN_EXPOSE_EVENTS`. Every contract must remain importable by both `tsconfig` projects (web + node) and must not pull in Node or DOM globals.
-- **No imports from `main/` or `renderer/`.** This directory depends on nothing inside `app/`. (Domain types like `Issue`/`PerformanceSummary` come from `@traceability/protocol` via the renderer's `apis/`, not here.)
+- **No imports from `main/` or `renderer/`.** This directory depends on nothing inside `app/`. Shared management types come from the server tRPC router.
 - When you add an IPC channel: add its request/response types here, a validated handler in main, and an entry in the typed preload allowlist. All three change together.
 - Keep `AllowedMainExposeEvents` narrow and stable - the renderer branches on its event names, so renaming an event is a runtime-breaking change for `_layout/_agent`.

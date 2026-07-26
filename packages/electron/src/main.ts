@@ -206,31 +206,6 @@ export function initMain(opts: MainInitOptions): MainMonitor {
   return monitor;
 }
 
-function getEnvironment(): ElectronEnvironment {
-  return activeMonitor?.getEnvironment() ?? fallbackEnvironment();
-}
-
-function fallbackEnvironment(): ElectronEnvironment {
-  const cpus = os.cpus();
-  return {
-    platform: "electron-main",
-    appVersion: safeAppVersion(),
-    electronVersion: process.versions.electron ?? "unknown",
-    nodeVersion: process.versions.node,
-    chromiumVersion: process.versions.chrome ?? "unknown",
-    os: { platform: process.platform, release: os.release(), arch: process.arch },
-    hardware: { cpuCount: cpus.length, cpuModel: cpus[0]?.model ?? "unknown" },
-    system: {
-      totalMemory: os.totalmem(),
-      freeMemory: os.freemem(),
-      processMemory: process.memoryUsage().rss,
-      memoryRatio: 0,
-      cpuLoad: 0,
-      networkOnline: true,
-    },
-  };
-}
-
 function safeAppName(): string {
   try {
     return app.getName();

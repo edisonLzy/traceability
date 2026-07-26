@@ -1,20 +1,17 @@
 import cors from "@fastify/cors";
-import swagger from "@fastify/swagger";
-import swaggerUi from "@fastify/swagger-ui";
 import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 
 import type { RuntimeConfig } from "./config/index.js";
 import { loadRuntimeConfig } from "./config/index.js";
 import { createPostgresDatabase, type PostgresDatabase } from "./db/postgres.js";
+import { openApiDocument, swaggerUiHtml } from "./docs/openapi.js";
 import { registerIngestRoutes } from "./domains/ingest/routes.js";
 import { IngestRequestError } from "./domains/ingest/service.js";
-import { registerIssueRoutes } from "./domains/issues/routes.js";
-import { registerOperationsRoutes } from "./domains/operations/routes.js";
-import { registerProjectRoutes } from "./domains/projects/routes.js";
 import { createManagementAuth } from "./infrastructure/auth/management-auth.js";
 import { ServerMetrics } from "./infrastructure/observability/metrics.js";
 import type { IngestionRateLimiter } from "./infrastructure/rate-limit/project-rate-limiter.js";
+import { registerTrpc } from "./trpc/index.js";
 
 export interface AppDependencies {
   config: RuntimeConfig;
@@ -68,17 +65,6 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
     credentials: false,
     origin: dependencies.config.corsOrigins.length > 0 ? dependencies.config.corsOrigins : false,
   });
-  await app.register(swagger, {
-    openapi: {
-      info: {
-        title: "Traceability Server API",
-        version: "1.0.0",
-        description: "Sentry-compatible event ingestion server",
-      },
-    },
-  });
-  await app.register(swaggerUi, { routePrefix: "/api-docs" });
-
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof IngestRequestError) {
       if (error.retryAfterSeconds) reply.header("retry-after", error.retryAfterSeconds);
@@ -102,7 +88,6 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
     return reply.code(500).send({ code: "internal_error" });
   });
 
-  app.get("/api-docs.json", async () => app.swagger());
   app.get(
     "/metrics",
     { preHandler: createManagementAuth(dependencies.config) },
@@ -122,10 +107,14 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
       return { status: "unavailable" };
     }
   });
+  app.get("/api-docs.json", async (_request, reply) => {
+    return reply.type("application/json").send(openApiDocument);
+  });
+  app.get("/api-docs", async (_request, reply) => {
+    return reply.type("text/html; charset=utf-8").send(swaggerUiHtml);
+  });
   await registerIngestRoutes(app, dependencies);
-  await registerProjectRoutes(app, dependencies);
-  await registerIssueRoutes(app, dependencies);
-  await registerOperationsRoutes(app, dependencies);
+  await registerTrpc(app, dependencies);
 
   app.addHook("onClose", async () => {
     await dependencies.rateLimiter?.close();

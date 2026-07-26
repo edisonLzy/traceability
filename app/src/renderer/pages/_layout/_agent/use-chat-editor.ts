@@ -90,7 +90,7 @@ export function useChatEditor({
           orderedList: false,
           bulletList: false,
         }),
-        Placeholder.configure({ placeholder: "Ask about this application…" }),
+        Placeholder.configure({ placeholder: "Ask about this project…" }),
         ...extensions,
         ...pluginPromptInputExtensions,
         skillNode,

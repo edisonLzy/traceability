@@ -80,9 +80,7 @@ export function PendingSessionContent() {
           <span className="mx-auto mb-3 grid size-10 place-items-center rounded-[11px] border border-hairline bg-white/[0.025] text-primary-hover">
             <Sparkles size={17} />
           </span>
-          <h2 className="text-[13px] font-[620] leading-snug text-ink">
-            Investigate this application
-          </h2>
+          <h2 className="text-[13px] font-[620] leading-snug text-ink">Investigate this project</h2>
           <p className="mt-1.5 text-[10px] leading-5 text-tertiary">
             Ask about the current issue, performance view, or session replay.
           </p>

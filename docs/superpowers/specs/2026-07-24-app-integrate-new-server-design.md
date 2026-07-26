@@ -1,11 +1,17 @@
 # App 接入新 server (Fastify + PG + tRPC)
 
-- **状态**：Draft
+- **状态**：Implemented
 - **作者**：evan
 - **日期**：2026-07-24
 - **相关**：`docs/superpowers/specs/2026-07-23-sentry-compatible-ingestion-server.md`
 
 ## 1. 背景
+
+> **Implementation note (2026-07-26):** The in-scope migration is implemented in the
+> current worktree. The fix-loop APIs remain intentionally out of scope and their CLI
+> commands return exit code `2`, as required below. Verification includes unit tests,
+> a PostgreSQL-backed ingest integration test, CLI/server smoke calls, type-checking,
+> linting, and a production renderer build with `VITE_MANAGEMENT_TOKEN`.
 
 `server/` 已完成从 Express + SQLite 到 **Fastify + PostgreSQL** 的重写（commit `3403433`），API 命名和数据模型全部改换：
 

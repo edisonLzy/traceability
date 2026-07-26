@@ -1,8 +1,8 @@
 import { Card } from "@renderer/components/ui/card";
 import { cn, relativeTime, statusLabel } from "@renderer/lib/utils";
-import type { Issue, IssueStatus } from "@traceability/protocol";
 import { useNavigate } from "react-router-dom";
 
+import type { Issue } from "../../../../shared/trpc-types.js";
 import { defineRendererExtension } from "../../../core/renderer";
 import { ISSUES_EXTENSION } from "../common/extension";
 import { ISSUES_LIST_BLOCK_TYPE, type IssuesListBlockProps } from "../common/types";
@@ -10,10 +10,7 @@ import { ISSUES_LIST_BLOCK_TYPE, type IssuesListBlockProps } from "../common/typ
 function IssuesListBlock({ props }: { props: Record<string, unknown> }) {
   const navigate = useNavigate();
   const block = parseIssuesProps(props);
-
-  if (!block) {
-    return null;
-  }
+  if (!block) return null;
 
   return (
     <Card className="not-prose my-2 bg-white/[0.03] text-card-foreground">
@@ -43,7 +40,7 @@ function IssuesListBlock({ props }: { props: Record<string, unknown> }) {
                 </span>
               </div>
               <div className="truncate text-[9px] text-muted-foreground">
-                x{issue.count} · {relativeTime(issue.lastSeen)}
+                x{issue.eventCount} · {relativeTime(issue.lastSeen.toString())}
               </div>
             </div>
           </button>
@@ -61,37 +58,35 @@ export default defineRendererExtension({
 });
 
 function parseIssuesProps(value: Record<string, unknown>): IssuesListBlockProps | null {
-  if (!Array.isArray(value.issues) || typeof value.appId !== "string") {
-    return null;
-  }
-
+  if (!Array.isArray(value.issues) || typeof value.projectId !== "string") return null;
   return {
-    appId: value.appId,
+    projectId: value.projectId,
     nextCursor: typeof value.nextCursor === "string" ? value.nextCursor : null,
     issues: value.issues.filter(isRecord).flatMap((item) => {
       if (
         typeof item.id !== "string" ||
-        typeof item.appId !== "string" ||
+        typeof item.projectId !== "string" ||
         typeof item.title !== "string" ||
         typeof item.type !== "string" ||
         typeof item.status !== "string"
       ) {
         return [];
       }
-
       return [
         {
           id: item.id,
-          appId: item.appId,
+          projectId: item.projectId,
           fingerprint: typeof item.fingerprint === "string" ? item.fingerprint : "",
+          groupingVersion: typeof item.groupingVersion === "number" ? item.groupingVersion : 1,
           title: item.title,
-          type: item.type as Issue["type"],
+          type: item.type,
+          status: item.status,
           firstSeen: typeof item.firstSeen === "string" ? item.firstSeen : "",
           lastSeen: typeof item.lastSeen === "string" ? item.lastSeen : "",
-          count: typeof item.count === "number" ? item.count : 0,
-          status: item.status as IssueStatus,
-          metadata: isRecord(item.metadata) ? item.metadata : {},
-        },
+          eventCount: typeof item.eventCount === "number" ? item.eventCount : 0,
+          createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
+          updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : "",
+        } as Issue,
       ];
     }),
   };

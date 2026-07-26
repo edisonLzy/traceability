@@ -75,17 +75,17 @@ export class JsonlSessionStore {
       throw new Error(`Session already exists: ${session.id}`);
     }
 
-    const filePath = this.filePath(session.appId, session.id);
+    const filePath = this.filePath(session.projectId, session.id);
     mkdirSync(dirname(filePath), { recursive: true, mode: 0o700 });
     this.writeNewFile(filePath, [{ type: "session", version: FORMAT_VERSION, session }]);
     this.states.set(session.id, this.createState(session, filePath));
     return clone(session);
   }
 
-  list(appId: string): Session[] {
+  list(projectId: string): Session[] {
     return [...this.states.values()]
       .map((state) => state.session)
-      .filter((session) => session.appId === appId)
+      .filter((session) => session.projectId === projectId)
       .sort((left, right) => right.updatedAt - left.updatedAt)
       .map(clone);
   }
@@ -189,8 +189,8 @@ export class JsonlSessionStore {
     return state;
   }
 
-  private filePath(appId: string, sessionId: string): string {
-    return join(this.rootDirectory, encodeURIComponent(appId), `${sessionId}.jsonl`);
+  private filePath(projectId: string, sessionId: string): string {
+    return join(this.rootDirectory, encodeURIComponent(projectId), `${sessionId}.jsonl`);
   }
 
   private createState(session: Session, filePath: string): SessionState {
@@ -331,7 +331,7 @@ export class JsonlSessionStore {
 
             const filePath = join(
               stagingDirectory,
-              encodeURIComponent(session.appId),
+              encodeURIComponent(session.projectId),
               `${session.id}.jsonl`,
             );
             mkdirSync(dirname(filePath), { recursive: true, mode: 0o700 });
@@ -374,7 +374,7 @@ function hasTable(
 function legacySession(row: LegacyRow): Session {
   return {
     id: stringValue(row.id),
-    appId: stringValue(row.app_id),
+    projectId: stringValue(row.app_id),
     name: stringValue(row.name) || stringValue(row.title),
     cwd: stringValue(row.cwd),
     workspaceId: nullableString(row.workspace_id),
@@ -444,7 +444,7 @@ function parseRecord(line: string, filePath: string): SessionRecord {
 function parseSession(value: Record<string, unknown>): Session {
   return {
     id: stringValue(value.id),
-    appId: stringValue(value.appId),
+    projectId: stringValue(value.projectId ?? value.appId),
     name: stringValue(value.name),
     cwd: stringValue(value.cwd),
     workspaceId: nullableString(value.workspaceId),

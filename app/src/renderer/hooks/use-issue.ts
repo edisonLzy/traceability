@@ -1,42 +1,29 @@
-import { getIssue, getIssueEvents, getIssueReplays, getReplay } from "@renderer/apis/monitor";
-import { useQuery } from "@tanstack/react-query";
+import { trpc } from "@renderer/lib/trpc";
+import type { RouterInputs, RouterOutputs } from "@renderer/lib/trpc-types";
+import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
+import type { AppRouter } from "@traceability/server/trpc";
+import type { TRPCClientErrorLike } from "@trpc/client";
 
-// ── Get Issue ────────────────────────────────────────────────────────────────
-
-export function useIssue(issueId: string | undefined) {
-  return useQuery({
-    queryKey: ["issue", issueId ?? ""],
-    queryFn: () => getIssue(issueId!),
-    enabled: Boolean(issueId),
-  });
+export function useIssue(
+  issueId: string | undefined,
+): UseQueryResult<RouterOutputs["issues"]["get"] | undefined, TRPCClientErrorLike<AppRouter>> {
+  return trpc.issues.get.useQuery(issueId!, { enabled: Boolean(issueId) });
 }
 
-// ── Get Issue Events ─────────────────────────────────────────────────────────
-
-export function useIssueEvents(issueId: string | undefined) {
-  return useQuery({
-    queryKey: ["issue", issueId ?? "", "events"],
-    queryFn: () => getIssueEvents(issueId!),
-    enabled: Boolean(issueId),
-  });
+export function useIssueEvents(
+  issueId: string | undefined,
+): UseQueryResult<RouterOutputs["issues"]["events"] | undefined, TRPCClientErrorLike<AppRouter>> {
+  return trpc.issues.events.useQuery(
+    { issueId: issueId!, limit: 100 },
+    { enabled: Boolean(issueId) },
+  );
 }
 
-// ── Get Issue Replays ────────────────────────────────────────────────────────
-
-export function useIssueReplays(issueId: string | undefined) {
-  return useQuery({
-    queryKey: ["issue", issueId ?? "", "replays"],
-    queryFn: () => getIssueReplays(issueId!),
-    enabled: Boolean(issueId),
-  });
-}
-
-// ── Get Replay (lazy: only when the replay tab is active) ────────────────────
-
-export function useReplay(issueId: string | undefined, replayId: string | null, enabled: boolean) {
-  return useQuery({
-    queryKey: ["replay", issueId ?? "", replayId ?? ""],
-    queryFn: () => getReplay(issueId!, replayId!),
-    enabled: Boolean(issueId && replayId && enabled),
-  });
+export function useUpdateIssue(): UseMutationResult<
+  RouterOutputs["issues"]["update"],
+  TRPCClientErrorLike<AppRouter>,
+  RouterInputs["issues"]["update"],
+  unknown
+> {
+  return trpc.issues.update.useMutation();
 }

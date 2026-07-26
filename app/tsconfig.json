@@ -16,7 +16,6 @@
     "src/preload/index.ts",
     "src/extensions/core/main/**",
     "src/extensions/builtins/subagents/main/**",
-    "src/extensions/builtins/apps/main/**",
     "src/extensions/builtins/issues/main/**"
   ]
 }

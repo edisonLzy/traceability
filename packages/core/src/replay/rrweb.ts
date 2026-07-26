@@ -1,9 +1,8 @@
 import { record } from "@rrweb/record";
 import type { eventWithTime, listenerHandler } from "@rrweb/types";
 import { EventType } from "@rrweb/types";
-import type { RrwebReplayIngestBody } from "@traceability/protocol";
 
-import type { InitOptions } from "../types.js";
+import type { InitOptions, RrwebReplayIngestBody } from "../types.js";
 
 interface ReplayRuntime {
   uploadUrl: string;

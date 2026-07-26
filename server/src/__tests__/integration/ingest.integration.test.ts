@@ -40,12 +40,15 @@ describeIntegration("PostgreSQL ingest integration", () => {
   it("durably accepts, scrubs, processes, and deduplicates a Sentry event", async () => {
     const projectResponse = await app.inject({
       method: "POST",
-      url: "/api/v1/projects",
-      headers: { authorization: `Bearer ${managementToken}` },
+      url: "/api/trpc/projects.create",
+      headers: {
+        authorization: `Bearer ${managementToken}`,
+        "content-type": "application/json",
+      },
       payload: { slug: "integration-web", name: "Integration Web" },
     });
-    expect(projectResponse.statusCode).toBe(201);
-    const created = projectResponse.json().data as {
+    expect(projectResponse.statusCode).toBe(200);
+    const created = projectResponse.json().result.data as {
       project: { id: string; sentryProjectId: number };
       dsn: string;
     };

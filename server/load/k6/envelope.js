@@ -27,8 +27,12 @@ export const options = {
 export function setup() {
   if (!managementToken) throw new Error("MANAGEMENT_AUTH_TOKEN is required");
   const project = http.post(
-    `${target}/api/v1/projects`,
-    JSON.stringify({ slug: `k6-${Date.now()}`, name: "k6 load test" }),
+    `${target}/api/trpc/projects.create`,
+    JSON.stringify({
+      slug: `k6-${Date.now()}`,
+      name: "k6 load test",
+      platform: "javascript",
+    }),
     {
       headers: {
         authorization: `Bearer ${managementToken}`,
@@ -36,8 +40,8 @@ export function setup() {
       },
     },
   );
-  if (project.status !== 201) throw new Error(`could not create load project: ${project.body}`);
-  return project.json("data");
+  if (project.status !== 200) throw new Error(`could not create load project: ${project.body}`);
+  return project.json().result.data;
 }
 
 export default function (project) {
