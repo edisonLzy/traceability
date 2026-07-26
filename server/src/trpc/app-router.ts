@@ -1,3 +1,5 @@
+import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
+
 import { issuesRouter } from "../domains/issues/router.js";
 import { operationsRouter } from "../domains/operations/router.js";
 import { projectsRouter } from "../domains/projects/router.js";
@@ -10,3 +12,5 @@ export const appRouter = t.router({
 });
 
 export type AppRouter = typeof appRouter;
+export type AppRouterInputs = inferRouterInputs<AppRouter>;
+export type AppRouterOutputs = inferRouterOutputs<AppRouter>;

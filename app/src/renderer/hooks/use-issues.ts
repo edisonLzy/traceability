@@ -1,5 +1,5 @@
 import { trpc } from "@renderer/lib/trpc";
-import type { RouterOutputs } from "@renderer/lib/trpc-types";
+import type { AppRouterOutputs } from "@renderer/lib/trpc-types";
 import { useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import type { AppRouter } from "@traceability/server/trpc";
 import type { TRPCClientErrorLike } from "@trpc/client";
@@ -13,7 +13,7 @@ export interface UseIssuesParams {
 
 export function useIssues(
   params: UseIssuesParams,
-): UseQueryResult<RouterOutputs["issues"]["list"] | undefined, TRPCClientErrorLike<AppRouter>> {
+): UseQueryResult<AppRouterOutputs["issues"]["list"] | undefined, TRPCClientErrorLike<AppRouter>> {
   return trpc.issues.list.useQuery(
     {
       projectId: params.projectId,

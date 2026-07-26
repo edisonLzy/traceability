@@ -1,7 +1,6 @@
-import type { AppRouter } from "@traceability/server/trpc";
-import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
+import type { AppRouterInputs, AppRouterOutputs } from "@traceability/server/trpc";
 
-export type RouterInputs = inferRouterInputs<AppRouter>;
-export type RouterOutputs = inferRouterOutputs<AppRouter>;
-export type Project = RouterOutputs["projects"]["list"][number];
-export type Issue = NonNullable<RouterOutputs["issues"]["get"]>;
+export type { AppRouterInputs, AppRouterOutputs };
+
+export type Project = AppRouterOutputs["projects"]["list"][number];
+export type Issue = NonNullable<AppRouterOutputs["issues"]["get"]>;
