@@ -12,6 +12,7 @@ import { createManagementAuth } from "./infrastructure/auth/management-auth.js";
 import { ServerMetrics } from "./infrastructure/observability/metrics.js";
 import type { IngestionRateLimiter } from "./infrastructure/rate-limit/project-rate-limiter.js";
 import { registerTrpc } from "./trpc/index.js";
+import { registerTrpcPanel } from "./trpc/panel.js";
 
 export interface AppDependencies {
   config: RuntimeConfig;
@@ -115,6 +116,7 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
   });
   await registerIngestRoutes(app, dependencies);
   await registerTrpc(app, dependencies);
+  await registerTrpcPanel(app, dependencies.config);
 
   app.addHook("onClose", async () => {
     await dependencies.rateLimiter?.close();

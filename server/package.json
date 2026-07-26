@@ -41,6 +41,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@ajayche/trpc-panel": "^2.1.0",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.15.6",
     "drizzle-kit": "^0.31.10",

@@ -45,6 +45,22 @@ Management requests require a Bearer token. The desktop app reads `VITE_SERVER_U
 `VITE_MANAGEMENT_TOKEN`; the CLI reads `--server`/`--token`, environment variables, or its
 config file.
 
+### tRPC debugging panel
+
+The server includes a development-only tRPC UI for browsing and invoking the management
+procedures. After `pnpm install` and with the configured PostgreSQL and Redis services
+available, start the server in development mode, then open
+[`http://localhost:3000/trpc-panel`](http://localhost:3000/trpc-panel):
+
+```bash
+NODE_ENV=development MANAGEMENT_AUTH_TOKEN=traceability-development-token pnpm --filter @traceability/server dev
+```
+
+In the panel, open **Headers** and add `Authorization: Bearer traceability-development-token`
+before invoking a procedure. The panel shell is available only when `NODE_ENV` is not
+`production`; every management procedure still enforces `MANAGEMENT_AUTH_TOKEN`. Do not
+expose the development server or its fallback token to an untrusted network.
+
 ## Integrating the SDK
 
 ```ts

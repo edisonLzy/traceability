@@ -57,6 +57,30 @@ describe("runtime app", () => {
     expect(ui.body).toContain("swagger-ui");
   });
 
+  it("serves the tRPC panel outside production", async () => {
+    const app = await createApp({ config, database: createDatabase() });
+    apps.push(app);
+
+    const response = await app.inject({ method: "GET", url: "/trpc-panel" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toContain("text/html");
+    expect(response.body).toContain("tRPC.ui()");
+    expect(response.body).toContain("/api/trpc");
+  });
+
+  it("does not register the tRPC panel in production", async () => {
+    const app = await createApp({
+      config: { ...config, environment: "production", managementAuthToken: "production-token" },
+      database: createDatabase(),
+    });
+    apps.push(app);
+
+    const response = await app.inject({ method: "GET", url: "/trpc-panel" });
+
+    expect(response.statusCode).toBe(404);
+  });
+
   it("reports readiness only when PostgreSQL is reachable", async () => {
     const database = createDatabase();
     const app = await createApp({ config, database });
