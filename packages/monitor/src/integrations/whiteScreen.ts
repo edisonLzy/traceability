@@ -1,6 +1,6 @@
+import * as Sentry from "@sentry/browser";
 import type { Integration } from "@sentry/core";
-
-import { captureMessage } from "../index.js";
+const captureMessage = Sentry.captureMessage;
 
 export interface WhiteScreenOptions {
   rootSelector?: string;

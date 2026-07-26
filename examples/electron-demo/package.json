@@ -5,13 +5,16 @@
   "type": "module",
   "main": "./dist/main.js",
   "scripts": {
-    "build:packages": "pnpm --filter @traceability/core build && pnpm --filter @traceability/electron build",
+    "build:packages": "pnpm --filter @traceability/monitor build",
     "build:main": "tsc -p tsconfig.json",
     "build:renderer": "vite build --config vite.renderer.config.ts",
     "build": "pnpm build:packages && pnpm build:main && pnpm build:renderer",
     "start": "electron .",
     "dev": "pnpm build && pnpm start",
     "crash:main": "ELECTRON_DEMO_CRASH_ON_START=1 pnpm dev"
+  },
+  "dependencies": {
+    "@traceability/monitor": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

@@ -4,7 +4,7 @@ import {
   captureException,
   setTag,
   reportPerformance,
-} from "@traceability/core";
+} from "@traceability/monitor";
 
 /**
  * 用户注册表单控制器 -- 纯前端逻辑，不接入 Traceability SDK。

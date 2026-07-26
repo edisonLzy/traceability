@@ -1,0 +1,48 @@
+{
+  "name": "@traceability/monitor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/browser/index.ts",
+      "import": "./src/browser/index.ts"
+    },
+    "./react": {
+      "types": "./src/react/index.ts",
+      "import": "./src/react/index.ts"
+    },
+    "./electron-main": {
+      "types": "./src/electron-main/index.ts",
+      "import": "./src/electron-main/index.ts"
+    },
+    "./electron-renderer": {
+      "types": "./src/electron-renderer/index.ts",
+      "import": "./src/electron-renderer/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sentry/browser": "^8.0.0",
+    "@sentry/core": "^8.0.0",
+    "@sentry/electron": "^5.0.0",
+    "@sentry/react": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "jsdom": "^25.0.0",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
+}

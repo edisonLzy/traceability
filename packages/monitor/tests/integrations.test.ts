@@ -3,12 +3,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { corsDiagnosticIntegration } from "../src/integrations/corsDiagnostic.js";
 import { whiteScreenIntegration } from "../src/integrations/whiteScreen.js";
 
-// captureMessage is imported from ../index.js inside the integration; mock it
-vi.mock("../src/index.js", () => ({
+// captureMessage is imported from @sentry/browser inside the integration; mock it
+vi.mock("@sentry/browser", () => ({
   captureMessage: vi.fn(),
 }));
 
-import { captureMessage } from "../src/index.js";
+import { captureMessage } from "@sentry/browser";
 
 describe("corsDiagnosticIntegration", () => {
   beforeEach(() => {
