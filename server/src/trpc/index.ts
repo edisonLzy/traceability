@@ -2,14 +2,14 @@ import { fastifyTRPCPlugin, type CreateFastifyContextOptions } from "@trpc/serve
 import type { FastifyInstance } from "fastify";
 
 import type { RuntimeConfig } from "../config/index.js";
-import type { PostgresDatabase } from "../db/postgres.js";
+import type { Database } from "../db/client.js";
 import { IssueService } from "../domains/issues/service.js";
 import { ProjectService } from "../domains/projects/service.js";
 import { appRouter } from "./app-router.js";
 
 export interface TrpcDependencies {
   config: RuntimeConfig;
-  database: PostgresDatabase;
+  database: Database;
 }
 
 export async function registerTrpc(

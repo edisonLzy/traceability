@@ -13,8 +13,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { organizations } from "./organizations.js";
-
 export const projectKeyStatus = pgEnum("project_key_status", ["active", "disabled", "revoked"]);
 
 export const projects = pgTable(
@@ -24,9 +22,6 @@ export const projects = pgTable(
     // Sentry SDKs require the DSN path component to be an integer. Keep the
     // UUID as our internal relational key while exposing this stable protocol ID.
     sentryProjectId: serial("sentry_project_id").notNull().unique(),
-    organizationId: uuid("organization_id")
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
     slug: text("slug").notNull(),
     name: text("name").notNull(),
     platform: text("platform").notNull().default("javascript"),
@@ -34,9 +29,7 @@ export const projects = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [
-    uniqueIndex("projects_organization_slug_unique").on(table.organizationId, table.slug),
-  ],
+  (table) => [uniqueIndex("projects_slug_unique").on(table.slug)],
 );
 
 export const projectKeys = pgTable(

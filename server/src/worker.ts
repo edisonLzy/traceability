@@ -3,8 +3,8 @@ import { Worker } from "bullmq";
 import { eq } from "drizzle-orm";
 
 import { loadRuntimeConfig } from "./config/index.js";
-import { createPostgresDatabase } from "./db/postgres.js";
-import { ingestItems, processingFailures } from "./db/schema/index.js";
+import { createDatabase } from "./db/client.js";
+import { ingestItems, processingFailures } from "./domains/ingest/db.js";
 import { itemProcessors } from "./domains/processing/registry.js";
 import {
   createQueueConnection,
@@ -19,7 +19,7 @@ interface ItemJob {
 
 export async function startWorker(): Promise<void> {
   const config = loadRuntimeConfig();
-  const database = createPostgresDatabase({
+  const database = createDatabase({
     connectionString: config.databaseUrl,
     maxConnections: config.databasePoolMax,
   });

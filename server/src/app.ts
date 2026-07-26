@@ -1,13 +1,11 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
-import { ZodError } from "zod";
 
 import type { RuntimeConfig } from "./config/index.js";
 import { loadRuntimeConfig } from "./config/index.js";
-import { createPostgresDatabase, type PostgresDatabase } from "./db/postgres.js";
-import { openApiDocument, swaggerUiHtml } from "./docs/openapi.js";
+import { createDatabase, type Database } from "./db/client.js";
 import { registerIngestRoutes } from "./domains/ingest/routes.js";
-import { IngestRequestError } from "./domains/ingest/service.js";
+import { registerErrorHandler } from "./errors/app-error.js";
 import { createManagementAuth } from "./infrastructure/auth/management-auth.js";
 import { ServerMetrics } from "./infrastructure/observability/metrics.js";
 import type { IngestionRateLimiter } from "./infrastructure/rate-limit/project-rate-limiter.js";
@@ -16,7 +14,7 @@ import { registerTrpcPanel } from "./trpc/panel.js";
 
 export interface AppDependencies {
   config: RuntimeConfig;
-  database: PostgresDatabase;
+  database: Database;
   rateLimiter?: IngestionRateLimiter;
 }
 
@@ -34,6 +32,7 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
     },
     requestIdHeader: "x-request-id",
   });
+  registerErrorHandler(app);
   const metrics = new ServerMetrics();
   const requestStartedAt = new WeakMap<object, number>();
   app.addHook("onRequest", async (request) => {
@@ -66,28 +65,6 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
     credentials: false,
     origin: dependencies.config.corsOrigins.length > 0 ? dependencies.config.corsOrigins : false,
   });
-  app.setErrorHandler((error, _request, reply) => {
-    if (error instanceof IngestRequestError) {
-      if (error.retryAfterSeconds) reply.header("retry-after", error.retryAfterSeconds);
-      return reply.code(error.statusCode).send({ detail: error.message, code: error.code });
-    }
-    if (error instanceof ZodError) {
-      return reply.code(400).send({ code: "invalid_request", issues: error.issues });
-    }
-    if (
-      error &&
-      typeof error === "object" &&
-      "statusCode" in error &&
-      typeof error.statusCode === "number" &&
-      error.statusCode >= 400 &&
-      error.statusCode < 500
-    ) {
-      const code = error.statusCode === 413 ? "request_too_large" : "invalid_request";
-      return reply.code(error.statusCode).send({ code });
-    }
-    app.log.error(error);
-    return reply.code(500).send({ code: "internal_error" });
-  });
 
   app.get(
     "/metrics",
@@ -108,12 +85,6 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
       return { status: "unavailable" };
     }
   });
-  app.get("/api-docs.json", async (_request, reply) => {
-    return reply.type("application/json").send(openApiDocument);
-  });
-  app.get("/api-docs", async (_request, reply) => {
-    return reply.type("text/html; charset=utf-8").send(swaggerUiHtml);
-  });
   await registerIngestRoutes(app, dependencies);
   await registerTrpc(app, dependencies);
   await registerTrpcPanel(app, dependencies.config);
@@ -128,7 +99,7 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
 
 export async function startApi(): Promise<FastifyInstance> {
   const config = loadRuntimeConfig();
-  const database = createPostgresDatabase({
+  const database = createDatabase({
     connectionString: config.databaseUrl,
     maxConnections: config.databasePoolMax,
   });

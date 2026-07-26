@@ -1,11 +1,11 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import type { RuntimeConfig } from "../../config/index.js";
-import type { PostgresDatabase } from "../../db/postgres.js";
-import { organizations, projectKeys, projectPolicies, projects } from "../../db/schema/index.js";
+import type { Database } from "../../db/client.js";
+import { projectKeys, projectPolicies, projects } from "./db.js";
 
 const SlugSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/);
 
@@ -31,7 +31,7 @@ export const UpdateProjectPolicySchema = z.object({
 
 export class ProjectService {
   public constructor(
-    private readonly database: PostgresDatabase,
+    private readonly database: Database,
     private readonly config: RuntimeConfig,
   ) {}
 
@@ -41,11 +41,9 @@ export class ProjectService {
 
   async createProject(raw: unknown) {
     const input = CreateProjectSchema.parse(raw);
-    const organization = await this.ensureDefaultOrganization();
     const [project] = await this.database.db
       .insert(projects)
       .values({
-        organizationId: organization.id,
         slug: input.slug,
         name: input.name,
         platform: input.platform,
@@ -124,25 +122,6 @@ export class ProjectService {
       .where(eq(projectPolicies.projectId, projectId))
       .returning();
     return policy ?? null;
-  }
-
-  private async ensureDefaultOrganization() {
-    await this.database.db
-      .insert(organizations)
-      .values({
-        id: randomUUID(),
-        slug: this.config.defaultOrganizationSlug,
-        name: this.config.defaultOrganizationName,
-      })
-      .onConflictDoNothing();
-
-    const [organization] = await this.database.db
-      .select()
-      .from(organizations)
-      .where(eq(organizations.slug, this.config.defaultOrganizationSlug))
-      .limit(1);
-    if (!organization) throw new Error("default organization could not be created");
-    return organization;
   }
 
   private async createProjectKey(projectId: string) {

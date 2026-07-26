@@ -3,20 +3,13 @@ import { brotliDecompressSync, gunzipSync, inflateSync } from "node:zlib";
 
 import { and, eq } from "drizzle-orm";
 
-import type { PostgresDatabase } from "../../db/postgres.js";
-import {
-  ingestEnvelopes,
-  ingestItems,
-  outcomes,
-  outbox,
-  projectKeys,
-  projectPolicies,
-  projects,
-} from "../../db/schema/index.js";
+import type { Database } from "../../db/client.js";
 import {
   NoopIngestionRateLimiter,
   type IngestionRateLimiter,
 } from "../../infrastructure/rate-limit/project-rate-limiter.js";
+import { projectKeys, projectPolicies, projects } from "../projects/db.js";
+import { ingestEnvelopes, ingestItems, outcomes, outbox } from "./db.js";
 import type { ParsedEnvelope, ParsedEnvelopeItem } from "./envelope-parser.js";
 import { EnvelopeParseError, parseEnvelope } from "./envelope-parser.js";
 import { parseAndScrubEvent, scrubValue } from "./scrubber.js";
@@ -49,7 +42,7 @@ interface ProjectContext {
 
 export class IngestService {
   public constructor(
-    private readonly database: PostgresDatabase,
+    private readonly database: Database,
     private readonly limits: IngestLimits,
     private readonly rateLimiter: IngestionRateLimiter = new NoopIngestionRateLimiter(),
   ) {}

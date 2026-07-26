@@ -2,7 +2,7 @@ import type { FastifyRequest } from "fastify";
 import { describe, expect, it } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
-import type { PostgresDatabase } from "../../db/postgres.js";
+import type { Database } from "../../db/client.js";
 import type { Context } from "../context.js";
 import { managementProcedure, t } from "../trpc.js";
 
@@ -15,8 +15,6 @@ function makeConfig(token: string): RuntimeConfig {
     databasePoolMax: 10,
     redisUrl: "redis://x",
     publicIngestUrl: "http://x",
-    defaultOrganizationSlug: "traceability",
-    defaultOrganizationName: "Traceability",
     managementAuthToken: token,
     ingestMaxCompressedBytes: 1024,
     ingestMaxDecompressedBytes: 1024,
@@ -31,7 +29,7 @@ function makeConfig(token: string): RuntimeConfig {
 function makeCtx(token: string, authHeader?: string): Context & { req: FastifyRequest } {
   return {
     config: makeConfig(token),
-    database: {} as PostgresDatabase,
+    database: {} as Database,
     services: {} as never,
     req: { headers: { authorization: authHeader } } as unknown as FastifyRequest,
   };

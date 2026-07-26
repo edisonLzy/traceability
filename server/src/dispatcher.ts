@@ -1,13 +1,13 @@
 import "dotenv/config";
 import { loadRuntimeConfig } from "./config/index.js";
-import { createPostgresDatabase } from "./db/postgres.js";
+import { createDatabase } from "./db/client.js";
 import { createItemQueue, createQueueConnection } from "./infrastructure/queue/item-queue.js";
 import { OutboxDispatcher } from "./infrastructure/queue/outbox-dispatcher.js";
 import { isMainModule } from "./shared/isMainModule.js";
 
 export async function startDispatcher(): Promise<void> {
   const config = loadRuntimeConfig();
-  const database = createPostgresDatabase({
+  const database = createDatabase({
     connectionString: config.databaseUrl,
     maxConnections: config.databasePoolMax,
   });

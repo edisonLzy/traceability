@@ -1,7 +1,7 @@
-import type { PostgresDatabase } from "../../db/postgres.js";
+import type { Database } from "../../db/client.js";
 import { processEventItem } from "./event-handler.js";
 
-export type ItemProcessor = (database: PostgresDatabase, itemId: string) => Promise<void>;
+export type ItemProcessor = (database: Database, itemId: string) => Promise<void>;
 
 /**
  * The public envelope endpoint never needs to know which item types exist.

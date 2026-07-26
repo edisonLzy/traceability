@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import { ingestItems } from "./ingest.js";
-import { projects } from "./projects.js";
+import { ingestItems } from "../ingest/db.js";
+import { projects } from "../projects/db.js";
 
 export const issues = pgTable(
   "issues",

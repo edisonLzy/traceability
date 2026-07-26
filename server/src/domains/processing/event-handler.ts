@@ -2,10 +2,11 @@ import { createHash } from "node:crypto";
 
 import { and, eq, sql } from "drizzle-orm";
 
-import type { PostgresDatabase } from "../../db/postgres.js";
-import { events, ingestEnvelopes, ingestItems, issues } from "../../db/schema/index.js";
+import type { Database } from "../../db/client.js";
+import { ingestEnvelopes, ingestItems } from "../ingest/db.js";
+import { events, issues } from "../issues/db.js";
 
-export async function processEventItem(database: PostgresDatabase, itemId: string): Promise<void> {
+export async function processEventItem(database: Database, itemId: string): Promise<void> {
   await database.db.transaction(async (transaction) => {
     const [item] = await transaction
       .select({

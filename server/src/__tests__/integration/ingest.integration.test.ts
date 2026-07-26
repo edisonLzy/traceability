@@ -5,22 +5,23 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createApp } from "../../app.js";
 import { loadRuntimeConfig } from "../../config/index.js";
-import { createPostgresDatabase, type PostgresDatabase } from "../../db/postgres.js";
-import { events, ingestItems, issues } from "../../db/schema/index.js";
+import { createDatabase, type Database } from "../../db/client.js";
+import { ingestItems } from "../../domains/ingest/db.js";
+import { events, issues } from "../../domains/issues/db.js";
 import { processEventItem } from "../../domains/processing/event-handler.js";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeIntegration = databaseUrl ? describe : describe.skip;
 
 describeIntegration("PostgreSQL ingest integration", () => {
-  let database: PostgresDatabase;
+  let database: Database;
   let app: Awaited<ReturnType<typeof createApp>>;
   const managementToken = "integration-management-token";
 
   beforeAll(async () => {
-    database = createPostgresDatabase({ connectionString: databaseUrl!, maxConnections: 2 });
+    database = createDatabase({ connectionString: databaseUrl!, maxConnections: 2 });
     await database.db.execute(
-      "TRUNCATE events, issues, outbox, outcomes, ingest_items, ingest_envelopes, project_policies, project_keys, projects, organizations CASCADE",
+      "TRUNCATE events, issues, outbox, outcomes, ingest_items, ingest_envelopes, project_policies, project_keys, projects CASCADE",
     );
     const config = loadRuntimeConfig({
       NODE_ENV: "test",

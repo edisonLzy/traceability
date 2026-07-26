@@ -1,13 +1,13 @@
 import type { Queue } from "bullmq";
 import { and, eq, lte } from "drizzle-orm";
 
-import type { PostgresDatabase } from "../../db/postgres.js";
-import { outbox } from "../../db/schema/index.js";
+import type { Database } from "../../db/client.js";
+import { outbox } from "../../domains/ingest/db.js";
 import { itemQueueJobOptions } from "./item-queue.js";
 
 export class OutboxDispatcher {
   public constructor(
-    private readonly database: PostgresDatabase,
+    private readonly database: Database,
     private readonly queue: Queue,
   ) {}
 

@@ -1,8 +1,8 @@
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import { z } from "zod";
 
-import type { PostgresDatabase } from "../../db/postgres.js";
-import { events, issues } from "../../db/schema/index.js";
+import type { Database } from "../../db/client.js";
+import { events, issues } from "./db.js";
 
 const CursorSchema = z.string().optional();
 const LimitSchema = z.coerce.number().int().min(1).max(100).default(50);
@@ -12,7 +12,7 @@ export const UpdateIssueSchema = z.object({
 });
 
 export class IssueService {
-  public constructor(private readonly database: PostgresDatabase) {}
+  public constructor(private readonly database: Database) {}
 
   async listForProject(projectId: string, rawQuery: unknown) {
     const query = z.object({ cursor: CursorSchema, limit: LimitSchema }).parse(rawQuery);

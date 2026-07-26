@@ -11,11 +11,6 @@ const EnvironmentSchema = z.object({
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
   REDIS_URL: z.string().url().default("redis://127.0.0.1:6379"),
   PUBLIC_INGEST_URL: z.string().url().default("http://127.0.0.1:3000"),
-  DEFAULT_ORGANIZATION_SLUG: z
-    .string()
-    .regex(/^[a-z0-9][a-z0-9-]{0,62}$/)
-    .default("traceability"),
-  DEFAULT_ORGANIZATION_NAME: z.string().min(1).max(200).default("Traceability"),
   MANAGEMENT_AUTH_TOKEN: z.string().min(16).optional(),
   INGEST_MAX_COMPRESSED_BYTES: z.coerce
     .number()
@@ -49,8 +44,6 @@ export interface RuntimeConfig {
   databasePoolMax: number;
   redisUrl: string;
   publicIngestUrl: string;
-  defaultOrganizationSlug: string;
-  defaultOrganizationName: string;
   managementAuthToken: string;
   ingestMaxCompressedBytes: number;
   ingestMaxDecompressedBytes: number;
@@ -75,8 +68,6 @@ export function loadRuntimeConfig(environment: NodeJS.ProcessEnv = process.env):
     databasePoolMax: parsed.DATABASE_POOL_MAX,
     redisUrl: parsed.REDIS_URL,
     publicIngestUrl: parsed.PUBLIC_INGEST_URL,
-    defaultOrganizationSlug: parsed.DEFAULT_ORGANIZATION_SLUG,
-    defaultOrganizationName: parsed.DEFAULT_ORGANIZATION_NAME,
     managementAuthToken: parsed.MANAGEMENT_AUTH_TOKEN ?? "traceability-development-token",
     ingestMaxCompressedBytes: parsed.INGEST_MAX_COMPRESSED_BYTES,
     ingestMaxDecompressedBytes: parsed.INGEST_MAX_DECOMPRESSED_BYTES,

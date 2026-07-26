@@ -1,13 +1,13 @@
 import type { FastifyInstance } from "fastify";
 
 import type { RuntimeConfig } from "../../config/index.js";
-import type { PostgresDatabase } from "../../db/postgres.js";
+import type { Database } from "../../db/client.js";
 import type { IngestionRateLimiter } from "../../infrastructure/rate-limit/project-rate-limiter.js";
 import { IngestService } from "./service.js";
 
 interface IngestRouteDependencies {
   config: RuntimeConfig;
-  database: PostgresDatabase;
+  database: Database;
   rateLimiter?: IngestionRateLimiter;
 }
 

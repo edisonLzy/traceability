@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../app.js";
 import type { RuntimeConfig } from "../config/index.js";
-import type { PostgresDatabase } from "../db/postgres.js";
+import type { Database } from "../db/client.js";
 
 const config: RuntimeConfig = {
   environment: "test",
@@ -12,8 +12,6 @@ const config: RuntimeConfig = {
   databasePoolMax: 1,
   redisUrl: "redis://127.0.0.1:6379",
   publicIngestUrl: "http://127.0.0.1:3000",
-  defaultOrganizationSlug: "traceability",
-  defaultOrganizationName: "Traceability",
   managementAuthToken: "traceability-development-token",
   ingestMaxCompressedBytes: 1_048_576,
   ingestMaxDecompressedBytes: 5_242_880,
@@ -41,20 +39,6 @@ describe("runtime app", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: "ok" });
     expect(database.ping).not.toHaveBeenCalled();
-  });
-
-  it("serves the OpenAPI document and Swagger UI shell", async () => {
-    const app = await createApp({ config, database: createDatabase() });
-    apps.push(app);
-
-    const document = await app.inject({ method: "GET", url: "/api-docs.json" });
-    const ui = await app.inject({ method: "GET", url: "/api-docs" });
-
-    expect(document.statusCode).toBe(200);
-    expect(document.json().openapi).toBe("3.0.3");
-    expect(document.json().paths["/api/trpc/{procedure}"]).toBeDefined();
-    expect(ui.statusCode).toBe(200);
-    expect(ui.body).toContain("swagger-ui");
   });
 
   it("serves the tRPC panel outside production", async () => {
@@ -119,9 +103,9 @@ describe("runtime app", () => {
   });
 });
 
-function createDatabase(options: { pingError?: Error } = {}): PostgresDatabase {
+function createDatabase(options: { pingError?: Error } = {}): Database {
   return {
-    db: {} as PostgresDatabase["db"],
+    db: {} as Database["db"],
     close: vi.fn(async () => undefined),
     ping: options.pingError
       ? vi.fn(async () => {
