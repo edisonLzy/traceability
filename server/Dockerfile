@@ -57,4 +57,4 @@ COPY --from=build --chown=traceability:traceability /workspace/server/drizzle ./
 USER traceability
 EXPOSE 3000
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/app.js"]

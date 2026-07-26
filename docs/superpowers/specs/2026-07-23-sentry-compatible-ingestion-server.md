@@ -6,7 +6,7 @@
 
 ## 1. Decision summary
 
-Traceability will replace the current server implementation with a new, production-oriented **single-organization, multi-project** monitoring service. It will accept standard Sentry JavaScript SDK envelopes through a normal DSN and provide durable asynchronous processing, event deduplication, Issue grouping, and a protected control API.
+Traceability will replace the current server implementation with a new, production-oriented **multi-project** monitoring service. It will accept standard Sentry JavaScript SDK envelopes through a normal DSN and provide durable asynchronous processing, event deduplication, Issue grouping, and a protected control API.
 
 V1 deliberately handles only the `event` envelope item. The protocol parser, durable storage, queue contracts, and worker registry must nevertheless model an Envelope as a list of typed items so that `transaction`, `session`, `attachment`, `replay_*`, and other item types can be added without redesigning ingestion.
 
@@ -59,7 +59,6 @@ V1 is a reliable internal platform, not an HA public SaaS. Its initial productio
 
 | Dimension | V1 target |
 | --- | --- |
-| Organizations | One internal organization |
 | Projects | 5–30 web/Node projects |
 | Normal traffic | Up to 50,000 events/day |
 | Burst traffic | 50 accepted events/second for 15 minutes |
@@ -174,7 +173,6 @@ The registry contains `event` in V1. Unknown types are persisted as a sanitized 
 
 | Table | Responsibility |
 | --- | --- |
-| `organizations` | One row in V1; preserves a future tenancy boundary. |
 | `projects` | Monitoring project and repository/release metadata. |
 | `project_keys` | DSN public key lifecycle and project association. |
 | `project_policies` | Origins, quotas, sampling, scrub configuration, and enabled item types. |

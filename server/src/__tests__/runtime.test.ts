@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../app.js";
 import type { RuntimeConfig } from "../config/index.js";
 import type { Database } from "../db/client.js";
+import type { IngestionRateLimiter } from "../infrastructure/rate-limit/project-rate-limiter.js";
 
 const config: RuntimeConfig = {
   environment: "test",
@@ -77,6 +78,18 @@ describe("runtime app", () => {
     expect(database.ping).toHaveBeenCalledOnce();
   });
 
+  it("returns 503 when the rate limiter is unreachable", async () => {
+    const rateLimiter = createRateLimiter({ checkError: new Error("Redis unavailable") });
+    const app = await createApp({ config, database: createDatabase(), rateLimiter });
+    apps.push(app);
+
+    const response = await app.inject({ method: "GET", url: "/health/ready" });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ status: "unavailable" });
+    expect(rateLimiter.check).toHaveBeenCalledOnce();
+  });
+
   it("returns 503 when PostgreSQL is unreachable", async () => {
     const database = createDatabase({ pingError: new Error("connection refused") });
     const app = await createApp({ config, database });
@@ -101,6 +114,25 @@ describe("runtime app", () => {
     expect(response.statusCode).toBe(401);
     expect(response.json().error.data.code).toBe("UNAUTHORIZED");
   });
+
+  it("protects metrics and returns Prometheus metrics for management callers", async () => {
+    const app = await createApp({ config, database: createDatabase() });
+    apps.push(app);
+
+    const unauthenticated = await app.inject({ method: "GET", url: "/metrics" });
+    expect(unauthenticated.statusCode).toBe(401);
+
+    await app.inject({ method: "GET", url: "/health/live" });
+    const response = await app.inject({
+      method: "GET",
+      url: "/metrics",
+      headers: { authorization: `Bearer ${config.managementAuthToken}` },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toContain("text/plain");
+    expect(response.body).toContain("traceability_http_requests_total");
+  });
 });
 
 function createDatabase(options: { pingError?: Error } = {}): Database {
@@ -112,5 +144,17 @@ function createDatabase(options: { pingError?: Error } = {}): Database {
           throw options.pingError;
         })
       : vi.fn(async () => undefined),
+  };
+}
+
+function createRateLimiter(options: { checkError?: Error } = {}): IngestionRateLimiter {
+  return {
+    consume: vi.fn(async () => ({ allowed: true, retryAfterSeconds: 0 })),
+    check: options.checkError
+      ? vi.fn(async () => {
+          throw options.checkError;
+        })
+      : vi.fn(async () => undefined),
+    close: vi.fn(async () => undefined),
   };
 }

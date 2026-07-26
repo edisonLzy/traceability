@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 
-import { IngestRequestError } from "../domains/ingest/service.js";
+import { IngestRequestError } from "../../domains/ingest/service.js";
 
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((error, _request, reply) => {

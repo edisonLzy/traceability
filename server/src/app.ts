@@ -1,3 +1,4 @@
+import "dotenv/config";
 import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 
@@ -5,10 +6,11 @@ import type { RuntimeConfig } from "./config/index.js";
 import { loadRuntimeConfig } from "./config/index.js";
 import { createDatabase, type Database } from "./db/client.js";
 import { registerIngestRoutes } from "./domains/ingest/routes.js";
-import { registerErrorHandler } from "./errors/app-error.js";
-import { createManagementAuth } from "./infrastructure/auth/management-auth.js";
-import { ServerMetrics } from "./infrastructure/observability/metrics.js";
+import { registerHealthRoutes } from "./infrastructure/health/index.js";
+import { registerErrorHandler } from "./infrastructure/http/index.js";
+import { registerObservability } from "./infrastructure/observability/index.js";
 import type { IngestionRateLimiter } from "./infrastructure/rate-limit/project-rate-limiter.js";
+import { isMainModule } from "./shared/isMainModule.js";
 import { registerTrpc } from "./trpc/index.js";
 import { registerTrpcPanel } from "./trpc/panel.js";
 
@@ -33,21 +35,8 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
     requestIdHeader: "x-request-id",
   });
   registerErrorHandler(app);
-  const metrics = new ServerMetrics();
-  const requestStartedAt = new WeakMap<object, number>();
-  app.addHook("onRequest", async (request) => {
-    requestStartedAt.set(request, performance.now());
-  });
-  app.addHook("onResponse", async (request, reply) => {
-    const startedAt = requestStartedAt.get(request);
-    if (startedAt === undefined) return;
-    metrics.observeRequest({
-      method: request.method,
-      route: request.routeOptions.url ?? "unmatched",
-      statusCode: reply.statusCode,
-      durationMs: performance.now() - startedAt,
-    });
-  });
+  registerObservability(app, dependencies.config);
+  registerHealthRoutes(app, dependencies);
 
   for (const contentType of [
     "application/x-sentry-envelope",
@@ -66,25 +55,6 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
     origin: dependencies.config.corsOrigins.length > 0 ? dependencies.config.corsOrigins : false,
   });
 
-  app.get(
-    "/metrics",
-    { preHandler: createManagementAuth(dependencies.config) },
-    async (_request, reply) => {
-      reply.header("content-type", metrics.registry.contentType);
-      return metrics.registry.metrics();
-    },
-  );
-  app.get("/health/live", async () => ({ status: "ok" }));
-  app.get("/health/ready", async (_request, reply) => {
-    try {
-      await dependencies.database.ping();
-      await dependencies.rateLimiter?.check();
-      return { status: "ok" };
-    } catch {
-      reply.code(503);
-      return { status: "unavailable" };
-    }
-  });
   await registerIngestRoutes(app, dependencies);
   await registerTrpc(app, dependencies);
   await registerTrpcPanel(app, dependencies.config);
@@ -111,4 +81,8 @@ export async function startApi(): Promise<FastifyInstance> {
 
   await app.listen({ host: config.host, port: config.port });
   return app;
+}
+
+if (isMainModule(import.meta.url)) {
+  await startApi();
 }

@@ -11,8 +11,6 @@ services:
       DATABASE_POOL_MAX: 10
       REDIS_URL: redis://redis:6379
       PUBLIC_INGEST_URL: ${PUBLIC_INGEST_URL:-http://localhost:3000}
-      DEFAULT_ORGANIZATION_SLUG: ${DEFAULT_ORGANIZATION_SLUG:-traceability}
-      DEFAULT_ORGANIZATION_NAME: ${DEFAULT_ORGANIZATION_NAME:-Traceability}
       MANAGEMENT_AUTH_TOKEN: ${MANAGEMENT_AUTH_TOKEN:?MANAGEMENT_AUTH_TOKEN must be set}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
@@ -27,7 +25,7 @@ services:
     build:
       context: ..
       dockerfile: server/Dockerfile
-    command: ["node", "dist/index.js"]
+    command: ["node", "dist/app.js"]
     environment:
       <<: *server-environment
       PORT: 3000
