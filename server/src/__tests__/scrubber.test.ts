@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseAndScrubEvent } from "../domains/ingest/scrubber.js";
+import { parseAndScrubEvent } from "../modules/ingest/scrubber.js";
 
 describe("parseAndScrubEvent", () => {
   it("filters sensitive fields and recognizable values before persistence", () => {

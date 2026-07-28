@@ -2,7 +2,7 @@ import type { FastifyRequest } from "fastify";
 import { describe, expect, it } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
-import type { Database } from "../../db/client.js";
+import type { Database } from "../../infrastructure/database/client.js";
 import type { Context } from "../context.js";
 import { managementProcedure, t } from "../trpc.js";
 

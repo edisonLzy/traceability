@@ -5,10 +5,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createApp } from "../../app.js";
 import { loadRuntimeConfig } from "../../config/index.js";
-import { createDatabase, type Database } from "../../db/client.js";
-import { ingestItems } from "../../domains/ingest/db.js";
-import { events, issues } from "../../domains/issues/db.js";
-import { processEventItem } from "../../domains/processing/event-handler.js";
+import { createDatabase, type Database } from "../../infrastructure/database/client.js";
+import { ingestItems } from "../../modules/ingest/schema.js";
+import { events, issues } from "../../modules/issues/schema.js";
+import { ProcessingRepository } from "../../modules/processing/repository.js";
+import { ProcessingService } from "../../modules/processing/service.js";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeIntegration = databaseUrl ? describe : describe.skip;
@@ -91,8 +92,9 @@ describeIntegration("PostgreSQL ingest integration", () => {
     expect(item?.payloadJson).toMatchObject({
       exception: { values: [{ value: "email [Filtered Email] and token [Filtered JWT]" }] },
     });
-    await processEventItem(database, item!.id);
-    await processEventItem(database, item!.id);
+    const processing = new ProcessingService(new ProcessingRepository(database));
+    await processing.processEventItem(item!.id);
+    await processing.processEventItem(item!.id);
 
     const storedEvents = await database.db.select().from(events).where(eq(events.eventId, eventId));
     const storedIssues = await database.db.select().from(issues);

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../app.js";
 import type { RuntimeConfig } from "../config/index.js";
-import type { Database } from "../db/client.js";
+import type { Database } from "../infrastructure/database/client.js";
 import type { IngestionRateLimiter } from "../infrastructure/rate-limit/project-rate-limiter.js";
 
 const config: RuntimeConfig = {
@@ -132,6 +132,25 @@ describe("runtime app", () => {
     expect(response.statusCode).toBe(200);
     expect(response.headers["content-type"]).toContain("text/plain");
     expect(response.body).toContain("traceability_http_requests_total");
+  });
+
+  it("keeps ingest content parsers scoped away from sibling routes", async () => {
+    const app = await createApp({ config, database: createDatabase() });
+    apps.push(app);
+    app.post("/echo-text", async (request) => ({
+      body: request.body,
+      isBuffer: Buffer.isBuffer(request.body),
+    }));
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/echo-text",
+      headers: { "content-type": "text/plain" },
+      payload: "hello",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ body: "hello", isBuffer: false });
   });
 });
 

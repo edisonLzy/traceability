@@ -1,12 +1,8 @@
 import type { RuntimeConfig } from "../config/index.js";
-import type { Database } from "../db/client.js";
-import type { IssueService } from "../domains/issues/service.js";
-import type { ProjectService } from "../domains/projects/service.js";
+import type { Database } from "../infrastructure/database/client.js";
+import type { ApiServices } from "../plugins/services.js";
 
-export interface Services {
-  projects: ProjectService;
-  issues: IssueService;
-}
+export type Services = ApiServices;
 
 export interface Context {
   config: RuntimeConfig;

@@ -2,6 +2,10 @@ import Fastify from "fastify";
 import { describe, expect, it, vi } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
+import { configPlugin } from "../../plugins/config.js";
+import { databasePlugin } from "../../plugins/database.js";
+import { rateLimiterPlugin } from "../../plugins/rate-limiter.js";
+import { servicesPlugin } from "../../plugins/services.js";
 import { appRouter } from "../app-router.js";
 import type { Context } from "../context.js";
 import { registerTrpc } from "../index.js";
@@ -25,6 +29,10 @@ function makeContext(overrides: Partial<Context["services"]> = {}): RequestConte
     listEvents: vi.fn().mockResolvedValue([]),
     updateIssue: vi.fn().mockResolvedValue({ id: "issue-1", status: "resolved" }),
   };
+  const ingest = {} as Context["services"]["ingest"];
+  const operations = {
+    listProcessingFailures: vi.fn().mockResolvedValue([]),
+  } as unknown as Context["services"]["operations"];
 
   return {
     config: {
@@ -34,6 +42,8 @@ function makeContext(overrides: Partial<Context["services"]> = {}): RequestConte
     services: {
       projects: projects as unknown as Context["services"]["projects"],
       issues: issues as unknown as Context["services"]["issues"],
+      ingest,
+      operations,
       ...overrides,
     },
     req: { headers: { authorization: "Bearer secret" } } as RequestContext["req"],
@@ -105,7 +115,18 @@ describe("appRouter", () => {
 
   it("enforces management auth through the Fastify HTTP adapter", async () => {
     const app = Fastify();
-    await registerTrpc(app, makeDependencies());
+    const dependencies = makeDependencies();
+    await app.register(configPlugin, { config: dependencies.config });
+    await app.register(databasePlugin, { database: dependencies.database });
+    await app.register(rateLimiterPlugin, {
+      rateLimiter: {
+        consume: async () => ({ allowed: true, retryAfterSeconds: 0 }),
+        check: async () => undefined,
+        close: async () => undefined,
+      },
+    });
+    await app.register(servicesPlugin);
+    await registerTrpc(app);
 
     const unauthorized = await app.inject({
       method: "GET",
