@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createShutdown } from "../bootstrap/shutdown.js";
+import { createShutdown } from "../shutdown.js";
 
 describe("runtime shutdown", () => {
   it("closes owned resources once when called repeatedly", async () => {

@@ -1,12 +1,12 @@
 import Fastify from "fastify";
 import { describe, expect, it, vi } from "vitest";
 
-import type { RuntimeConfig } from "../config/index.js";
-import type { Database } from "../infrastructure/database/client.js";
-import type { IngestionRateLimiter } from "../infrastructure/rate-limit/project-rate-limiter.js";
-import { configPlugin } from "../plugins/config.js";
-import { databasePlugin } from "../plugins/database.js";
-import { rateLimiterPlugin } from "../plugins/rate-limiter.js";
+import type { RuntimeConfig } from "../../config/index.js";
+import type { Database } from "../../infrastructure/database/client.js";
+import type { IngestionRateLimiter } from "../../infrastructure/rate-limit/project-rate-limiter.js";
+import { configPlugin } from "../config.js";
+import { databasePlugin } from "../database.js";
+import { rateLimiterPlugin } from "../rate-limiter.js";
 
 const config = {
   databaseUrl: "postgresql://unused",

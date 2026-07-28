@@ -1,13 +1,13 @@
 import Fastify from "fastify";
 import { describe, expect, it, vi } from "vitest";
 
-import type { RuntimeConfig } from "../config/index.js";
-import type { Database } from "../infrastructure/database/client.js";
-import type { IngestionRateLimiter } from "../infrastructure/rate-limit/project-rate-limiter.js";
-import { configPlugin } from "../plugins/config.js";
-import { databasePlugin } from "../plugins/database.js";
-import { rateLimiterPlugin } from "../plugins/rate-limiter.js";
-import { servicesPlugin } from "../plugins/services.js";
+import type { RuntimeConfig } from "../../config/index.js";
+import type { Database } from "../../infrastructure/database/client.js";
+import type { IngestionRateLimiter } from "../../infrastructure/rate-limit/project-rate-limiter.js";
+import { configPlugin } from "../config.js";
+import { databasePlugin } from "../database.js";
+import { rateLimiterPlugin } from "../rate-limiter.js";
+import { servicesPlugin } from "../services.js";
 
 describe("application services plugin", () => {
   it("creates one immutable service registry for the API process", async () => {
@@ -38,7 +38,7 @@ describe("application services plugin", () => {
     expect(Object.keys(app.services).sort()).toEqual([
       "ingest",
       "issues",
-      "operations",
+      "processing",
       "projects",
     ]);
     expect(Object.isFrozen(app.services)).toBe(true);

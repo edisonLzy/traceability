@@ -1,17 +1,33 @@
 import "dotenv/config";
 import Fastify, { type FastifyInstance } from "fastify";
 
-import { bootstrapApi, type ApiBootstrapOptions } from "./bootstrap/api.js";
 import { loadRuntimeConfig } from "./config/index.js";
-import { isMainModule } from "./shared/isMainModule.js";
+import { isMainModule } from "./helper/isMainModule.js";
+import type { Database } from "./infrastructure/database/client.js";
+import type { IngestionRateLimiter } from "./infrastructure/rate-limit/project-rate-limiter.js";
+import { NoopIngestionRateLimiter } from "./infrastructure/rate-limit/project-rate-limiter.js";
+import { ingestRouter } from "./modules/ingest/router.js";
+import { configPlugin } from "./plugins/config.js";
+import { corsPlugin } from "./plugins/cors.js";
+import { databasePlugin } from "./plugins/database.js";
+import { errorHandlerPlugin } from "./plugins/error-handler.js";
+import { healthPlugin } from "./plugins/health.js";
+import { observabilityPlugin } from "./plugins/observability.js";
+import { rateLimiterPlugin } from "./plugins/rate-limiter.js";
+import { servicesPlugin } from "./plugins/services.js";
+import { trpcPlugin } from "./plugins/trpc.js";
 
-export type AppDependencies = ApiBootstrapOptions;
+export interface AppDependencies {
+  config: ReturnType<typeof loadRuntimeConfig>;
+  database?: Database;
+  rateLimiter?: IngestionRateLimiter;
+}
 
-export async function createApp(dependencies: AppDependencies): Promise<FastifyInstance> {
+export async function createApp(deps: AppDependencies): Promise<FastifyInstance> {
   const app = Fastify({
-    trustProxy: dependencies.config.trustProxy,
+    trustProxy: deps.config.trustProxy,
     logger: {
-      level: dependencies.config.logLevel,
+      level: deps.config.logLevel,
       redact: [
         "req.headers.authorization",
         "req.headers.cookie",
@@ -22,7 +38,21 @@ export async function createApp(dependencies: AppDependencies): Promise<FastifyI
     requestIdHeader: "x-request-id",
   });
 
-  await bootstrapApi(app, dependencies);
+  // Plugins are registered in dependency order:
+  //   config → database, rate-limiter → services → error-handler, observability, cors, health, trpc
+  await app.register(configPlugin, { config: deps.config });
+  await app.register(databasePlugin, { database: deps.database });
+  await app.register(rateLimiterPlugin, {
+    rateLimiter: deps.rateLimiter ?? (deps.database ? new NoopIngestionRateLimiter() : undefined),
+  });
+  await app.register(servicesPlugin);
+  await app.register(errorHandlerPlugin);
+  await app.register(observabilityPlugin);
+  await app.register(corsPlugin);
+  await app.register(healthPlugin);
+  await app.register(ingestRouter);
+  await app.register(trpcPlugin);
+
   return app;
 }
 

@@ -6,6 +6,10 @@ import type { EventFields } from "./types.js";
 export class ProcessingService {
   public constructor(private readonly repository: ProcessingRepository) {}
 
+  listFailures(limit = 100) {
+    return this.repository.listFailures(limit);
+  }
+
   processEventItem(itemId: string): Promise<void> {
     return this.repository.processEventItem(itemId, deriveEventFields);
   }

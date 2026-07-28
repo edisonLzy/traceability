@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { EnvelopeParseError, parseEnvelope } from "../modules/ingest/envelope-parser.js";
+import { EnvelopeParseError, parseEnvelope } from "../envelope-parser.js";
 
 const limits = { maxItems: 20, maxItemBytes: 1024 };
 

@@ -6,9 +6,9 @@ import { configPlugin } from "../../plugins/config.js";
 import { databasePlugin } from "../../plugins/database.js";
 import { rateLimiterPlugin } from "../../plugins/rate-limiter.js";
 import { servicesPlugin } from "../../plugins/services.js";
+import { trpcPlugin } from "../../plugins/trpc.js";
 import { appRouter } from "../app-router.js";
 import type { Context } from "../context.js";
-import { registerTrpc } from "../index.js";
 import type { RequestContext } from "../trpc.js";
 
 function makeContext(overrides: Partial<Context["services"]> = {}): RequestContext {
@@ -30,9 +30,9 @@ function makeContext(overrides: Partial<Context["services"]> = {}): RequestConte
     updateIssue: vi.fn().mockResolvedValue({ id: "issue-1", status: "resolved" }),
   };
   const ingest = {} as Context["services"]["ingest"];
-  const operations = {
-    listProcessingFailures: vi.fn().mockResolvedValue([]),
-  } as unknown as Context["services"]["operations"];
+  const processing = {
+    listFailures: vi.fn().mockResolvedValue([]),
+  } as unknown as Context["services"]["processing"];
 
   return {
     config: {
@@ -43,7 +43,7 @@ function makeContext(overrides: Partial<Context["services"]> = {}): RequestConte
       projects: projects as unknown as Context["services"]["projects"],
       issues: issues as unknown as Context["services"]["issues"],
       ingest,
-      operations,
+      processing,
       ...overrides,
     },
     req: { headers: { authorization: "Bearer secret" } } as RequestContext["req"],
@@ -126,7 +126,7 @@ describe("appRouter", () => {
       },
     });
     await app.register(servicesPlugin);
-    await registerTrpc(app);
+    await app.register(trpcPlugin);
 
     const unauthorized = await app.inject({
       method: "GET",

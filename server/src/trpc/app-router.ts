@@ -1,14 +1,14 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
 import { issuesRouter } from "../modules/issues/router.js";
-import { operationsRouter } from "../modules/operations/router.js";
+import { processingRouter } from "../modules/processing/index.js";
 import { projectsRouter } from "../modules/projects/router.js";
 import { t } from "./trpc.js";
 
 export const appRouter = t.router({
   projects: projectsRouter,
   issues: issuesRouter,
-  operations: operationsRouter,
+  processing: processingRouter,
 });
 
 export type AppRouter = typeof appRouter;

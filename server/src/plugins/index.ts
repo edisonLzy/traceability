@@ -6,3 +6,4 @@ export { healthPlugin } from "./health.js";
 export { observabilityPlugin } from "./observability.js";
 export { rateLimiterPlugin } from "./rate-limiter.js";
 export { servicesPlugin } from "./services.js";
+export { trpcPlugin } from "./trpc.js";

@@ -3,13 +3,13 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { createApp } from "../../app.js";
-import { loadRuntimeConfig } from "../../config/index.js";
-import { createDatabase, type Database } from "../../infrastructure/database/client.js";
-import { ingestItems } from "../../modules/ingest/schema.js";
-import { events, issues } from "../../modules/issues/schema.js";
-import { ProcessingRepository } from "../../modules/processing/repository.js";
-import { ProcessingService } from "../../modules/processing/service.js";
+import { createApp } from "../../../app.js";
+import { loadRuntimeConfig } from "../../../config/index.js";
+import { createDatabase, type Database } from "../../../infrastructure/database/client.js";
+import { events, issues } from "../../../modules/issues/schema.js";
+import { ProcessingRepository } from "../../../modules/processing/repository.js";
+import { ProcessingService } from "../../../modules/processing/service.js";
+import { ingestItems } from "../schema.js";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeIntegration = databaseUrl ? describe : describe.skip;

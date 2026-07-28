@@ -1,7 +1,7 @@
 import { managementProcedure, t } from "../../trpc/trpc.js";
 
-export const operationsRouter = t.router({
+export const processingRouter = t.router({
   processingFailures: managementProcedure.query(({ ctx }) =>
-    ctx.services.operations.listProcessingFailures(),
+    ctx.services.processing.listFailures(),
   ),
 });
