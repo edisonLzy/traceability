@@ -3,15 +3,14 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
 import { configPlugin } from "../../plugins/config.js";
+import { containerPlugin } from "../../plugins/container.js";
 import { databasePlugin } from "../../plugins/database.js";
-import { rateLimiterPlugin } from "../../plugins/rate-limiter.js";
-import { servicesPlugin } from "../../plugins/services.js";
 import { trpcPlugin } from "../../plugins/trpc.js";
 import { appRouter } from "../app-router.js";
 import type { Context } from "../context.js";
 import type { RequestContext } from "../trpc.js";
 
-function makeContext(overrides: Partial<Context["services"]> = {}): RequestContext {
+function makeContext(overrides: Partial<Context["container"]> = {}): RequestContext {
   const projects = {
     listProjects: vi.fn().mockResolvedValue([{ id: "project-1" }]),
     getProject: vi.fn().mockResolvedValue({ id: "project-1" }),
@@ -29,19 +28,19 @@ function makeContext(overrides: Partial<Context["services"]> = {}): RequestConte
     listEvents: vi.fn().mockResolvedValue([]),
     updateIssue: vi.fn().mockResolvedValue({ id: "issue-1", status: "resolved" }),
   };
-  const ingest = {} as Context["services"]["ingest"];
+  const ingest = {} as Context["container"]["ingest"];
   const processing = {
     listFailures: vi.fn().mockResolvedValue([]),
-  } as unknown as Context["services"]["processing"];
+  } as unknown as Context["container"]["processing"];
 
   return {
     config: {
       managementAuthToken: "secret",
     } as RuntimeConfig,
     database: {} as Context["database"],
-    services: {
-      projects: projects as unknown as Context["services"]["projects"],
-      issues: issues as unknown as Context["services"]["issues"],
+    container: {
+      projects: projects as unknown as Context["container"]["projects"],
+      issues: issues as unknown as Context["container"]["issues"],
       ingest,
       processing,
       ...overrides,
@@ -52,7 +51,7 @@ function makeContext(overrides: Partial<Context["services"]> = {}): RequestConte
 
 function makeDependencies() {
   return {
-    config: { managementAuthToken: "secret" } as RuntimeConfig,
+    config: { managementAuthToken: "secret", redisUrl: "redis://127.0.0.1:6379" } as RuntimeConfig,
     database: {
       db: {
         select: () => ({
@@ -86,7 +85,7 @@ describe("appRouter", () => {
       limit: 20,
     });
 
-    const issues = ctx.services.issues as unknown as { listForProject: ReturnType<typeof vi.fn> };
+    const issues = ctx.container.issues as unknown as { listForProject: ReturnType<typeof vi.fn> };
     expect(issues.listForProject).toHaveBeenCalledWith("00000000-0000-4000-8000-000000000001", {
       cursor: undefined,
       limit: 20,
@@ -118,14 +117,7 @@ describe("appRouter", () => {
     const dependencies = makeDependencies();
     await app.register(configPlugin, { config: dependencies.config });
     await app.register(databasePlugin, { database: dependencies.database });
-    await app.register(rateLimiterPlugin, {
-      rateLimiter: {
-        consume: async () => ({ allowed: true, retryAfterSeconds: 0 }),
-        check: async () => undefined,
-        close: async () => undefined,
-      },
-    });
-    await app.register(servicesPlugin);
+    await app.register(containerPlugin);
     await app.register(trpcPlugin);
 
     const unauthorized = await app.inject({

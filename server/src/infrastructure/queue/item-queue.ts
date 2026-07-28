@@ -1,12 +1,12 @@
 import { Queue } from "bullmq";
-import IORedis from "ioredis";
+import type IORedis from "ioredis";
+
+import { createRedisClient } from "../redis/client.js";
 
 export const ITEM_QUEUE_NAME = "traceability-items";
 
 export function createQueueConnection(redisUrl: string): IORedis {
-  return new IORedis(redisUrl, {
-    maxRetriesPerRequest: null,
-  });
+  return createRedisClient(redisUrl);
 }
 
 export function createItemQueue(connection: IORedis): Queue {

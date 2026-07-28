@@ -23,7 +23,7 @@ export const ingestRouter: FastifyPluginAsync = async (app) => {
     },
     reply: { code: (statusCode: number) => { send: (body: unknown) => unknown } },
   ) => {
-    const result = await app.services.ingest.ingest({
+    const result = await app.container.ingest.ingest({
       pathProjectId: request.params.projectId,
       body: request.body as Buffer,
       contentEncoding: firstHeaderValue(request.headers["content-encoding"]),

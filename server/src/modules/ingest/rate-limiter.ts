@@ -1,4 +1,4 @@
-import type IORedis from "ioredis";
+import IORedis from "ioredis";
 
 export interface IngestionRateLimiter {
   consume(input: { projectKeyId: string; ip: string; limit: number }): Promise<RateLimitResult>;
@@ -23,7 +23,11 @@ export class NoopIngestionRateLimiter implements IngestionRateLimiter {
 
 /** Fixed one-second window implemented atomically in Redis. */
 export class RedisIngestionRateLimiter implements IngestionRateLimiter {
-  public constructor(private readonly client: IORedis) {}
+  private readonly client: IORedis;
+
+  public constructor(redisUrl: string) {
+    this.client = new IORedis(redisUrl);
+  }
 
   async consume(input: {
     projectKeyId: string;
@@ -36,12 +40,24 @@ export class RedisIngestionRateLimiter implements IngestionRateLimiter {
       `traceability:rate:project-key:${input.projectKeyId}:${bucket}`,
       `traceability:rate:ip:${input.ip}:${bucket}`,
     ];
-    const results = await Promise.all(
-      keys.map((key) => incrementWindow(this.client, key, windowMs)),
-    );
-    const retryAfterSeconds = Math.max(...results.map((result) => Math.ceil(result.ttlMs / 1_000)));
+    const incrementWindow = async (
+      key: string,
+      winMs: number,
+    ): Promise<{ count: number; ttlMs: number }> => {
+      const result = (await this.client.eval(
+        `local count = redis.call('INCR', KEYS[1])
+         if count == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end
+         return { count, redis.call('PTTL', KEYS[1]) }`,
+        1,
+        key,
+        winMs,
+      )) as [number, number];
+      return { count: result[0], ttlMs: result[1] };
+    };
+    const results = await Promise.all(keys.map((key) => incrementWindow(key, windowMs)));
+    const retryAfterSeconds = Math.max(...results.map((r) => Math.ceil(r.ttlMs / 1_000)));
     return {
-      allowed: results.every((result) => result.count <= input.limit),
+      allowed: results.every((r) => r.count <= input.limit),
       retryAfterSeconds,
     };
   }
@@ -54,22 +70,4 @@ export class RedisIngestionRateLimiter implements IngestionRateLimiter {
     const response = await this.client.ping();
     if (response !== "PONG") throw new Error("Redis health check failed");
   }
-}
-
-async function incrementWindow(
-  client: IORedis,
-  key: string,
-  windowMs: number,
-): Promise<{ count: number; ttlMs: number }> {
-  const result = (await client.eval(
-    `
-      local count = redis.call('INCR', KEYS[1])
-      if count == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end
-      return { count, redis.call('PTTL', KEYS[1]) }
-    `,
-    1,
-    key,
-    windowMs,
-  )) as [number, number];
-  return { count: result[0], ttlMs: result[1] };
 }

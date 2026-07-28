@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto";
 import { brotliDecompressSync, gunzipSync, inflateSync } from "node:zlib";
 
-import {
-  NoopIngestionRateLimiter,
-  type IngestionRateLimiter,
-} from "../../infrastructure/rate-limit/project-rate-limiter.js";
 import type { ParsedEnvelope, ParsedEnvelopeItem } from "./envelope-parser.js";
 import { EnvelopeParseError, parseEnvelope } from "./envelope-parser.js";
+import {
+  NoopIngestionRateLimiter,
+  RedisIngestionRateLimiter,
+  type IngestionRateLimiter,
+} from "./rate-limiter.js";
 import type { IngestRepository, PreparedItem } from "./repository.js";
 import { parseAndScrubEvent, scrubValue } from "./scrubber.js";
 
@@ -42,12 +43,24 @@ export class IngestRequestError extends Error {
 }
 
 export class IngestService {
+  /** Override in tests to mock rate limiting without Redis. */
+  public rateLimiter: IngestionRateLimiter;
+
   public constructor(
     private readonly repository: IngestRepository,
     private readonly projectKeyLookup: ProjectKeyLookup,
     private readonly limits: IngestLimits,
-    private readonly rateLimiter: IngestionRateLimiter = new NoopIngestionRateLimiter(),
-  ) {}
+    redisUrl: string,
+  ) {
+    this.rateLimiter = redisUrl
+      ? new RedisIngestionRateLimiter(redisUrl)
+      : new NoopIngestionRateLimiter();
+  }
+
+  /** Exposed for readiness health checks. */
+  checkRateLimiter(): Promise<void> {
+    return this.rateLimiter.check();
+  }
 
   async ingest(input: {
     pathProjectId: string;

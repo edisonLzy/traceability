@@ -12,7 +12,7 @@ export const trpcPlugin = fastifyPlugin(
         createContext: ({ req }: CreateFastifyContextOptions) => ({
           config: app.config,
           database: app.database,
-          services: app.services,
+          container: app.container,
           req,
         }),
       },
@@ -37,6 +37,6 @@ export const trpcPlugin = fastifyPlugin(
   },
   {
     name: "trpc",
-    dependencies: ["config", "database", "services"],
+    dependencies: ["config", "database", "container"],
   },
 );

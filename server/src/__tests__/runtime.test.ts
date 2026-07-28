@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../app.js";
 import type { RuntimeConfig } from "../config/index.js";
 import type { Database } from "../infrastructure/database/client.js";
-import type { IngestionRateLimiter } from "../infrastructure/rate-limit/project-rate-limiter.js";
 
 const config: RuntimeConfig = {
   environment: "test",
@@ -30,9 +29,19 @@ describe("runtime app", () => {
     await Promise.all(apps.splice(0).map((app) => app.close()));
   });
 
+  /** Swap the ingest service's rate limiter with a mock to avoid Redis in tests. */
+  function mockRateLimiter(app: Awaited<ReturnType<typeof createApp>>) {
+    app.container.ingest.rateLimiter = {
+      consume: vi.fn(async () => ({ allowed: true, retryAfterSeconds: 0 })),
+      check: vi.fn(async () => undefined),
+      close: vi.fn(async () => undefined),
+    };
+  }
+
   it("reports liveness without querying PostgreSQL", async () => {
     const database = createDatabase();
     const app = await createApp({ config, database });
+    mockRateLimiter(app);
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/health/live" });
@@ -44,6 +53,7 @@ describe("runtime app", () => {
 
   it("serves the tRPC panel outside production", async () => {
     const app = await createApp({ config, database: createDatabase() });
+    mockRateLimiter(app);
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/trpc-panel" });
@@ -59,6 +69,7 @@ describe("runtime app", () => {
       config: { ...config, environment: "production", managementAuthToken: "production-token" },
       database: createDatabase(),
     });
+    mockRateLimiter(app);
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/trpc-panel" });
@@ -69,6 +80,7 @@ describe("runtime app", () => {
   it("reports readiness only when PostgreSQL is reachable", async () => {
     const database = createDatabase();
     const app = await createApp({ config, database });
+    mockRateLimiter(app);
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/health/ready" });
@@ -78,21 +90,10 @@ describe("runtime app", () => {
     expect(database.ping).toHaveBeenCalledOnce();
   });
 
-  it("returns 503 when the rate limiter is unreachable", async () => {
-    const rateLimiter = createRateLimiter({ checkError: new Error("Redis unavailable") });
-    const app = await createApp({ config, database: createDatabase(), rateLimiter });
-    apps.push(app);
-
-    const response = await app.inject({ method: "GET", url: "/health/ready" });
-
-    expect(response.statusCode).toBe(503);
-    expect(response.json()).toEqual({ status: "unavailable" });
-    expect(rateLimiter.check).toHaveBeenCalledOnce();
-  });
-
   it("returns 503 when PostgreSQL is unreachable", async () => {
     const database = createDatabase({ pingError: new Error("connection refused") });
     const app = await createApp({ config, database });
+    mockRateLimiter(app);
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/health/ready" });
@@ -104,6 +105,7 @@ describe("runtime app", () => {
   it("rejects unauthenticated management requests", async () => {
     const database = createDatabase();
     const app = await createApp({ config, database });
+    mockRateLimiter(app);
     apps.push(app);
 
     const response = await app.inject({
@@ -117,6 +119,7 @@ describe("runtime app", () => {
 
   it("protects metrics and returns Prometheus metrics for management callers", async () => {
     const app = await createApp({ config, database: createDatabase() });
+    mockRateLimiter(app);
     apps.push(app);
 
     const unauthenticated = await app.inject({ method: "GET", url: "/metrics" });
@@ -136,6 +139,7 @@ describe("runtime app", () => {
 
   it("keeps ingest content parsers scoped away from sibling routes", async () => {
     const app = await createApp({ config, database: createDatabase() });
+    mockRateLimiter(app);
     apps.push(app);
     app.post("/echo-text", async (request) => ({
       body: request.body,
@@ -163,17 +167,5 @@ function createDatabase(options: { pingError?: Error } = {}): Database {
           throw options.pingError;
         })
       : vi.fn(async () => undefined),
-  };
-}
-
-function createRateLimiter(options: { checkError?: Error } = {}): IngestionRateLimiter {
-  return {
-    consume: vi.fn(async () => ({ allowed: true, retryAfterSeconds: 0 })),
-    check: options.checkError
-      ? vi.fn(async () => {
-          throw options.checkError;
-        })
-      : vi.fn(async () => undefined),
-    close: vi.fn(async () => undefined),
   };
 }

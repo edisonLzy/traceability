@@ -30,7 +30,7 @@ function makeCtx(token: string, authHeader?: string): Context & { req: FastifyRe
   return {
     config: makeConfig(token),
     database: {} as Database,
-    services: {} as never,
+    container: {} as never,
     req: { headers: { authorization: authHeader } } as unknown as FastifyRequest,
   };
 }

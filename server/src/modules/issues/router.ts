@@ -18,23 +18,23 @@ const UpdateIssueInputSchema = z.object({
 
 export const issuesRouter = t.router({
   list: managementProcedure.input(ListIssuesInputSchema).query(({ ctx, input }) => {
-    return ctx.services.issues.listForProject(input.projectId, {
+    return ctx.container.issues.listForProject(input.projectId, {
       cursor: input.cursor,
       limit: input.limit,
     });
   }),
 
   get: managementProcedure.input(issueIdInput).query(({ ctx, input }) => {
-    return ctx.services.issues.getIssue(input);
+    return ctx.container.issues.getIssue(input);
   }),
 
   events: managementProcedure.input(ListEventsInputSchema).query(({ ctx, input }) => {
-    return ctx.services.issues.listEvents(input.issueId, { limit: input.limit });
+    return ctx.container.issues.listEvents(input.issueId, { limit: input.limit });
   }),
 
   update: managementProcedure
     .input(z.object({ issueId: issueIdInput, patch: UpdateIssueInputSchema }))
     .mutation(({ ctx, input }) => {
-      return ctx.services.issues.updateIssue(input.issueId, input.patch);
+      return ctx.container.issues.updateIssue(input.issueId, input.patch);
     }),
 });

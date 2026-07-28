@@ -22,47 +22,47 @@ const UpdateProjectPolicyInputSchema = z.object({
 });
 
 export const projectsRouter = t.router({
-  list: managementProcedure.query(({ ctx }) => ctx.services.projects.listProjects()),
+  list: managementProcedure.query(({ ctx }) => ctx.container.projects.listProjects()),
 
   get: managementProcedure.input(projectIdInput).query(({ ctx, input }) => {
-    return ctx.services.projects.getProject(input);
+    return ctx.container.projects.getProject(input);
   }),
 
   create: managementProcedure.input(CreateProjectInputSchema).mutation(({ ctx, input }) => {
-    return ctx.services.projects.createProject(input);
+    return ctx.container.projects.createProject(input);
   }),
 
   update: managementProcedure
     .input(z.object({ projectId: projectIdInput, patch: UpdateProjectInputSchema }))
     .mutation(({ ctx, input }) => {
-      return ctx.services.projects.updateProject(input.projectId, input.patch);
+      return ctx.container.projects.updateProject(input.projectId, input.patch);
     }),
 
   remove: managementProcedure.input(projectIdInput).mutation(({ ctx, input }) => {
-    return ctx.services.projects.deleteProject(input);
+    return ctx.container.projects.deleteProject(input);
   }),
 
   listKeys: managementProcedure.input(projectIdInput).query(({ ctx, input }) => {
-    return ctx.services.projects.listKeys(input);
+    return ctx.container.projects.listKeys(input);
   }),
 
   createKey: managementProcedure.input(projectIdInput).mutation(({ ctx, input }) => {
-    return ctx.services.projects.createKey(input);
+    return ctx.container.projects.createKey(input);
   }),
 
   revokeKey: managementProcedure
     .input(z.object({ projectId: projectIdInput, keyId: projectIdInput }))
     .mutation(({ ctx, input }) => {
-      return ctx.services.projects.revokeKey(input.projectId, input.keyId);
+      return ctx.container.projects.revokeKey(input.projectId, input.keyId);
     }),
 
   getPolicy: managementProcedure.input(projectIdInput).query(({ ctx, input }) => {
-    return ctx.services.projects.getPolicy(input);
+    return ctx.container.projects.getPolicy(input);
   }),
 
   updatePolicy: managementProcedure
     .input(z.object({ projectId: projectIdInput, patch: UpdateProjectPolicyInputSchema }))
     .mutation(({ ctx, input }) => {
-      return ctx.services.projects.updatePolicy(input.projectId, input.patch);
+      return ctx.container.projects.updatePolicy(input.projectId, input.patch);
     }),
 });
