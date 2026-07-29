@@ -22,7 +22,7 @@ describeIntegration("PostgreSQL ingest integration", () => {
   beforeAll(async () => {
     database = createDatabase({ connectionString: databaseUrl!, maxConnections: 2 });
     await database.db.execute(
-      "TRUNCATE events, issues, outbox, outcomes, ingest_items, ingest_envelopes, project_policies, project_keys, projects CASCADE",
+      "TRUNCATE replay_segments, replay_sessions, events, issues, outbox, outcomes, ingest_items, ingest_envelopes, project_policies, project_keys, projects CASCADE",
     );
     const config = loadRuntimeConfig({
       NODE_ENV: "test",

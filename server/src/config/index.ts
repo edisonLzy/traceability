@@ -45,6 +45,12 @@ const EnvironmentSchema = z.object({
     .min(1_024)
     .max(200 * 1024 * 1024)
     .default(20_971_520),
+  REPLAY_MAX_RECORDING_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1_024)
+    .max(100 * 1024 * 1024)
+    .default(10_485_760),
 });
 
 export interface RuntimeConfig {
@@ -69,6 +75,7 @@ export interface RuntimeConfig {
   objectStorageAccessKey: string;
   objectStorageSecretKey: string;
   sourcemapMaxBytes: number;
+  replayMaxRecordingBytes: number;
 }
 
 export function loadRuntimeConfig(environment: NodeJS.ProcessEnv = process.env): RuntimeConfig {
@@ -101,5 +108,6 @@ export function loadRuntimeConfig(environment: NodeJS.ProcessEnv = process.env):
     objectStorageAccessKey: parsed.OBJECT_STORAGE_ACCESS_KEY,
     objectStorageSecretKey: parsed.OBJECT_STORAGE_SECRET_KEY,
     sourcemapMaxBytes: parsed.SOURCEMAP_MAX_BYTES,
+    replayMaxRecordingBytes: parsed.REPLAY_MAX_RECORDING_BYTES,
   };
 }

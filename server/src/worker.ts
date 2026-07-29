@@ -13,6 +13,7 @@ import {
 } from "./infrastructure/queue/item-queue.js";
 import { ProcessingRepository, ProcessingService } from "./modules/processing/index.js";
 import { createItemProcessors } from "./modules/processing/registry.js";
+import { ReplayRepository, ReplayService } from "./modules/replays/index.js";
 import { SourcemapRepository, SourcemapService } from "./modules/sourcemaps/index.js";
 
 interface ItemJob {
@@ -36,8 +37,9 @@ export async function startWorker(): Promise<void> {
   });
   const connection = createQueueConnection(config.redisUrl);
   const sourcemaps = new SourcemapService(new SourcemapRepository(database), objectStorage);
+  const replays = new ReplayService(new ReplayRepository(database), objectStorage);
   const processing = new ProcessingService(new ProcessingRepository(database), sourcemaps);
-  const itemProcessors = createItemProcessors(processing);
+  const itemProcessors = createItemProcessors(processing, replays);
 
   const worker = new Worker<ItemJob>(
     ITEM_QUEUE_NAME,

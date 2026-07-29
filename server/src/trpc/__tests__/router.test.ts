@@ -53,6 +53,12 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
     listByProject: vi.fn().mockResolvedValue([]),
     remove: vi.fn().mockResolvedValue(null),
   } as unknown as Context["container"]["sourcemaps"];
+  const replays = {
+    listReplays: vi.fn().mockResolvedValue({ data: [], nextCursor: null }),
+    getReplay: vi.fn().mockResolvedValue(null),
+    getSegment: vi.fn().mockResolvedValue(null),
+    deleteReplay: vi.fn().mockResolvedValue(false),
+  } as unknown as Context["container"]["replays"];
 
   return {
     config: {
@@ -65,6 +71,7 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
       ingest,
       processing,
       sourcemaps,
+      replays,
       ...overrides,
     },
     req: { headers: { authorization: "Bearer secret" } } as RequestContext["req"],

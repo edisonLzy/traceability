@@ -32,6 +32,7 @@ describe("application container plugin", () => {
       ingestMaxDecompressedBytes: 5_242_880,
       ingestMaxItems: 20,
       ingestMaxItemBytes: 1_048_576,
+      replayMaxRecordingBytes: 10_485_760,
       redisUrl: "redis://127.0.0.1:6379",
     } as RuntimeConfig;
     const database = {
@@ -51,6 +52,7 @@ describe("application container plugin", () => {
       "issues",
       "processing",
       "projects",
+      "replays",
       "sourcemaps",
     ]);
     expect(Object.isFrozen(app.container)).toBe(true);

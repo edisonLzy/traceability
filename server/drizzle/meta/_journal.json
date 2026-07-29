@@ -57,6 +57,13 @@
       "when": 1785319615139,
       "tag": "0007_bitter_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785340941799,
+      "tag": "0008_absent_trish_tilby",
+      "breakpoints": true
     }
   ]
 }

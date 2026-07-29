@@ -7,6 +7,7 @@ import {
   setContext,
   addBreadcrumb,
   withScope,
+  replayIntegration,
 } from "@sentry/browser";
 import type { BrowserOptions, SeverityLevel, User, Breadcrumb, Scope } from "@sentry/browser";
 import type { Transport } from "@sentry/core";
@@ -20,6 +21,7 @@ export function init(options: BrowserOptions): void {
     integrations: (defaults) => [
       corsDiagnosticIntegration(),
       whiteScreenIntegration(),
+      replayIntegration(),
       ...defaults,
       ...(typeof options.integrations === "function"
         ? options.integrations(defaults)

@@ -15,6 +15,7 @@ export interface IngestLimits {
   maxDecompressedBytes: number;
   maxItems: number;
   maxItemBytes: number;
+  replayMaxRecordingBytes: number;
 }
 
 export interface ProjectKeyLookup {
@@ -118,7 +119,9 @@ export class IngestService {
       );
     }
 
-    const preparedItems = envelope.items.map((item) => prepareItem(item, project.enabledItemTypes));
+    const preparedItems = envelope.items.map((item) =>
+      prepareItem(item, project.enabledItemTypes, this.limits.replayMaxRecordingBytes),
+    );
     const sanitizedEnvelope = serializeEnvelope(
       scrubValue(envelope.header) as Record<string, unknown>,
       preparedItems,
@@ -140,8 +143,68 @@ export class IngestService {
   }
 }
 
-function prepareItem(item: ParsedEnvelopeItem, enabledItemTypes: string[]): PreparedItem {
+function prepareItem(
+  item: ParsedEnvelopeItem,
+  enabledItemTypes: string[],
+  replayMaxRecordingBytes: number,
+): PreparedItem {
   const header = scrubValue(item.header) as Record<string, unknown>;
+
+  // replay_recording: binary payload
+  if (item.type === "replay_recording" && enabledItemTypes.includes("replay_recording")) {
+    if (item.payload.byteLength > replayMaxRecordingBytes) {
+      return {
+        sequence: item.sequence,
+        type: item.type,
+        header,
+        payload: null,
+        payloadJson: null,
+        eventId: null,
+        status: "ignored",
+        errorCode: "payload_too_large",
+      };
+    }
+    return {
+      sequence: item.sequence,
+      type: item.type,
+      header,
+      payload: item.payload,
+      payloadJson: null,
+      eventId: null,
+      status: "pending",
+      errorCode: null,
+    };
+  }
+
+  // replay_event: JSON metadata payload
+  if (item.type === "replay_event" && enabledItemTypes.includes("replay_event")) {
+    try {
+      const payloadJson = parseAndScrubEvent(item.payload);
+      const replayId = typeof payloadJson.replay_id === "string" ? payloadJson.replay_id : null;
+      return {
+        sequence: item.sequence,
+        type: item.type,
+        header,
+        payload: Buffer.from(JSON.stringify(payloadJson)),
+        payloadJson,
+        eventId: replayId,
+        status: "pending",
+        errorCode: null,
+      };
+    } catch {
+      return {
+        sequence: item.sequence,
+        type: item.type,
+        header,
+        payload: null,
+        payloadJson: null,
+        eventId: null,
+        status: "invalid",
+        errorCode: "invalid_replay_event_json",
+      };
+    }
+  }
+
   if (item.type !== "event" || !enabledItemTypes.includes(item.type)) {
     return {
       sequence: item.sequence,
