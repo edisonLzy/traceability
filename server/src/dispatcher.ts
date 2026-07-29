@@ -1,6 +1,4 @@
 import "dotenv/config";
-import { and, eq, lte } from "drizzle-orm";
-
 import { loadRuntimeConfig } from "./config/index.js";
 import { isMainModule } from "./helper/isMainModule.js";
 import { registerShutdownSignals } from "./helper/shutdown.js";
@@ -10,7 +8,11 @@ import {
   createQueueConnection,
   itemQueueJobOptions,
 } from "./infrastructure/queue/item-queue.js";
-import { outbox } from "./modules/ingest/schema.js";
+import { IngestRepository } from "./modules/ingest/index.js";
+
+const MAX_ATTEMPTS = 5;
+const BATCH_SIZE = 100;
+const POLL_INTERVAL_MS = 250;
 
 export async function startDispatcher(): Promise<void> {
   const config = loadRuntimeConfig();
@@ -19,6 +21,7 @@ export async function startDispatcher(): Promise<void> {
     connectionString: config.databaseUrl,
     maxConnections: config.databasePoolMax,
   });
+  const repository = new IngestRepository(database);
   const connection = createQueueConnection(config.redisUrl);
   const queue = createItemQueue(connection);
 
@@ -32,12 +35,7 @@ export async function startDispatcher(): Promise<void> {
   });
 
   while (!stopping) {
-    const records = await database.db
-      .select()
-      .from(outbox)
-      .where(and(eq(outbox.status, "pending"), lte(outbox.availableAt, new Date())))
-      .orderBy(outbox.createdAt)
-      .limit(100);
+    const records = await repository.claimPendingOutbox(BATCH_SIZE, new Date());
 
     for (const record of records) {
       try {
@@ -45,25 +43,19 @@ export async function startDispatcher(): Promise<void> {
           jobId: record.itemId,
           ...itemQueueJobOptions,
         });
-        await database.db
-          .update(outbox)
-          .set({ status: "published", publishedAt: new Date() })
-          .where(and(eq(outbox.id, record.id), eq(outbox.status, "pending")));
+        await repository.markOutboxPublished(record.id, new Date());
       } catch {
         const attempts = record.attempts + 1;
-        const retryAt = new Date(Date.now() + retryDelayMs(record.attempts));
-        await database.db
-          .update(outbox)
-          .set({
-            attempts,
-            availableAt: retryAt,
-            status: attempts >= 5 ? "failed" : "pending",
-          })
-          .where(eq(outbox.id, record.id));
+        await repository.markOutboxRetry({
+          id: record.id,
+          attempts,
+          availableAt: new Date(Date.now() + retryDelayMs(record.attempts)),
+          failed: attempts >= MAX_ATTEMPTS,
+        });
       }
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 }
 

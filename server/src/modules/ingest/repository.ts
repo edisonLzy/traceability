@@ -1,5 +1,7 @@
+import { and, eq, lte } from "drizzle-orm";
+
 import type { Database } from "../../infrastructure/database/client.js";
-import { ingestEnvelopes, ingestItems, outcomes, outbox } from "./schema.js";
+import { ingestEnvelopes, ingestItems, outbox, outcomes } from "./schema.js";
 
 export interface ProjectContext {
   projectId: string;
@@ -18,6 +20,14 @@ export interface PreparedItem {
   eventId: string | null;
   status: "pending" | "ignored" | "invalid";
   errorCode: string | null;
+}
+
+export interface OutboxRecord {
+  id: string;
+  itemId: string;
+  topic: string;
+  payload: Record<string, unknown>;
+  attempts: number;
 }
 
 export class IngestRepository {
@@ -85,5 +95,52 @@ export class IngestRepository {
 
       return { envelope: storedEnvelope, items: storedItems };
     });
+  }
+
+  /**
+   * Fetch pending outbox records that are due for dispatch, oldest first.
+   */
+  async claimPendingOutbox(limit: number, now: Date): Promise<OutboxRecord[]> {
+    const rows = await this.database.db
+      .select({
+        id: outbox.id,
+        itemId: outbox.itemId,
+        topic: outbox.topic,
+        payload: outbox.payload,
+        attempts: outbox.attempts,
+      })
+      .from(outbox)
+      .where(and(eq(outbox.status, "pending"), lte(outbox.availableAt, now)))
+      .orderBy(outbox.createdAt)
+      .limit(limit);
+    return rows;
+  }
+
+  /** Mark a pending outbox record as successfully published. */
+  async markOutboxPublished(id: string, publishedAt: Date): Promise<void> {
+    await this.database.db
+      .update(outbox)
+      .set({ status: "published", publishedAt })
+      .where(and(eq(outbox.id, id), eq(outbox.status, "pending")));
+  }
+
+  /**
+   * Schedule a retry for an outbox record after a failed publish attempt.
+   * When `failed` is true the record is moved to the terminal "failed" status.
+   */
+  async markOutboxRetry(input: {
+    id: string;
+    attempts: number;
+    availableAt: Date;
+    failed: boolean;
+  }): Promise<void> {
+    await this.database.db
+      .update(outbox)
+      .set({
+        attempts: input.attempts,
+        availableAt: input.availableAt,
+        status: input.failed ? "failed" : "pending",
+      })
+      .where(eq(outbox.id, input.id));
   }
 }
