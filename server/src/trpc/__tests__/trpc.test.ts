@@ -23,6 +23,12 @@ function makeConfig(token: string): RuntimeConfig {
     corsOrigins: [],
     trustProxy: false,
     logLevel: "info",
+    objectStorageEndpoint: "http://127.0.0.1:9000",
+    objectStorageRegion: "us-east-1",
+    objectStorageBucket: "traceability-sourcemaps",
+    objectStorageAccessKey: "traceability",
+    objectStorageSecretKey: "traceability-development-secret",
+    sourcemapMaxBytes: 20_971_520,
   };
 }
 

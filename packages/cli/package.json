@@ -15,6 +15,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@inquirer/prompts": "^8.5.2",
     "@traceability/server": "workspace:*",
     "@trpc/client": "^11.18.0",
     "commander": "^12.0.0"

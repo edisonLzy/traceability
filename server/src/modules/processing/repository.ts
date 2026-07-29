@@ -20,6 +20,7 @@ export class ProcessingRepository {
   async processEventItem(
     itemId: string,
     deriveFields: (payload: Record<string, unknown>, receivedAt: Date) => EventFields,
+    symbolicate?: (payload: Record<string, unknown>, projectId: string) => Promise<void>,
   ): Promise<void> {
     await this.database.db.transaction(async (transaction) => {
       const [item] = await transaction
@@ -60,6 +61,18 @@ export class ProcessingRepository {
           })
           .where(eq(ingestItems.id, item.id));
         return;
+      }
+
+      // Symbolicate BEFORE deriving fields so the fingerprint keys on the
+      // resolved filenames/functions rather than the minified bundle. The
+      // callback mutates the payload object in place; failures inside are
+      // swallowed by the symbolicator and marked on `payload.symbolicated`.
+      if (symbolicate) {
+        try {
+          await symbolicate(item.payload, item.projectId);
+        } catch {
+          item.payload.symbolicated = "unavailable";
+        }
       }
 
       const fields = deriveFields(item.payload, item.receivedAt);

@@ -1,11 +1,28 @@
 import Fastify from "fastify";
+import fastifyPlugin from "fastify-plugin";
 import { describe, expect, it, vi } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
 import type { Database } from "../../infrastructure/database/client.js";
+import type { ObjectStorage } from "../../infrastructure/object-storage/client.js";
 import { configPlugin } from "../config.js";
 import { containerPlugin } from "../container.js";
 import { databasePlugin } from "../database.js";
+
+const stubObjectStorage: ObjectStorage = {
+  put: vi.fn(async () => undefined),
+  get: vi.fn(async () => Buffer.alloc(0)),
+  delete: vi.fn(async () => undefined),
+  ping: vi.fn(async () => undefined),
+  close: vi.fn(async () => undefined),
+};
+
+const stubObjectStoragePlugin = fastifyPlugin(
+  async (app) => {
+    app.decorate("objectStorage", stubObjectStorage);
+  },
+  { name: "object-storage" },
+);
 
 describe("application container plugin", () => {
   it("creates one immutable container for the API process", async () => {
@@ -25,6 +42,7 @@ describe("application container plugin", () => {
 
     await app.register(configPlugin, { config });
     await app.register(databasePlugin, { database });
+    await app.register(stubObjectStoragePlugin);
     await app.register(containerPlugin);
     await app.ready();
 
@@ -33,6 +51,7 @@ describe("application container plugin", () => {
       "issues",
       "processing",
       "projects",
+      "sourcemaps",
     ]);
     expect(Object.isFrozen(app.container)).toBe(true);
     expect(app.container).toBe(app.container);

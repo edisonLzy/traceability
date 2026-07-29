@@ -1,17 +1,22 @@
 import { createHash } from "node:crypto";
 
+import type { SourcemapService } from "../sourcemaps/service.js";
 import type { ProcessingRepository } from "./repository.js";
+import { symbolicatePayload, type SourcemapResolver } from "./symbolicator.js";
 import type { EventFields } from "./types.js";
 
 export class ProcessingService {
-  public constructor(private readonly repository: ProcessingRepository) {}
+  public constructor(
+    private readonly repository: ProcessingRepository,
+    private readonly sourcemaps?: SourcemapService,
+  ) {}
 
   listFailures(limit = 100) {
     return this.repository.listFailures(limit);
   }
 
   processEventItem(itemId: string): Promise<void> {
-    return this.repository.processEventItem(itemId, deriveEventFields);
+    return this.repository.processEventItem(itemId, deriveEventFields, this.buildSymbolicate());
   }
 
   recordFailure(input: {
@@ -21,6 +26,15 @@ export class ProcessingService {
     attempts: number;
   }): Promise<void> {
     return this.repository.recordFailure(input);
+  }
+
+  private buildSymbolicate() {
+    const sourcemaps = this.sourcemaps;
+    if (!sourcemaps) return undefined;
+    return async (payload: Record<string, unknown>, projectId: string): Promise<void> => {
+      const resolver: SourcemapResolver = (debugId) => sourcemaps.findMapBody(projectId, debugId);
+      await symbolicatePayload(payload, resolver);
+    };
   }
 }
 

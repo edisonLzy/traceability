@@ -4,6 +4,7 @@ import { Command } from "commander";
 import { configCommand } from "./commands/config.js";
 import { issueCommand } from "./commands/issue.js";
 import { projectCommand } from "./commands/project.js";
+import { sourcemapCommand } from "./commands/sourcemap.js";
 import { setConfigOverrides } from "./lib/config.js";
 
 const program = new Command();
@@ -22,6 +23,7 @@ program.hook("preAction", (command) => {
 configCommand(program);
 projectCommand(program);
 issueCommand(program);
+sourcemapCommand(program);
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err instanceof Error ? err.message : String(err));

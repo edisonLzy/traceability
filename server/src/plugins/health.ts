@@ -6,7 +6,8 @@ const registerHealth: FastifyPluginAsync = async (app) => {
   app.get("/health/ready", async (_request, reply) => {
     try {
       await app.database.ping();
-      await app.container.ingest.checkRateLimiter();
+      await app.objectStorage.ping();
+      await app.redis.ping();
       return { status: "ok" };
     } catch {
       reply.code(503);
@@ -17,5 +18,5 @@ const registerHealth: FastifyPluginAsync = async (app) => {
 
 export const healthPlugin = fastifyPlugin(registerHealth, {
   name: "health",
-  dependencies: ["database", "container"],
+  dependencies: ["database", "object-storage", "container"],
 });

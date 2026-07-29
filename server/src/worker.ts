@@ -5,6 +5,7 @@ import { loadRuntimeConfig } from "./config/index.js";
 import { isMainModule } from "./helper/isMainModule.js";
 import { registerShutdownSignals } from "./helper/shutdown.js";
 import { createDatabase } from "./infrastructure/database/client.js";
+import { createObjectStorage } from "./infrastructure/object-storage/client.js";
 import {
   createQueueConnection,
   ITEM_QUEUE_NAME,
@@ -12,6 +13,7 @@ import {
 } from "./infrastructure/queue/item-queue.js";
 import { ProcessingRepository, ProcessingService } from "./modules/processing/index.js";
 import { createItemProcessors } from "./modules/processing/registry.js";
+import { SourcemapRepository, SourcemapService } from "./modules/sourcemaps/index.js";
 
 interface ItemJob {
   itemId?: string;
@@ -24,8 +26,17 @@ export async function startWorker(): Promise<void> {
     connectionString: config.databaseUrl,
     maxConnections: config.databasePoolMax,
   });
+  const objectStorage = createObjectStorage({
+    endpoint: config.objectStorageEndpoint,
+    region: config.objectStorageRegion,
+    bucket: config.objectStorageBucket,
+    accessKey: config.objectStorageAccessKey,
+    secretKey: config.objectStorageSecretKey,
+    forcePathStyle: true,
+  });
   const connection = createQueueConnection(config.redisUrl);
-  const processing = new ProcessingService(new ProcessingRepository(database));
+  const sourcemaps = new SourcemapService(new SourcemapRepository(database), objectStorage);
+  const processing = new ProcessingService(new ProcessingRepository(database), sourcemaps);
   const itemProcessors = createItemProcessors(processing);
 
   const worker = new Worker<ItemJob>(
@@ -53,7 +64,12 @@ export async function startWorker(): Promise<void> {
   });
 
   const close = registerShutdownSignals(async () => {
-    await Promise.allSettled([worker.close(), connection.quit(), database.close()]);
+    await Promise.allSettled([
+      worker.close(),
+      connection.quit(),
+      objectStorage.close(),
+      database.close(),
+    ]);
   });
 
   await new Promise<void>((resolve, reject) => {

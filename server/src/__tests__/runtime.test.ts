@@ -20,6 +20,12 @@ const config: RuntimeConfig = {
   corsOrigins: [],
   trustProxy: false,
   logLevel: "fatal",
+  objectStorageEndpoint: "http://127.0.0.1:9000",
+  objectStorageRegion: "us-east-1",
+  objectStorageBucket: "traceability-sourcemaps",
+  objectStorageAccessKey: "traceability",
+  objectStorageSecretKey: "traceability-development-secret",
+  sourcemapMaxBytes: 20_971_520,
 };
 
 describe("runtime app", () => {
@@ -38,10 +44,28 @@ describe("runtime app", () => {
     };
   }
 
+  /**
+   * Replace the S3-backed object storage client with a no-op stub so tests
+   * don't attempt real HeadBucket calls against a MinIO that isn't running.
+   */
+  function stubObjectStorage(
+    app: Awaited<ReturnType<typeof createApp>>,
+    { pingError }: { pingError?: Error } = {},
+  ) {
+    app.objectStorage = {
+      put: vi.fn(async () => undefined),
+      get: vi.fn(async () => Buffer.alloc(0)),
+      delete: vi.fn(async () => undefined),
+      ping: pingError ? vi.fn(async () => Promise.reject(pingError)) : vi.fn(async () => undefined),
+      close: vi.fn(async () => undefined),
+    };
+  }
+
   it("reports liveness without querying PostgreSQL", async () => {
     const database = createDatabase();
     const app = await createApp({ config, database });
     mockRateLimiter(app);
+    stubObjectStorage(app);
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/health/live" });
@@ -54,6 +78,7 @@ describe("runtime app", () => {
   it("serves the tRPC panel outside production", async () => {
     const app = await createApp({ config, database: createDatabase() });
     mockRateLimiter(app);
+    stubObjectStorage(app);
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/trpc-panel" });
@@ -70,6 +95,7 @@ describe("runtime app", () => {
       database: createDatabase(),
     });
     mockRateLimiter(app);
+    stubObjectStorage(app);
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/trpc-panel" });
@@ -81,6 +107,7 @@ describe("runtime app", () => {
     const database = createDatabase();
     const app = await createApp({ config, database });
     mockRateLimiter(app);
+    stubObjectStorage(app);
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/health/ready" });
@@ -94,6 +121,20 @@ describe("runtime app", () => {
     const database = createDatabase({ pingError: new Error("connection refused") });
     const app = await createApp({ config, database });
     mockRateLimiter(app);
+    stubObjectStorage(app);
+    apps.push(app);
+
+    const response = await app.inject({ method: "GET", url: "/health/ready" });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ status: "unavailable" });
+  });
+
+  it("returns 503 when object storage is unreachable", async () => {
+    const database = createDatabase();
+    const app = await createApp({ config, database });
+    mockRateLimiter(app);
+    stubObjectStorage(app, { pingError: new Error("bucket unavailable") });
     apps.push(app);
 
     const response = await app.inject({ method: "GET", url: "/health/ready" });
@@ -106,6 +147,7 @@ describe("runtime app", () => {
     const database = createDatabase();
     const app = await createApp({ config, database });
     mockRateLimiter(app);
+    stubObjectStorage(app);
     apps.push(app);
 
     const response = await app.inject({
@@ -120,6 +162,7 @@ describe("runtime app", () => {
   it("exposes Prometheus metrics without authentication", async () => {
     const app = await createApp({ config, database: createDatabase() });
     mockRateLimiter(app);
+    stubObjectStorage(app);
     apps.push(app);
 
     await app.inject({ method: "GET", url: "/health/live" });
@@ -133,6 +176,7 @@ describe("runtime app", () => {
   it("keeps ingest content parsers scoped away from sibling routes", async () => {
     const app = await createApp({ config, database: createDatabase() });
     mockRateLimiter(app);
+    stubObjectStorage(app);
     apps.push(app);
     app.post("/echo-text", async (request) => ({
       body: request.body,

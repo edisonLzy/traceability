@@ -1,7 +1,9 @@
 import Fastify from "fastify";
+import fastifyPlugin from "fastify-plugin";
 import { describe, expect, it, vi } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
+import type { ObjectStorage } from "../../infrastructure/object-storage/client.js";
 import { configPlugin } from "../../plugins/config.js";
 import { containerPlugin } from "../../plugins/container.js";
 import { databasePlugin } from "../../plugins/database.js";
@@ -9,6 +11,21 @@ import { trpcPlugin } from "../../plugins/trpc.js";
 import { appRouter } from "../app-router.js";
 import type { Context } from "../context.js";
 import type { RequestContext } from "../trpc.js";
+
+const stubObjectStorage: ObjectStorage = {
+  put: vi.fn(async () => undefined),
+  get: vi.fn(async () => Buffer.alloc(0)),
+  delete: vi.fn(async () => undefined),
+  ping: vi.fn(async () => undefined),
+  close: vi.fn(async () => undefined),
+};
+
+const stubObjectStoragePlugin = fastifyPlugin(
+  async (app) => {
+    app.decorate("objectStorage", stubObjectStorage);
+  },
+  { name: "object-storage" },
+);
 
 function makeContext(overrides: Partial<Context["container"]> = {}): RequestContext {
   const projects = {
@@ -32,6 +49,10 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
   const processing = {
     listFailures: vi.fn().mockResolvedValue([]),
   } as unknown as Context["container"]["processing"];
+  const sourcemaps = {
+    listByProject: vi.fn().mockResolvedValue([]),
+    remove: vi.fn().mockResolvedValue(null),
+  } as unknown as Context["container"]["sourcemaps"];
 
   return {
     config: {
@@ -43,6 +64,7 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
       issues: issues as unknown as Context["container"]["issues"],
       ingest,
       processing,
+      sourcemaps,
       ...overrides,
     },
     req: { headers: { authorization: "Bearer secret" } } as RequestContext["req"],
@@ -117,6 +139,7 @@ describe("appRouter", () => {
     const dependencies = makeDependencies();
     await app.register(configPlugin, { config: dependencies.config });
     await app.register(databasePlugin, { database: dependencies.database });
+    await app.register(stubObjectStoragePlugin);
     await app.register(containerPlugin);
     await app.register(trpcPlugin);
 

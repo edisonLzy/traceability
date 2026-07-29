@@ -34,6 +34,17 @@ const EnvironmentSchema = z.object({
   CORS_ORIGINS: z.string().default(""),
   TRUST_PROXY: z.coerce.boolean().default(false),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
+  OBJECT_STORAGE_ENDPOINT: z.string().url().default("http://127.0.0.1:9000"),
+  OBJECT_STORAGE_REGION: z.string().min(1).default("us-east-1"),
+  OBJECT_STORAGE_BUCKET: z.string().min(1).default("traceability-sourcemaps"),
+  OBJECT_STORAGE_ACCESS_KEY: z.string().min(1).default("traceability"),
+  OBJECT_STORAGE_SECRET_KEY: z.string().min(1).default("traceability-development-secret"),
+  SOURCEMAP_MAX_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1_024)
+    .max(200 * 1024 * 1024)
+    .default(20_971_520),
 });
 
 export interface RuntimeConfig {
@@ -52,6 +63,12 @@ export interface RuntimeConfig {
   corsOrigins: string[];
   trustProxy: boolean;
   logLevel: "fatal" | "error" | "warn" | "info" | "debug" | "trace";
+  objectStorageEndpoint: string;
+  objectStorageRegion: string;
+  objectStorageBucket: string;
+  objectStorageAccessKey: string;
+  objectStorageSecretKey: string;
+  sourcemapMaxBytes: number;
 }
 
 export function loadRuntimeConfig(environment: NodeJS.ProcessEnv = process.env): RuntimeConfig {
@@ -78,5 +95,11 @@ export function loadRuntimeConfig(environment: NodeJS.ProcessEnv = process.env):
       .filter(Boolean),
     trustProxy: parsed.TRUST_PROXY,
     logLevel: parsed.LOG_LEVEL,
+    objectStorageEndpoint: parsed.OBJECT_STORAGE_ENDPOINT,
+    objectStorageRegion: parsed.OBJECT_STORAGE_REGION,
+    objectStorageBucket: parsed.OBJECT_STORAGE_BUCKET,
+    objectStorageAccessKey: parsed.OBJECT_STORAGE_ACCESS_KEY,
+    objectStorageSecretKey: parsed.OBJECT_STORAGE_SECRET_KEY,
+    sourcemapMaxBytes: parsed.SOURCEMAP_MAX_BYTES,
   };
 }

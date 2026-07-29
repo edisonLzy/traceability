@@ -28,6 +28,15 @@ export class ProjectRepository {
     return project ?? null;
   }
 
+  async findBySlug(slug: string) {
+    const [project] = await this.database.db
+      .select()
+      .from(projects)
+      .where(eq(projects.slug, slug))
+      .limit(1);
+    return project ?? null;
+  }
+
   async update(projectId: string, input: UpdateProjectInput) {
     const [project] = await this.database.db
       .update(projects)

@@ -23,6 +23,10 @@ export class ProjectService {
     return this.repository.findById(projectId);
   }
 
+  getProjectBySlug(slug: string) {
+    return this.repository.findBySlug(slug);
+  }
+
   updateProject(projectId: string, input: UpdateProjectInput) {
     return this.repository.update(projectId, input);
   }
