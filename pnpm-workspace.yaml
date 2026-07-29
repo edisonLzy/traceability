@@ -4,13 +4,21 @@ packages:
   - "server"
   - "examples/*"
 
+allowBuilds:
+  better-sqlite3: true
+  electron: true
+  esbuild: true
+  msgpackr-extract: true
+  protobufjs: true
+  "@google/genai": false
+  electron-winstaller: false
+
+minimumReleaseAgeExclude:
+  - '@aws-sdk/*'
+
 catalog:
   typescript: ^7.0.2
   vitest: ^4.0.16
   tsx: ^4.21.0
   "@tiptap/core": ^3.22.5
 
-onlyBuiltDependencies:
-  - better-sqlite3
-  - electron
-  - esbuild
