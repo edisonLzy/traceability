@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { managementProcedure, t } from "../../trpc/trpc.js";
+import { procedure, t } from "../../trpc/trpc.js";
 
 const issueIdInput = z.string().uuid();
 const ListIssuesInputSchema = z.object({
@@ -17,22 +17,22 @@ const UpdateIssueInputSchema = z.object({
 });
 
 export const issuesRouter = t.router({
-  list: managementProcedure.input(ListIssuesInputSchema).query(({ ctx, input }) => {
+  list: procedure.input(ListIssuesInputSchema).query(({ ctx, input }) => {
     return ctx.container.issues.listForProject(input.projectId, {
       cursor: input.cursor,
       limit: input.limit,
     });
   }),
 
-  get: managementProcedure.input(issueIdInput).query(({ ctx, input }) => {
+  get: procedure.input(issueIdInput).query(({ ctx, input }) => {
     return ctx.container.issues.getIssue(input);
   }),
 
-  events: managementProcedure.input(ListEventsInputSchema).query(({ ctx, input }) => {
+  events: procedure.input(ListEventsInputSchema).query(({ ctx, input }) => {
     return ctx.container.issues.listEvents(input.issueId, { limit: input.limit });
   }),
 
-  update: managementProcedure
+  update: procedure
     .input(z.object({ issueId: issueIdInput, patch: UpdateIssueInputSchema }))
     .mutation(({ ctx, input }) => {
       return ctx.container.issues.updateIssue(input.issueId, input.patch);

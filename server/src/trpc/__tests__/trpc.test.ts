@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { RuntimeConfig } from "../../config/index.js";
 import type { Database } from "../../infrastructure/database/client.js";
 import type { Context } from "../context.js";
-import { managementProcedure, t } from "../trpc.js";
+import { procedure, t } from "../trpc.js";
 
 function makeConfig(token: string): RuntimeConfig {
   return {
@@ -36,10 +36,10 @@ function makeCtx(token: string, authHeader?: string): Context & { req: FastifyRe
 }
 
 const testRouter = t.router({
-  ping: managementProcedure.query(() => "pong"),
+  ping: procedure.query(() => "pong"),
 });
 
-describe("managementProcedure", () => {
+describe("procedure", () => {
   it("rejects when the bearer token is missing", async () => {
     const caller = testRouter.createCaller(makeCtx("secret"));
     await expect(caller.ping()).rejects.toMatchObject({ code: "UNAUTHORIZED" });

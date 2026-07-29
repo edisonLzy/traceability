@@ -3,6 +3,12 @@ import fastifyPlugin from "fastify-plugin";
 
 import { createDatabase, type Database } from "../infrastructure/database/client.js";
 
+declare module "fastify" {
+  interface FastifyInstance {
+    database: Database;
+  }
+}
+
 export interface DatabasePluginOptions {
   database?: Database;
 }

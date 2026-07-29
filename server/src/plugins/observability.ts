@@ -2,8 +2,6 @@ import type { FastifyPluginAsync } from "fastify";
 import fastifyPlugin from "fastify-plugin";
 import { collectDefaultMetrics, Counter, Histogram, Registry } from "prom-client";
 
-import { createManagementAuth } from "./management-auth.js";
-
 class ServerMetrics {
   public readonly registry = new Registry();
   private readonly requests = new Counter({
@@ -53,7 +51,7 @@ const registerMetrics: FastifyPluginAsync = async (app) => {
     });
   });
 
-  app.get("/metrics", { preHandler: createManagementAuth(app.config) }, async (_request, reply) => {
+  app.get("/metrics", async (_request, reply) => {
     reply.header("content-type", metrics.registry.contentType);
     return metrics.registry.metrics();
   });

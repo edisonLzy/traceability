@@ -13,6 +13,12 @@ export interface Container {
   processing: ProcessingService;
 }
 
+declare module "fastify" {
+  interface FastifyInstance {
+    container: Container;
+  }
+}
+
 export const containerPlugin = fastifyPlugin(
   async (app) => {
     const projects = new ProjectService(new ProjectRepository(app.database), app.config);

@@ -117,20 +117,13 @@ describe("runtime app", () => {
     expect(response.json().error.data.code).toBe("UNAUTHORIZED");
   });
 
-  it("protects metrics and returns Prometheus metrics for management callers", async () => {
+  it("exposes Prometheus metrics without authentication", async () => {
     const app = await createApp({ config, database: createDatabase() });
     mockRateLimiter(app);
     apps.push(app);
 
-    const unauthenticated = await app.inject({ method: "GET", url: "/metrics" });
-    expect(unauthenticated.statusCode).toBe(401);
-
     await app.inject({ method: "GET", url: "/health/live" });
-    const response = await app.inject({
-      method: "GET",
-      url: "/metrics",
-      headers: { authorization: `Bearer ${config.managementAuthToken}` },
-    });
+    const response = await app.inject({ method: "GET", url: "/metrics" });
 
     expect(response.statusCode).toBe(200);
     expect(response.headers["content-type"]).toContain("text/plain");

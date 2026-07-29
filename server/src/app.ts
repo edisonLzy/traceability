@@ -1,4 +1,5 @@
 import "dotenv/config";
+import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 
 import { loadRuntimeConfig } from "./config/index.js";
@@ -7,7 +8,6 @@ import type { Database } from "./infrastructure/database/client.js";
 import { ingestRouter } from "./modules/ingest/router.js";
 import { configPlugin } from "./plugins/config.js";
 import { containerPlugin } from "./plugins/container.js";
-import { corsPlugin } from "./plugins/cors.js";
 import { databasePlugin } from "./plugins/database.js";
 import { errorHandlerPlugin } from "./plugins/error-handler.js";
 import { healthPlugin } from "./plugins/health.js";
@@ -43,7 +43,10 @@ export async function createApp(deps: AppDependencies): Promise<FastifyInstance>
   await app.register(containerPlugin);
   await app.register(errorHandlerPlugin);
   await app.register(observabilityPlugin);
-  await app.register(corsPlugin);
+  await app.register(cors, {
+    credentials: false,
+    origin: deps.config.corsOrigins.length > 0 ? deps.config.corsOrigins : false,
+  });
   await app.register(healthPlugin);
   await app.register(ingestRouter);
   await app.register(trpcPlugin);

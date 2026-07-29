@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { managementProcedure, t } from "../../trpc/trpc.js";
+import { procedure, t } from "../../trpc/trpc.js";
 
 const projectIdInput = z.string().uuid();
 const CreateProjectInputSchema = z.object({
@@ -22,45 +22,45 @@ const UpdateProjectPolicyInputSchema = z.object({
 });
 
 export const projectsRouter = t.router({
-  list: managementProcedure.query(({ ctx }) => ctx.container.projects.listProjects()),
+  list: procedure.query(({ ctx }) => ctx.container.projects.listProjects()),
 
-  get: managementProcedure.input(projectIdInput).query(({ ctx, input }) => {
+  get: procedure.input(projectIdInput).query(({ ctx, input }) => {
     return ctx.container.projects.getProject(input);
   }),
 
-  create: managementProcedure.input(CreateProjectInputSchema).mutation(({ ctx, input }) => {
+  create: procedure.input(CreateProjectInputSchema).mutation(({ ctx, input }) => {
     return ctx.container.projects.createProject(input);
   }),
 
-  update: managementProcedure
+  update: procedure
     .input(z.object({ projectId: projectIdInput, patch: UpdateProjectInputSchema }))
     .mutation(({ ctx, input }) => {
       return ctx.container.projects.updateProject(input.projectId, input.patch);
     }),
 
-  remove: managementProcedure.input(projectIdInput).mutation(({ ctx, input }) => {
+  remove: procedure.input(projectIdInput).mutation(({ ctx, input }) => {
     return ctx.container.projects.deleteProject(input);
   }),
 
-  listKeys: managementProcedure.input(projectIdInput).query(({ ctx, input }) => {
+  listKeys: procedure.input(projectIdInput).query(({ ctx, input }) => {
     return ctx.container.projects.listKeys(input);
   }),
 
-  createKey: managementProcedure.input(projectIdInput).mutation(({ ctx, input }) => {
+  createKey: procedure.input(projectIdInput).mutation(({ ctx, input }) => {
     return ctx.container.projects.createKey(input);
   }),
 
-  revokeKey: managementProcedure
+  revokeKey: procedure
     .input(z.object({ projectId: projectIdInput, keyId: projectIdInput }))
     .mutation(({ ctx, input }) => {
       return ctx.container.projects.revokeKey(input.projectId, input.keyId);
     }),
 
-  getPolicy: managementProcedure.input(projectIdInput).query(({ ctx, input }) => {
+  getPolicy: procedure.input(projectIdInput).query(({ ctx, input }) => {
     return ctx.container.projects.getPolicy(input);
   }),
 
-  updatePolicy: managementProcedure
+  updatePolicy: procedure
     .input(z.object({ projectId: projectIdInput, patch: UpdateProjectPolicyInputSchema }))
     .mutation(({ ctx, input }) => {
       return ctx.container.projects.updatePolicy(input.projectId, input.patch);
