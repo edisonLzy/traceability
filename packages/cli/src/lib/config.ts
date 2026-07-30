@@ -21,7 +21,7 @@ export function setConfigOverrides(overrides: CliConfigOverrides): void {
   commandLineOverrides = { ...overrides };
 }
 
-function configPath(): string {
+export function configPath(): string {
   return process.env.TRACEABILITY_CONFIG_PATH ?? join(homedir(), ".traceability", "config.json");
 }
 
