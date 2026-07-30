@@ -61,3 +61,29 @@ export async function ensureConfig(): Promise<CliConfig> {
   process.stderr.write(`Saved to ${configPath()}.\n`);
   return cfg;
 }
+
+/**
+ * 401 fallback: force a re-prompt (server field pre-filled with the current
+ * value) and persist. Throws NonInteractiveAuthError when stdin isn't a TTY,
+ * or when the current token came from the TRACEABILITY_MANAGEMENT_TOKEN env
+ * override — the env value expresses strong external intent and we refuse to
+ * silently overwrite it with a prompt-provided value.
+ */
+export async function reconfigureAfter401(current: CliConfig): Promise<CliConfig> {
+  if (!isInteractive()) {
+    throw new NonInteractiveAuthError(
+      "management authentication failed and stdin is not a TTY; refusing to prompt",
+    );
+  }
+  const envToken = process.env.TRACEABILITY_MANAGEMENT_TOKEN;
+  if (envToken !== undefined && envToken === current.token) {
+    throw new NonInteractiveAuthError(
+      "TRACEABILITY_MANAGEMENT_TOKEN is set; refusing to prompt (unset the env var to reconfigure)",
+    );
+  }
+  process.stderr.write("Server rejected the management token. Please re-enter your credentials.\n");
+  const cfg = await runPrompt({ serverDefault: current.server });
+  saveConfig(cfg);
+  process.stderr.write(`Saved to ${configPath()}.\n`);
+  return cfg;
+}
