@@ -15,7 +15,7 @@ const { list, create } = vi.hoisted(() => ({
 }));
 
 vi.mock("../lib/trpc.js", () => ({
-  getTrpcClient: () => ({
+  getTrpcClient: async () => ({
     projects: {
       list: { query: list },
       create: { mutate: create },
