@@ -1,7 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 
-import { getConfig } from "./config.js";
+import {
+  NonInteractiveAuthError,
+  ensureConfig,
+  reconfigureAfter401,
+} from "./config-interactive.js";
+import type { CliConfig } from "./config.js";
 
 export interface UploadSourcemapInput {
   filePath: string;
@@ -17,15 +22,7 @@ export interface UploadSourcemapResponse {
   reused: boolean;
 }
 
-/**
- * POST a single `.map` file to the server's multipart upload endpoint. Uses
- * `undici` FormData (available on Node 22 as globalThis.FormData / File) — the
- * tRPC client can't handle multipart so we build the request by hand.
- */
-export async function uploadSourcemap(
-  input: UploadSourcemapInput,
-): Promise<UploadSourcemapResponse> {
-  const { server, token } = getConfig();
+async function postOnce(cfg: CliConfig, input: UploadSourcemapInput): Promise<Response> {
   const body = await readFile(input.filePath);
   const form = new FormData();
   form.set("projectSlug", input.projectSlug);
@@ -37,11 +34,38 @@ export async function uploadSourcemap(
     basename(input.filePath),
   );
 
-  const response = await fetch(`${server.replace(/\/$/, "")}/api/sourcemaps/upload`, {
+  return fetch(`${cfg.server.replace(/\/$/, "")}/api/sourcemaps/upload`, {
     method: "POST",
     body: form,
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${cfg.token}` },
   });
+}
+
+/**
+ * POST a single `.map` file to the server's multipart upload endpoint. Uses
+ * `undici` FormData (available on Node 22 as globalThis.FormData / File) — the
+ * tRPC client can't handle multipart so we build the request by hand.
+ *
+ * On HTTP 401 we prompt the user to re-enter credentials (TTY only) and retry
+ * exactly once. Non-TTY environments propagate the failure as a normal
+ * `upload failed: HTTP 401` error.
+ */
+export async function uploadSourcemap(
+  input: UploadSourcemapInput,
+): Promise<UploadSourcemapResponse> {
+  let cfg = await ensureConfig();
+  let response = await postOnce(cfg, input);
+
+  if (response.status === 401) {
+    try {
+      cfg = await reconfigureAfter401(cfg);
+      response = await postOnce(cfg, input);
+    } catch (err) {
+      if (!(err instanceof NonInteractiveAuthError)) throw err;
+      // Fall through: `response` still carries the original 401, which the
+      // not-ok branch below will surface with the server's error body.
+    }
+  }
 
   if (!response.ok) {
     const text = await response.text();
