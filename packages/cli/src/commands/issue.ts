@@ -11,7 +11,8 @@ export function issueCommand(program: Command): void {
     .option("--limit <n>", "max results", "20")
     .option("--json", "output JSON")
     .action(async (opts) => {
-      const result = await getTrpcClient().issues.list.query({
+      const client = await getTrpcClient();
+      const result = await client.issues.list.query({
         projectId: opts.projectId,
         limit: Number(opts.limit),
       });
@@ -31,7 +32,8 @@ export function issueCommand(program: Command): void {
     .command("show <issueId>")
     .option("--json", "output JSON")
     .action(async (issueId) => {
-      const issue = await getTrpcClient().issues.get.query(issueId);
+      const client = await getTrpcClient();
+      const issue = await client.issues.get.query(issueId);
       if (!issue) throw new Error(`Issue not found: ${issueId}`);
       printJson(issue);
     });

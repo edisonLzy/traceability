@@ -20,7 +20,8 @@ function addProjectSubcommands(cmd: Command): void {
     .command("list")
     .option("--json", "output JSON")
     .action(async (opts) => {
-      const projects = await getTrpcClient().projects.list.query();
+      const client = await getTrpcClient();
+      const projects = await client.projects.list.query();
       if (opts.json) {
         printJson(projects);
       } else {
@@ -39,7 +40,8 @@ function addProjectSubcommands(cmd: Command): void {
     .requiredOption("--name <name>")
     .option("--json", "output JSON")
     .action(async (opts) => {
-      const project = await getTrpcClient().projects.create.mutate({
+      const client = await getTrpcClient();
+      const project = await client.projects.create.mutate({
         slug: opts.slug,
         name: opts.name,
         platform: "javascript",
@@ -55,7 +57,8 @@ function addProjectSubcommands(cmd: Command): void {
     .command("show <projectId>")
     .option("--json", "output JSON")
     .action(async (projectId) => {
-      const project = await getTrpcClient().projects.get.query(projectId);
+      const client = await getTrpcClient();
+      const project = await client.projects.get.query(projectId);
       if (!project) throw new Error(`Project not found: ${projectId}`);
       printJson(project);
     });
@@ -69,7 +72,8 @@ function addProjectSubcommands(cmd: Command): void {
       if (!opts.name && opts.enabled === undefined) {
         throw new Error("Provide --name or --enabled.");
       }
-      const project = await getTrpcClient().projects.update.mutate({
+      const client = await getTrpcClient();
+      const project = await client.projects.update.mutate({
         projectId,
         patch: {
           ...(opts.name ? { name: opts.name } : {}),
@@ -81,7 +85,8 @@ function addProjectSubcommands(cmd: Command): void {
     });
 
   cmd.command("remove <projectId>").action(async (projectId) => {
-    const project = await getTrpcClient().projects.remove.mutate(projectId);
+    const client = await getTrpcClient();
+    const project = await client.projects.remove.mutate(projectId);
     if (!project) throw new Error(`Project not found: ${projectId}`);
     console.log(`Removed project ${project.slug}.`);
   });
