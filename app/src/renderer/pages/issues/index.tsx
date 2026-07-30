@@ -164,7 +164,7 @@ export function IssuesPage() {
               return (
                 <tr
                   key={issue.id}
-                  onClick={() => nav(`/issues/${issue.id}`)}
+                  onClick={() => nav(`/monitor/issues/${issue.id}`)}
                   className="cursor-pointer transition-colors hover:bg-white/[0.045]"
                 >
                   <td className="border-b border-hairline px-4 py-3 text-[12px] text-muted">
