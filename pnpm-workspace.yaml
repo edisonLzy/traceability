@@ -12,6 +12,7 @@ allowBuilds:
   protobufjs: true
   "@google/genai": false
   electron-winstaller: false
+  '@sentry/cli': true
 
 minimumReleaseAgeExclude:
   - '@aws-sdk/*'
@@ -21,4 +22,3 @@ catalog:
   vitest: ^4.0.16
   tsx: ^4.21.0
   "@tiptap/core": ^3.22.5
-

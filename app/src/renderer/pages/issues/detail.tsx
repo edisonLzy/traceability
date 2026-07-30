@@ -1,4 +1,5 @@
 import { useRegisterCommands } from "@renderer/commands";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@renderer/components/ui/tabs";
 import { useCurrentProject } from "@renderer/context/current-project";
 import { useIssue, useIssueEvents, useUpdateIssue } from "@renderer/hooks/use-issue";
 import { promptAgent } from "@renderer/lib/agent-events";
@@ -7,6 +8,8 @@ import { ArrowLeft, Check, CircleOff, Sparkles } from "lucide-react";
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+
+import { Stacktrace } from "./_components/Stacktrace";
 
 export function IssueDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -113,12 +116,10 @@ export function IssueDetailPage() {
           <div className="px-4 py-2">
             {events.map((event) => (
               <div className="border-b border-hairline py-3 last:border-b-0" key={event.id}>
-                <div className="mb-1 text-[11px] text-tertiary">
+                <div className="mb-2 text-[11px] text-tertiary">
                   {new Date(event.receivedAt).toLocaleString()}
                 </div>
-                <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] leading-[1.7] text-muted">
-                  {JSON.stringify(event.payload, null, 2)}
-                </pre>
+                <EventBody event={event} />
               </div>
             ))}
             {events.length === 0 && (
@@ -166,6 +167,56 @@ export function IssueDetailPage() {
       </div>
     </div>
   );
+}
+
+interface EventLike {
+  id: string;
+  payload: Record<string, unknown>;
+}
+
+/**
+ * Show a stack-trace tab by default and a raw-JSON tab as escape hatch. When
+ * the payload doesn't contain a stacktrace at all (message-only events),
+ * we skip the tabbed layout and just show raw so the widget stays honest.
+ */
+function EventBody({ event }: { event: EventLike }) {
+  const hasStack = payloadHasStacktrace(event.payload);
+  if (!hasStack) return <RawPayload payload={event.payload} />;
+  return (
+    <Tabs defaultValue="stack" className="rounded-lg border border-hairline bg-white/[0.02]">
+      <TabsList className="border-b-0 px-3 py-0">
+        <TabsTrigger value="stack">Stack trace</TabsTrigger>
+        <TabsTrigger value="raw">Raw payload</TabsTrigger>
+      </TabsList>
+      <TabsContent value="stack">
+        <Stacktrace payload={event.payload} />
+      </TabsContent>
+      <TabsContent value="raw" className="px-4 py-3">
+        <RawPayload payload={event.payload} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function RawPayload({ payload }: { payload: Record<string, unknown> }) {
+  return (
+    <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] leading-[1.7] text-muted">
+      {JSON.stringify(payload, null, 2)}
+    </pre>
+  );
+}
+
+function payloadHasStacktrace(payload: Record<string, unknown>): boolean {
+  const exception = payload.exception;
+  if (!exception || typeof exception !== "object" || Array.isArray(exception)) return false;
+  const values = (exception as { values?: unknown }).values;
+  if (!Array.isArray(values) || values.length === 0) return false;
+  const first = values[0];
+  if (!first || typeof first !== "object" || Array.isArray(first)) return false;
+  const stacktrace = (first as { stacktrace?: unknown }).stacktrace;
+  if (!stacktrace || typeof stacktrace !== "object" || Array.isArray(stacktrace)) return false;
+  const frames = (stacktrace as { frames?: unknown }).frames;
+  return Array.isArray(frames) && frames.length > 0;
 }
 
 function StatusBadge({ group }: { group: "unresolved" | "resolved" | "ignored" }) {

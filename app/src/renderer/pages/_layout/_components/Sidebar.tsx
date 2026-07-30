@@ -20,7 +20,15 @@ import {
 import { useCurrentProject } from "@renderer/context/current-project";
 import { useIssues } from "@renderer/hooks/use-issues";
 import { cn } from "@renderer/lib/utils";
-import { Activity, Bug, Compass, Fingerprint, Inbox, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  Bug,
+  Compass,
+  FileCode2,
+  Fingerprint,
+  Inbox,
+  type LucideIcon,
+} from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 type NavigationItem = {
@@ -121,6 +129,11 @@ function MonitorNavigation() {
           label: "Issues",
           to: "/monitor/issues",
           badge: data?.data.filter((issue) => issue.status === "unresolved").length ?? 0,
+        },
+        {
+          icon: FileCode2,
+          label: "Sourcemaps",
+          to: "/monitor/sourcemaps",
         },
       ]}
     />

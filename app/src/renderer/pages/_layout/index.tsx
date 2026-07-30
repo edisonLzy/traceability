@@ -16,7 +16,7 @@ import {
 } from "@renderer/components/ui/resizable";
 import { useCurrentProject } from "@renderer/context/current-project";
 import { useMinimumLoading } from "@renderer/hooks/use-minimum-loading";
-import { Bug, Command, Compass, Inbox, Radio } from "lucide-react";
+import { Bug, Command, Compass, FileCode2, Inbox, Radio } from "lucide-react";
 import { Fragment, useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -64,6 +64,16 @@ function AppLayout() {
         keywords: ["monitor", "errors"],
         shortcut: "G I",
         action: () => navigate("/monitor/issues"),
+      },
+      {
+        id: "navigation.sourcemaps",
+        group: { id: "navigation", label: "Navigation", order: 10 },
+        title: "Go to Sourcemaps",
+        description: "Manage uploaded source maps",
+        icon: FileCode2,
+        keywords: ["symbolicate", "debug"],
+        shortcut: "G M",
+        action: () => navigate("/monitor/sourcemaps"),
       },
       {
         id: "navigation.explorer",
@@ -138,6 +148,7 @@ function HeaderBreadcrumb() {
     const { pathname } = location;
     if (pathname === "/inbox") return [{ label: "Inbox" }];
     if (pathname === "/explorer") return [{ label: "Explorer" }];
+    if (pathname === "/monitor/sourcemaps") return [{ label: "Monitor" }, { label: "Sourcemaps" }];
     const issueMatch = pathname.match(/^\/monitor\/issues\/(.+)$/);
     if (issueMatch)
       return [
