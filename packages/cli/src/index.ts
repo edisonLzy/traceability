@@ -26,6 +26,11 @@ issueCommand(program);
 sourcemapCommand(program);
 
 program.parseAsync(process.argv).catch((err) => {
+  if (err instanceof Error && err.name === "ExitPromptError") {
+    console.error("Aborted.");
+    process.exitCode = 130;
+    return;
+  }
   console.error(err instanceof Error ? err.message : String(err));
   const code =
     typeof err === "object" &&
