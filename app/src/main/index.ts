@@ -4,7 +4,6 @@ import { app, BrowserWindow } from "electron";
 
 import { AgentPool } from "./agent-pool.js";
 import { AuthSession } from "./auth/auth-session.js";
-import { ClipboardHandler } from "./clipboard/clipboard-handler.js";
 import { SessionPersistence } from "./sessions/index.js";
 
 void app
@@ -15,7 +14,6 @@ void app
     const agentPool = new AgentPool(browserWindow);
     const sessionPersistence = new SessionPersistence(browserWindow);
     const authSession = new AuthSession(browserWindow);
-    const clipboardHandler = new ClipboardHandler(browserWindow);
 
     app.on("activate", () => {
       if (!browserWindow || browserWindow.isDestroyed()) {
@@ -23,7 +21,6 @@ void app
         agentPool.updateBrowserWindow(browserWindow);
         sessionPersistence.updateBrowserWindow(browserWindow);
         authSession.updateBrowserWindow(browserWindow);
-        clipboardHandler.updateBrowserWindow(browserWindow);
       }
     });
 
@@ -31,7 +28,6 @@ void app
       void agentPool.destroyAll();
       void sessionPersistence.destroyAll();
       void authSession.destroyAll();
-      clipboardHandler.destroyAll();
     });
   })
   .catch((error: unknown) => {
