@@ -2,11 +2,12 @@ import type { FastifyRequest } from "fastify";
 import { describe, expect, it } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
+import { createAccessToken } from "../../helper/auth.js";
 import type { Database } from "../../infrastructure/database/client.js";
 import type { Context } from "../context.js";
 import { procedure, t } from "../trpc.js";
 
-function makeConfig(token: string): RuntimeConfig {
+function makeConfig(secret: string): RuntimeConfig {
   return {
     environment: "development",
     host: "0.0.0.0",
@@ -15,7 +16,8 @@ function makeConfig(token: string): RuntimeConfig {
     databasePoolMax: 10,
     redisUrl: "redis://x",
     publicIngestUrl: "http://x",
-    managementAuthToken: token,
+    jwtSecret: secret,
+    jwtAccessTokenTtlSeconds: 900,
     ingestMaxCompressedBytes: 1024,
     ingestMaxDecompressedBytes: 1024,
     ingestMaxItems: 1,
@@ -33,9 +35,9 @@ function makeConfig(token: string): RuntimeConfig {
   };
 }
 
-function makeCtx(token: string, authHeader?: string): Context & { req: FastifyRequest } {
+function makeCtx(secret: string, authHeader?: string): Context & { req: FastifyRequest } {
   return {
-    config: makeConfig(token),
+    config: makeConfig(secret),
     database: {} as Database,
     container: {} as never,
     req: { headers: { authorization: authHeader } } as unknown as FastifyRequest,
@@ -57,8 +59,17 @@ describe("procedure", () => {
     await expect(caller.ping()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
-  it("accepts a matching bearer token", async () => {
-    const caller = testRouter.createCaller(makeCtx("secret", "Bearer secret"));
+  it("accepts a signed access token", async () => {
+    const secret = "a secure secret that contains at least thirty-two characters";
+    const token = createAccessToken(
+      {
+        id: "00000000-0000-4000-8000-000000000001",
+        username: "root",
+        email: "root@root.com",
+      },
+      { jwtSecret: secret, jwtAccessTokenTtlSeconds: 900 },
+    );
+    const caller = testRouter.createCaller(makeCtx(secret, `Bearer ${token}`));
     await expect(caller.ping()).resolves.toBe("pong");
   });
 });

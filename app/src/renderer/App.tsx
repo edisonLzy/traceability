@@ -8,6 +8,7 @@ import {
   type ExtensionsContextAPI,
   type RendererExtensionDefinition,
 } from "@extensions/core/renderer";
+import { AuthProvider } from "@renderer/auth/AuthProvider";
 import { CommandProvider } from "@renderer/commands";
 import { Toaster } from "@renderer/components/ui/sonner";
 import { CurrentProjectProvider } from "@renderer/context/current-project";
@@ -48,17 +49,19 @@ export function App() {
     <trpc.Provider client={rendererTrpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <ElectronIPCProvider>
-          <CurrentProjectProvider>
-            <CommandProvider>
-              <ExtensionProvider extensions={installedRendererExtensions}>
-                <ExtensionsContextAPIProvider api={extensionsContextAPI}>
-                  <RouterProvider router={router} />
-                  <TrpcErrorToaster />
-                  <Toaster />
-                </ExtensionsContextAPIProvider>
-              </ExtensionProvider>
-            </CommandProvider>
-          </CurrentProjectProvider>
+          <AuthProvider>
+            <CurrentProjectProvider>
+              <CommandProvider>
+                <ExtensionProvider extensions={installedRendererExtensions}>
+                  <ExtensionsContextAPIProvider api={extensionsContextAPI}>
+                    <RouterProvider router={router} />
+                    <TrpcErrorToaster />
+                    <Toaster />
+                  </ExtensionsContextAPIProvider>
+                </ExtensionProvider>
+              </CommandProvider>
+            </CurrentProjectProvider>
+          </AuthProvider>
         </ElectronIPCProvider>
       </QueryClientProvider>
     </trpc.Provider>

@@ -8,7 +8,7 @@ const { list } = vi.hoisted(() => ({
     ]),
 }));
 
-vi.mock("../../../../../main/trpc-client.js", () => ({
+vi.mock("../../../../../main/trpc/client.js", () => ({
   createMainTrpcClient: () => ({ projects: { list: { query: list } } }),
 }));
 

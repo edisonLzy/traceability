@@ -1,7 +1,7 @@
-import { initTRPC, TRPCError } from "@trpc/server";
+import { initTRPC } from "@trpc/server";
 import type { FastifyRequest } from "fastify";
 
-import { verifyManagementBearerToken } from "../helper/auth.js";
+import { trpcAuthMiddleware } from "../helper/auth.js";
 import type { Context } from "./context.js";
 
 /**
@@ -17,14 +17,7 @@ const t = initTRPC.context<RequestContext>().create();
  * tRPC middleware that enforces the management Bearer token against the
  * server's configured `MANAGEMENT_AUTH_TOKEN`.
  */
-const requireManagementAuth = t.middleware(async ({ ctx, next }) => {
-  if (
-    !verifyManagementBearerToken(ctx.req?.headers?.authorization, ctx.config.managementAuthToken)
-  ) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "management authentication required" });
-  }
-  return next({ ctx });
-});
+const requireManagementAuth = t.middleware(trpcAuthMiddleware());
 
 export { t };
 

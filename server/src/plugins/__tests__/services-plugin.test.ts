@@ -48,6 +48,7 @@ describe("application container plugin", () => {
     await app.ready();
 
     expect(Object.keys(app.container).sort()).toEqual([
+      "auth",
       "ingest",
       "issues",
       "processing",

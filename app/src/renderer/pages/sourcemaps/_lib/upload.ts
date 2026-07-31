@@ -1,4 +1,4 @@
-import { resolveRendererServerUrl, resolveRendererToken } from "@renderer/lib/trpc";
+import { getRendererAccessToken, resolveRendererServerUrl } from "@renderer/lib/trpc";
 
 export interface UploadSourcemapResult {
   id: string;
@@ -36,7 +36,9 @@ export async function uploadSourcemap(input: UploadSourcemapInput): Promise<Uplo
   const response = await fetch(`${resolveRendererServerUrl()}/api/sourcemaps/upload`, {
     method: "POST",
     body: form,
-    headers: { Authorization: `Bearer ${resolveRendererToken()}` },
+    headers: getRendererAccessToken()
+      ? { Authorization: `Bearer ${getRendererAccessToken()}` }
+      : {},
   });
 
   if (!response.ok) {

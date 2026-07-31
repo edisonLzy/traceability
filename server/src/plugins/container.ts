@@ -1,6 +1,6 @@
-import type { FastifyPluginAsync } from "fastify";
 import fastifyPlugin from "fastify-plugin";
 
+import { AuthService, AuthRepository } from "../modules/auth/index.js";
 import { IngestRepository, IngestService } from "../modules/ingest/index.js";
 import { IssueRepository, IssueService } from "../modules/issues/index.js";
 import { ProcessingRepository, ProcessingService } from "../modules/processing/index.js";
@@ -9,6 +9,7 @@ import { ReplayRepository, ReplayService } from "../modules/replays/index.js";
 import { SourcemapRepository, SourcemapService } from "../modules/sourcemaps/index.js";
 
 export interface Container {
+  auth: AuthService;
   projects: ProjectService;
   issues: IssueService;
   ingest: IngestService;
@@ -25,6 +26,7 @@ declare module "fastify" {
 
 export const containerPlugin = fastifyPlugin(
   async (app) => {
+    const auth = new AuthService(new AuthRepository(app.database), app.config, 7 * 24 * 60 * 60);
     const projects = new ProjectService(new ProjectRepository(app.database), app.config);
     const issues = new IssueService(new IssueRepository(app.database));
     const ingest = new IngestService(
@@ -50,7 +52,7 @@ export const containerPlugin = fastifyPlugin(
 
     app.decorate(
       "container",
-      Object.freeze({ projects, issues, ingest, processing, sourcemaps, replays }),
+      Object.freeze({ auth, projects, issues, ingest, processing, sourcemaps, replays }),
     );
   },
   {
