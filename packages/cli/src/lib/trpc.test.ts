@@ -4,17 +4,12 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@inquirer/prompts", () => ({
-  input: vi.fn(),
-  password: vi.fn(),
-}));
-
-const inquirer = await import("@inquirer/prompts");
+import { getConfig } from "./config.js";
 
 const originalStdinTTY = process.stdin.isTTY;
 const originalStderrTTY = process.stderr.isTTY;
 
-describe("getTrpcClient reauth", () => {
+describe("getTrpcClient authentication", () => {
   let tmp: string;
   let originalFetch: typeof fetch;
   let originalConfigPath: string | undefined;
@@ -23,17 +18,19 @@ describe("getTrpcClient reauth", () => {
     tmp = mkdtempSync(join(tmpdir(), "traceability-cli-trpc-"));
     originalConfigPath = process.env.TRACEABILITY_CONFIG_PATH;
     process.env.TRACEABILITY_CONFIG_PATH = join(tmp, "config.json");
-    delete process.env.TRACEABILITY_MANAGEMENT_TOKEN;
     delete process.env.TRACEABILITY_SERVER_URL;
     writeFileSync(
       process.env.TRACEABILITY_CONFIG_PATH,
-      JSON.stringify({ server: "http://mock.example", token: "old-token" }),
+      JSON.stringify({
+        server: "http://mock.example",
+        user: { id: "user-1", username: "root", email: "root@example.com" },
+        accessToken: "expired-access",
+        refreshToken: "refresh-1",
+      }),
     );
     Object.defineProperty(process.stdin, "isTTY", { value: true, configurable: true });
     Object.defineProperty(process.stderr, "isTTY", { value: true, configurable: true });
     originalFetch = globalThis.fetch;
-    vi.mocked(inquirer.input).mockReset();
-    vi.mocked(inquirer.password).mockReset();
   });
 
   afterEach(() => {
@@ -49,7 +46,6 @@ describe("getTrpcClient reauth", () => {
   });
 
   function trpcOkResponse(payload: unknown): Response {
-    // tRPC v11 non-batch httpBatchLink response is a JSON array of { result: { data } }
     return new Response(JSON.stringify([{ result: { data: payload } }]), {
       status: 200,
       headers: { "content-type": "application/json" },
@@ -67,61 +63,53 @@ describe("getTrpcClient reauth", () => {
           },
         },
       ]),
-      {
-        // HTTP status 200 keeps httpBatchLink's per-item parsing consistent
-        // across environments; the { error: { data.code: UNAUTHORIZED } }
-        // payload is what triggers the client-side classification.
-        status: 200,
-        headers: { "content-type": "application/json" },
-      },
+      { status: 200, headers: { "content-type": "application/json" } },
     );
   }
 
-  it("retries once after UNAUTHORIZED and returns success", async () => {
-    const authHeaders: string[] = [];
+  it("rotates both tokens then retries the protected request exactly once", async () => {
+    const authorization: string[] = [];
     globalThis.fetch = vi.fn(async (_input: unknown, init?: RequestInit) => {
       const headers = init?.headers as Record<string, string> | undefined;
-      authHeaders.push(headers?.authorization ?? "");
-      if (authHeaders.length === 1) return trpcUnauthorizedResponse();
+      authorization.push(headers?.authorization ?? "");
+      if (authorization.length === 1) return trpcUnauthorizedResponse();
+      if (authorization.length === 2) {
+        return trpcOkResponse({ accessToken: "rotated-access", refreshToken: "rotated-refresh" });
+      }
       return trpcOkResponse([]);
     }) as unknown as typeof fetch;
-
-    vi.mocked(inquirer.input).mockResolvedValueOnce("http://mock.example");
-    vi.mocked(inquirer.password).mockResolvedValueOnce("new-token");
 
     const { getTrpcClient } = await import("./trpc.js");
     const client = await getTrpcClient();
     const result = await client.projects.list.query();
 
     expect(result).toEqual([]);
-    expect(authHeaders).toEqual(["Bearer old-token", "Bearer new-token"]);
-    expect(inquirer.password).toHaveBeenCalledTimes(1);
-  });
-
-  it("gives up after the retry also fails and throws UNAUTHORIZED", async () => {
-    globalThis.fetch = vi.fn(async () => trpcUnauthorizedResponse()) as unknown as typeof fetch;
-
-    vi.mocked(inquirer.input).mockResolvedValueOnce("http://mock.example");
-    vi.mocked(inquirer.password).mockResolvedValueOnce("still-bad");
-
-    const { getTrpcClient } = await import("./trpc.js");
-    const client = await getTrpcClient();
-    await expect(client.projects.list.query()).rejects.toMatchObject({
-      data: { code: "UNAUTHORIZED" },
+    expect(authorization).toEqual(["Bearer expired-access", "", "Bearer rotated-access"]);
+    expect(getConfig()).toMatchObject({
+      accessToken: "rotated-access",
+      refreshToken: "rotated-refresh",
+      user: { email: "root@example.com" },
     });
-    expect(inquirer.password).toHaveBeenCalledTimes(1);
   });
 
-  it("propagates UNAUTHORIZED unchanged in non-TTY", async () => {
+  it("clears the stale session and reports AUTH_REQUIRED when refresh fails outside a TTY", async () => {
     Object.defineProperty(process.stdin, "isTTY", { value: false, configurable: true });
     Object.defineProperty(process.stderr, "isTTY", { value: false, configurable: true });
     globalThis.fetch = vi.fn(async () => trpcUnauthorizedResponse()) as unknown as typeof fetch;
 
     const { getTrpcClient } = await import("./trpc.js");
     const client = await getTrpcClient();
-    await expect(client.projects.list.query()).rejects.toMatchObject({
-      data: { code: "UNAUTHORIZED" },
-    });
-    expect(inquirer.password).not.toHaveBeenCalled();
+    await expect(client.projects.list.query()).rejects.toMatchObject({ code: "AUTH_REQUIRED" });
+    expect(getConfig()).toEqual({ server: "http://mock.example" });
+  });
+
+  it("does not create a protected client when no complete session is configured", async () => {
+    writeFileSync(
+      process.env.TRACEABILITY_CONFIG_PATH as string,
+      JSON.stringify({ server: "http://x" }),
+    );
+
+    const { getTrpcClient } = await import("./trpc.js");
+    await expect(getTrpcClient()).rejects.toMatchObject({ code: "AUTH_REQUIRED" });
   });
 });

@@ -20,15 +20,14 @@ In scope:
 - Remove the deprecated `app` command instead of retaining an alias.
 - Remove CLI support for `MANAGEMENT_AUTH_TOKEN`, `TRACEABILITY_MANAGEMENT_TOKEN`,
   and the legacy `--token` option.
+- Add an explicit project DSN lookup that returns every project key with the
+  DSN generated from the server's public ingest URL.
 
 Out of scope:
 
 - Adding user registration; the server exposes no registration procedure.
 - Adding an online `whoami` endpoint; `auth status` reports the locally saved
   identity returned by a successful login.
-- The project DSN/key command expansion. A project can have multiple active
-  keys and therefore multiple DSNs. This needs a server connection-info
-  contract based on `PUBLIC_INGEST_URL`, and will be specified separately.
 - Redesigning every existing command's human/JSON output envelope or adding
   pagination and dry-run support. Existing `--json` behaviour is preserved in
   this slice; a follow-up will make it globally uniform.
@@ -43,6 +42,8 @@ Out of scope:
 - `getTrpcClient()` performs implicit first-run credential prompting and
   automatically re-prompts after a protected request returns 401.
 - The source-map uploader duplicates that same refresh-on-401 behaviour.
+- `projects.listKeys` returns key records only. The server can generate a DSN
+  only in `ProjectService`, where `PUBLIC_INGEST_URL` is available.
 - The current workspace's `AppRouter` does not yet contain `auth`; the
   `feature/auth` worktree adds public `auth.login` and `auth.refresh` and
   changes protected procedures to expect an access JWT.
@@ -161,6 +162,19 @@ The project, issue, and sourcemap command spellings and their existing
 `@clack/prompts` are added. Clack is only used by the interactive auth flow;
 non-interactive commands never open prompts.
 
+## Project DSN contract
+
+The server adds `projects.listConnections(projectId)`. It returns `null` for an
+unknown project; otherwise it returns an array of `{ key, dsn }`, with one DSN
+per project key. The server, rather than the CLI, constructs DSNs so a
+management URL cannot accidentally replace a distinct `PUBLIC_INGEST_URL`.
+
+The CLI adds `traceability project dsn <projectId>`, whose JSON result is
+`{ projectId, connections }`. `project show <projectId>` outputs
+`{ project, connections }`; human `project create` output prints the freshly
+created DSN in addition to the project identifier. `project list` remains a
+compact project index and does not duplicate connection data for every row.
+
 ## Resulting CLI structure
 
 ```text
@@ -183,6 +197,12 @@ packages/cli/src/
 `config-interactive.ts` is removed after its responsibilities move to
 `lib/auth.ts`.
 
+```text
+server/src/modules/projects/
+├── service.ts                  # listConnections() creates DSNs from config
+└── router.ts                   # projects.listConnections procedure
+```
+
 ## Acceptance criteria
 
 1. The package contains CAC and no Commander dependency; all currently
@@ -201,3 +221,6 @@ packages/cli/src/
 8. CLI unit tests cover command parsing, missing credentials, public login,
    token rotation persistence, exactly-once retry, failed refresh, logout,
    token redaction, and legacy-command removal.
+9. `project dsn <projectId>` returns every key/DSN pair; `project show` includes
+   those connections; an unknown project gets the same not-found behavior as
+   other project read commands.

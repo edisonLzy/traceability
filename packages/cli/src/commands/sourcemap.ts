@@ -2,9 +2,10 @@ import type { Dirent } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
-import { checkbox } from "@inquirer/prompts";
-import { Command } from "commander";
+import { isCancel, multiselect } from "@clack/prompts";
+import type { CAC } from "cac";
 
+import { AuthRequiredError } from "../lib/auth.js";
 import { uploadSourcemap } from "../lib/upload.js";
 
 interface Candidate {
@@ -12,85 +13,78 @@ interface Candidate {
   debugId: string;
 }
 
-export function sourcemapCommand(program: Command): void {
-  const cmd = program.command("sourcemap").description("manage source maps");
-
-  cmd
-    .command("upload")
-    .description("scan a build output directory and upload .js.map files that carry a debug_id")
-    .requiredOption("--project <slug>", "project slug")
-    .requiredOption("--dist <dir>", "directory to scan for *.js.map")
-    .option("--concurrency <n>", "parallel uploads", (v) => Number.parseInt(v, 10), 4)
-    .option(
-      "-s, --select",
-      "interactively pick which .js.map files to upload (default: upload all)",
-      false,
-    )
-    .option("--yes", "skip the interactive picker even when --select is set", false)
-    .action(
-      async (opts: {
-        project: string;
-        dist: string;
-        concurrency: number;
-        select: boolean;
-        yes: boolean;
-      }) => {
-        const discovered = await findSourcemaps(opts.dist);
-        if (discovered.length === 0) {
-          console.error(`No .js.map files with a debug_id found in ${opts.dist}.`);
-          process.exitCode = 1;
-          return;
-        }
-
-        const maps = await maybePickMaps(discovered, opts.dist, opts.select && !opts.yes);
-        if (maps.length === 0) {
-          console.log("No sourcemaps selected. Nothing to upload.");
-          return;
-        }
-
-        let uploaded = 0;
-        let reused = 0;
-        let failed = 0;
-        let cursor = 0;
-        const concurrency = Math.max(1, Math.min(opts.concurrency, 16));
-
-        const workers = Array.from({ length: concurrency }, async () => {
-          while (cursor < maps.length) {
-            const index = cursor++;
-            const candidate = maps[index];
-            if (!candidate) continue;
-            const label = relative(opts.dist, candidate.path);
-            try {
-              const result = await uploadSourcemap({
-                filePath: candidate.path,
-                projectSlug: opts.project,
-                debugId: candidate.debugId,
-              });
-              if (result.reused) reused += 1;
-              else uploaded += 1;
-              console.log(
-                `  ${result.reused ? "reused" : "uploaded"}  ${label}  (${candidate.debugId})`,
-              );
-            } catch (error) {
-              failed += 1;
-              console.error(`  failed    ${label}: ${(error as Error).message}`);
-            }
-          }
-        });
-        await Promise.all(workers);
-
-        console.log(`\nDone. uploaded=${uploaded} reused=${reused} failed=${failed}`);
-        if (failed > 0) process.exitCode = 1;
-      },
-    );
+interface SourcemapOptions {
+  project?: string;
+  dist?: string;
+  concurrency?: string;
+  select?: boolean;
+  yes?: boolean;
 }
 
-/**
- * When `interactive` is true and stdin is a TTY, prompt the user with a
- * checkbox picker so they can pick which maps to upload. Falls back to the
- * full list when stdin is not a TTY (e.g. CI) so `--select` in a pipeline
- * does not hang; a warning explains the fallback.
- */
+export function sourcemapCommand(cli: CAC): void {
+  cli
+    .command("sourcemap <action>", "manage source maps")
+    .option("--project <slug>", "project slug")
+    .option("--dist <dir>", "directory to scan for *.js.map")
+    .option("--concurrency <n>", "parallel uploads", { default: "4" })
+    .option("-s, --select", "interactively pick source maps")
+    .option("--yes", "skip the interactive picker even when --select is set")
+    .action(async (action: string, opts: SourcemapOptions) => {
+      if (action !== "upload") throw new Error(`Unknown sourcemap action: ${action}`);
+      if (!opts.project || !opts.dist) {
+        throw new Error("sourcemap upload requires --project <slug> and --dist <dir>");
+      }
+      const discovered = await findSourcemaps(opts.dist);
+      if (discovered.length === 0) {
+        throw new Error(`No .js.map files with a debug_id found in ${opts.dist}.`);
+      }
+
+      const maps = await maybePickMaps(discovered, opts.dist, Boolean(opts.select && !opts.yes));
+      if (maps.length === 0) {
+        console.log("No sourcemaps selected. Nothing to upload.");
+        return;
+      }
+
+      let uploaded = 0;
+      let reused = 0;
+      let failed = 0;
+      let cursor = 0;
+      const concurrency = Math.max(
+        1,
+        Math.min(Number.parseInt(opts.concurrency ?? "4", 10) || 4, 16),
+      );
+
+      const workers = Array.from({ length: concurrency }, async () => {
+        while (cursor < maps.length) {
+          const index = cursor++;
+          const candidate = maps[index];
+          if (!candidate) continue;
+          const label = relative(opts.dist as string, candidate.path);
+          try {
+            const result = await uploadSourcemap({
+              filePath: candidate.path,
+              projectSlug: opts.project as string,
+              debugId: candidate.debugId,
+            });
+            if (result.reused) reused += 1;
+            else uploaded += 1;
+            console.log(
+              `  ${result.reused ? "reused" : "uploaded"}  ${label}  (${candidate.debugId})`,
+            );
+          } catch (error) {
+            if (error instanceof AuthRequiredError) throw error;
+            failed += 1;
+            console.error(`  failed    ${label}: ${(error as Error).message}`);
+          }
+        }
+      });
+      await Promise.all(workers);
+
+      console.log(`\nDone. uploaded=${uploaded} reused=${reused} failed=${failed}`);
+      if (failed > 0) process.exitCode = 1;
+    });
+}
+
 async function maybePickMaps(
   candidates: Candidate[],
   root: string,
@@ -98,25 +92,19 @@ async function maybePickMaps(
 ): Promise<Candidate[]> {
   if (!interactive) return candidates;
   if (!process.stdin.isTTY) {
-    console.warn(
-      "--select requires an interactive terminal; uploading all discovered maps instead.",
-    );
-    return candidates;
+    throw new Error("--select requires an interactive terminal; omit --select to upload all maps.");
   }
-
-  const answer = await checkbox<string>({
+  const selected = await multiselect({
     message: `Select sourcemaps to upload (${candidates.length} found):`,
-    pageSize: Math.min(20, Math.max(candidates.length, 5)),
-    loop: false,
-    choices: candidates.map((c) => ({
-      value: c.path,
-      name: `${relative(root, c.path)}  (${c.debugId})`,
-      checked: true,
+    options: candidates.map((candidate) => ({
+      value: candidate.path,
+      label: `${relative(root, candidate.path)}  (${candidate.debugId})`,
     })),
+    initialValues: candidates.map((candidate) => candidate.path),
   });
-
-  const selected = new Set(answer);
-  return candidates.filter((c) => selected.has(c.path));
+  if (isCancel(selected)) throw new Error("Operation cancelled");
+  const paths = new Set(selected);
+  return candidates.filter((candidate) => paths.has(candidate.path));
 }
 
 async function findSourcemaps(root: string): Promise<Candidate[]> {
@@ -143,7 +131,6 @@ async function findSourcemaps(root: string): Promise<Candidate[]> {
       else console.warn(`  skipped   ${relative(root, full)}  (no debug_id)`);
     }
   }
-  // Stable, human-friendly order so the picker's shown order matches disk order.
   results.sort((a, b) => a.path.localeCompare(b.path));
   return results;
 }

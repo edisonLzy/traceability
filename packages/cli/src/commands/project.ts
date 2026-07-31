@@ -1,93 +1,103 @@
-import { Command } from "commander";
+import type { CAC } from "cac";
 
 import { printJson, printTable } from "../lib/output.js";
 import { getTrpcClient } from "../lib/trpc.js";
 
-export function projectCommand(program: Command): void {
-  const cmd = program.command("project").description("manage projects");
-  addProjectSubcommands(cmd);
-
-  // Keep the old command as a deprecation alias for one minor release.
-  const legacy = program.command("app").description("deprecated alias for project");
-  legacy.hook("preAction", () => {
-    console.error("Warning: `traceability app` is deprecated; use `traceability project`.");
-  });
-  addProjectSubcommands(legacy);
+interface ProjectOptions {
+  slug?: string;
+  name?: string;
+  enabled?: string;
+  json?: boolean;
 }
 
-function addProjectSubcommands(cmd: Command): void {
-  cmd
-    .command("list")
+export function projectCommand(cli: CAC): void {
+  cli
+    .command("project <action> [projectId]", "manage projects")
+    .option("--slug <slug>", "project slug")
+    .option("--name <name>", "project name")
+    .option("--enabled <boolean>", "whether the project is enabled")
     .option("--json", "output JSON")
-    .action(async (opts) => {
+    .action(async (action: string, projectId: string | undefined, opts: ProjectOptions) => {
       const client = await getTrpcClient();
-      const projects = await client.projects.list.query();
-      if (opts.json) {
-        printJson(projects);
-      } else {
-        printTable(projects, [
-          { key: "id", label: "ID", width: 36 },
-          { key: "slug", label: "SLUG", width: 20 },
-          { key: "name", label: "NAME", width: 24 },
-          { key: "enabled", label: "ENABLED", width: 8 },
-        ]);
+      switch (action) {
+        case "list": {
+          const projects = await client.projects.list.query();
+          if (opts.json) printJson(projects);
+          else {
+            printTable(projects, [
+              { key: "id", label: "ID", width: 36 },
+              { key: "slug", label: "SLUG", width: 20 },
+              { key: "name", label: "NAME", width: 24 },
+              { key: "enabled", label: "ENABLED", width: 8 },
+            ]);
+          }
+          return;
+        }
+        case "create": {
+          if (!opts.slug || !opts.name)
+            throw new Error("project create requires --slug and --name");
+          const project = await client.projects.create.mutate({
+            slug: opts.slug,
+            name: opts.name,
+            platform: "javascript",
+          });
+          if (opts.json) printJson(project);
+          else
+            console.log(
+              `Created project ${project.project.id} (${project.project.slug})\nDSN: ${project.dsn}`,
+            );
+          return;
+        }
+        case "show": {
+          const id = requireProjectId(action, projectId);
+          const [project, connections] = await Promise.all([
+            client.projects.get.query(id),
+            client.projects.listConnections.query(id),
+          ]);
+          if (!project) throw new Error(`Project not found: ${id}`);
+          printJson({ project, connections: connections ?? [] });
+          return;
+        }
+        case "dsn": {
+          const id = requireProjectId(action, projectId);
+          const connections = await client.projects.listConnections.query(id);
+          if (!connections) throw new Error(`Project not found: ${id}`);
+          printJson({ projectId: id, connections });
+          return;
+        }
+        case "update": {
+          const id = requireProjectId(action, projectId);
+          if (!opts.name && opts.enabled === undefined) {
+            throw new Error("Provide --name or --enabled.");
+          }
+          if (opts.enabled !== undefined && opts.enabled !== "true" && opts.enabled !== "false") {
+            throw new Error("--enabled must be true or false");
+          }
+          const project = await client.projects.update.mutate({
+            projectId: id,
+            patch: {
+              ...(opts.name ? { name: opts.name } : {}),
+              ...(opts.enabled === undefined ? {} : { enabled: opts.enabled === "true" }),
+            },
+          });
+          if (!project) throw new Error(`Project not found: ${id}`);
+          printJson(project);
+          return;
+        }
+        case "remove": {
+          const id = requireProjectId(action, projectId);
+          const project = await client.projects.remove.mutate(id);
+          if (!project) throw new Error(`Project not found: ${id}`);
+          console.log(`Removed project ${project.slug}.`);
+          return;
+        }
+        default:
+          throw new Error(`Unknown project action: ${action}`);
       }
     });
+}
 
-  cmd
-    .command("create")
-    .requiredOption("--slug <slug>")
-    .requiredOption("--name <name>")
-    .option("--json", "output JSON")
-    .action(async (opts) => {
-      const client = await getTrpcClient();
-      const project = await client.projects.create.mutate({
-        slug: opts.slug,
-        name: opts.name,
-        platform: "javascript",
-      });
-      if (opts.json) {
-        printJson(project);
-      } else {
-        console.log(`Created project ${project.project.id} (${project.project.slug})`);
-      }
-    });
-
-  cmd
-    .command("show <projectId>")
-    .option("--json", "output JSON")
-    .action(async (projectId) => {
-      const client = await getTrpcClient();
-      const project = await client.projects.get.query(projectId);
-      if (!project) throw new Error(`Project not found: ${projectId}`);
-      printJson(project);
-    });
-
-  cmd
-    .command("update <projectId>")
-    .option("--name <name>")
-    .option("--enabled <boolean>")
-    .option("--json", "output JSON")
-    .action(async (projectId, opts) => {
-      if (!opts.name && opts.enabled === undefined) {
-        throw new Error("Provide --name or --enabled.");
-      }
-      const client = await getTrpcClient();
-      const project = await client.projects.update.mutate({
-        projectId,
-        patch: {
-          ...(opts.name ? { name: opts.name } : {}),
-          ...(opts.enabled === undefined ? {} : { enabled: opts.enabled === "true" }),
-        },
-      });
-      if (!project) throw new Error(`Project not found: ${projectId}`);
-      printJson(project);
-    });
-
-  cmd.command("remove <projectId>").action(async (projectId) => {
-    const client = await getTrpcClient();
-    const project = await client.projects.remove.mutate(projectId);
-    if (!project) throw new Error(`Project not found: ${projectId}`);
-    console.log(`Removed project ${project.slug}.`);
-  });
+function requireProjectId(action: string, projectId: string | undefined): string {
+  if (!projectId) throw new Error(`project ${action} requires <projectId>`);
+  return projectId;
 }

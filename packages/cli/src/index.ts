@@ -1,46 +1,57 @@
 #!/usr/bin/env node
-import { Command } from "commander";
+import { pathToFileURL } from "node:url";
 
+import { cac, type CAC } from "cac";
+
+import { authCommand } from "./commands/auth.js";
 import { configCommand } from "./commands/config.js";
 import { issueCommand } from "./commands/issue.js";
 import { projectCommand } from "./commands/project.js";
 import { sourcemapCommand } from "./commands/sourcemap.js";
+import { AuthCancelledError, AuthRequiredError } from "./lib/auth.js";
 import { setConfigOverrides } from "./lib/config.js";
 
-const program = new Command();
-program
-  .name("traceability")
-  .description("Traceability CLI")
-  .version("1.0.0")
-  .option("--server <url>", "server URL override")
-  .option("--token <token>", "management token override");
+export function createCli(): CAC {
+  const cli = cac("traceability");
+  cli
+    .usage("<command> [options]")
+    .option("--server <url>", "server URL override")
+    .version("1.0.0")
+    .help();
 
-program.hook("preAction", (command) => {
-  const options = command.optsWithGlobals() as { server?: string; token?: string };
-  setConfigOverrides({ server: options.server, token: options.token });
-});
+  authCommand(cli);
+  configCommand(cli);
+  projectCommand(cli);
+  issueCommand(cli);
+  sourcemapCommand(cli);
+  return cli;
+}
 
-configCommand(program);
-projectCommand(program);
-issueCommand(program);
-sourcemapCommand(program);
+export async function runCli(argv = process.argv): Promise<void> {
+  const cli = createCli();
+  cli.parse(argv, { run: false });
+  setConfigOverrides({
+    server: typeof cli.options.server === "string" ? cli.options.server : undefined,
+  });
+  if (!cli.matchedCommand) {
+    if (cli.args[0]) throw new Error(`Unknown command: ${cli.args[0]}`);
+    cli.outputHelp();
+    return;
+  }
+  await cli.runMatchedCommand();
+}
 
-program.parseAsync(process.argv).catch((err) => {
-  if (err instanceof Error && err.name === "ExitPromptError") {
+function reportError(err: unknown): void {
+  if (err instanceof AuthCancelledError) {
     console.error("Aborted.");
     process.exitCode = 130;
     return;
   }
   console.error(err instanceof Error ? err.message : String(err));
-  const code =
-    typeof err === "object" &&
-    err !== null &&
-    "data" in err &&
-    typeof err.data === "object" &&
-    err.data !== null &&
-    "code" in err.data &&
-    err.data.code === "UNAUTHORIZED"
-      ? 2
-      : 1;
-  process.exitCode = code;
-});
+  process.exitCode =
+    err instanceof AuthRequiredError || (err instanceof Error && err.name === "CACError") ? 2 : 1;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  void runCli().catch(reportError);
+}

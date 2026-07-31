@@ -1,6 +1,9 @@
 # @traceability/cli reference
 
-The `traceability` CLI manages CLI configuration, projects, and issues. It reads credentials from `~/.traceability/config.json` (written by `config set`); project/issue commands do **not** take a `--token` flag.
+The `traceability` CLI manages a local user session, projects, and issues. It
+stores the selected server, user, access token, and rotating refresh token in
+`~/.traceability/config.json` (mode `0600`); project/issue commands do not
+take a token flag.
 
 ## Invocation
 
@@ -20,20 +23,30 @@ node packages/cli/dist/index.js <command> ...
 
 > If `dist/` is stale, build first: `pnpm --filter @traceability/cli build`.
 
-## Configuration
+## Authentication
 
-### `config set --server <url> --token <token>`
+### `auth login [--server <url>] [--email <email>] [--password-stdin]`
 
-Stores `{ server, token }` to `~/.traceability/config.json` (mode `0600`). Run once to "log in". Required before any other command works.
+Logs in through the public `auth.login` procedure and writes the user plus an
+access/refresh token pair to `~/.traceability/config.json`. The CLI never
+prints the tokens. In a TTY, missing email/password values are prompted. In a
+non-TTY, pass `--email` and send the password through standard input with
+`--password-stdin`; there is no password option.
 
-### `config show`
+### `auth status [--json]`
 
-Prints the stored config. The `server` line is the SDK `dsn` (the server base URL). The token is masked.
+Prints the selected server and locally saved identity without exposing token
+values. It does not claim an online-verified session because the server has no
+`whoami` procedure.
 
-```text
-server: http://localhost:3000
-token:  dev-…
-```
+### `auth logout`
+
+Removes the stored user and token pair while retaining the selected server.
+
+### `config set --server <url>` / `config show`
+
+Stores or prints only the selected management server URL. Credentials belong to
+the `auth` commands.
 
 ## Projects
 
@@ -63,7 +76,13 @@ Lists projects. Use to discover an existing project's `id`.
 
 ### `project show <projectId> [--json]`
 
-Fetches one project. Use to validate a user-provided project id.
+Fetches one project with its DSN connection collection. Use to validate a
+user-provided project id.
+
+### `project dsn <projectId>`
+
+Lists every project key and its DSN. A project can have multiple active keys,
+so this is the canonical connection lookup command.
 
 ### `project update <projectId> [--name <n>] [--enabled <boolean>]`
 

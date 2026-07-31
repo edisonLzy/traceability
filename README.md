@@ -32,8 +32,8 @@ pnpm -r run build
 # 1. start server
 cd server && pnpm dev &          # http://localhost:3000
 
-# 2. create a project
-cd ../packages/cli && node dist/index.js config set --server http://localhost:3000 --token dev-token
+# 2. log in and create a project
+cd ../packages/cli && node dist/index.js auth login --server http://localhost:3000
 node dist/index.js project create --slug demo --name Demo --json
 # copy the project.sentryProjectId for SDK ingest, and project.id for management commands
 
@@ -41,9 +41,9 @@ node dist/index.js project create --slug demo --name Demo --json
 cd ../../app && echo 'VITE_SERVER_URL=http://localhost:3000' > .env && pnpm dev
 ```
 
-Management requests require a Bearer token. The desktop app reads `VITE_SERVER_URL` and
-`VITE_MANAGEMENT_TOKEN`; the CLI reads `--server`/`--token`, environment variables, or its
-config file.
+Management requests require a user access JWT. The CLI obtains and rotates it
+through `traceability auth login`, persisting its local session without
+displaying token values.
 
 ### tRPC debugging panel
 

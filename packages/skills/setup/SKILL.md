@@ -12,17 +12,17 @@ This skill targets projects **inside this monorepo** (dependencies use `workspac
 ## 0. Pre-check the CLI
 
 ```bash
-traceability config show
+traceability auth status --json
 ```
 
-- **Succeeds** (prints `server:` / `token:`) -> the CLI is installed. If it shows the development defaults, configure a real server/token before continuing.
+- **Authenticated** (the JSON has `authenticated: true`) -> the CLI is ready.
 - **Fails** -> tell the user to run:
   ```bash
-  traceability config set --server <url> --token <token>
+  traceability auth login --server <url>
   ```
   then retry. If `traceability` isn't on PATH, use `pnpm --filter @traceability/cli exec traceability …` (see `references/cli.md`).
 
-After this step, **do not deal with the token** - it is the user's secret and lives in the project's `.env`.
+After this step, never read or print the CLI session tokens.
 
 ## 1. Detect the stack
 
@@ -49,7 +49,8 @@ Ask the user whether a Traceability project already exists for this codebase.
   Take `project.id` from the JSON output for management commands and
   `project.sentryProjectId` for the SDK's legacy `appId` option.
 
-> The `dsn` (server base URL) comes from `config show`'s `server:` line.
+> The project creation response includes its first DSN. For an existing project,
+> use `traceability project dsn <projectId>` to retrieve its DSN connections.
 
 ## 3. Install deps + write config
 

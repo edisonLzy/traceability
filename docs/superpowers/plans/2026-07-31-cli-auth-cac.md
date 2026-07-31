@@ -263,3 +263,53 @@ Expected: all commands exit 0.
 git add packages/cli/README.md README.md packages/skills/setup docs/superpowers/specs/2026-07-31-cli-auth-cac-design.md
 git commit -m "docs(cli): document user authentication"
 ```
+
+### Task 5: Expose project DSNs through a server-owned connection contract
+
+**Files:**
+- Modify: `server/src/modules/projects/service.ts`
+- Modify: `server/src/modules/projects/router.ts`
+- Modify: `server/src/trpc/__tests__/router.test.ts`
+- Modify: `packages/cli/src/commands/project.ts`
+- Modify: `packages/cli/src/commands/project.test.ts`
+
+**Interfaces:**
+- Produces `ProjectService.listConnections(projectId): Promise<Array<{ key: ProjectKeyView; dsn: string }> | null>`.
+- Exposes `projects.listConnections` and `traceability project dsn <projectId>`.
+
+- [ ] **Step 1: Add the failing router and CLI DSN tests**
+
+```ts
+await expect(caller.projects.listConnections(projectId)).resolves.toEqual([]);
+await run(["dsn", projectId]);
+expect(listConnections).toHaveBeenCalledWith(projectId);
+```
+
+- [ ] **Step 2: Implement server-owned DSN construction and CLI output**
+
+```ts
+async listConnections(projectId: string) {
+  const project = await this.repository.findById(projectId);
+  if (!project) return null;
+  return (await this.repository.listKeys(projectId)).map((key) => ({
+    key,
+    dsn: this.createDsn(key.publicKey, project.sentryProjectId),
+  }));
+}
+```
+
+Add the protected `projects.listConnections` procedure. `project dsn` prints
+`{ projectId, connections }`; `project show` includes `connections`.
+
+- [ ] **Step 3: Verify server and CLI behavior**
+
+Run: `pnpm --filter @traceability/server test -- src/trpc/__tests__/router.test.ts && pnpm --filter @traceability/server typecheck && pnpm --filter @traceability/cli test && pnpm --filter @traceability/cli typecheck`
+
+Expected: PASS.
+
+- [ ] **Step 4: Commit the DSN contract**
+
+```bash
+git add server/src/modules/projects/service.ts server/src/modules/projects/router.ts server/src/trpc/__tests__/router.test.ts packages/cli/src/commands/project.ts packages/cli/src/commands/project.test.ts
+git commit -m "feat(projects): expose DSN connections"
+```

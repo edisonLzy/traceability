@@ -1,41 +1,56 @@
 # Traceability CLI
 
-The CLI talks to the protected server management API through tRPC.
+The CLI manages Traceability projects, issues, source maps, and a local user
+session for the protected tRPC management API.
 
 ```bash
-traceability config set --server http://localhost:3000 --token <token>
-traceability project list
-traceability project create --slug checkout-web --name "Checkout Web"
-traceability issue list --project-id <project-id>
+# Interactive login
+traceability auth login --server http://localhost:3000
+
+# Safe for automation: password arrives on stdin, never in argv
+printf '%s' "$TRACEABILITY_PASSWORD" \
+  | traceability auth login --server http://localhost:3000 \
+      --email engineer@example.com --password-stdin
+
+traceability project create --slug checkout-web --name "Checkout Web" --json
+traceability project dsn <project-id>
+traceability issue list --project-id <project-id> --json
 ```
 
-## First run
+## Authentication
 
-The first time you invoke a command that talks to the server (for example
-`traceability project list`), the CLI notices there is no configuration
-yet and interactively asks for the server URL and management token. Your
-answers are written to `~/.traceability/config.json` (`0600`) and the
-original command continues.
+`auth login` calls the server's public `auth.login` procedure and stores the
+server URL, user identity, access token, and refresh token in
+`~/.traceability/config.json` with mode `0600`. It never prints either token.
 
-If the server later rejects the stored token (HTTP 401 / tRPC
-`UNAUTHORIZED`), the CLI prompts you to re-enter your credentials once and
-transparently retries the request against the new values.
+- `traceability auth` prints the saved user when a session exists; otherwise it
+  starts an interactive login in a TTY.
+- `traceability auth status --json` reports the saved identity and session
+  state without exposing credentials.
+- `traceability auth logout` removes the user and both tokens but retains the
+  selected server URL.
+- In a non-interactive environment, pass `--email` and `--password-stdin` to
+  `auth login`. There is intentionally no `--password` option.
 
-Non-interactive environments (CI, redirected stdin, etc.) never see a
-prompt. Instead the CLI reports `management authentication required` and
-exits with status `2`, so you can inject credentials via
-`traceability config set`, `--server` / `--token`, or the
-`TRACEABILITY_MANAGEMENT_TOKEN` environment variable.
+Protected requests send the access token. A 401 triggers one public token
+refresh and one retry of the original operation. Refresh tokens rotate, so the
+CLI atomically persists the returned pair. If refresh fails, the local session
+is cleared; a TTY can log in again, while a non-TTY exits with status `2` and
+an `auth login` instruction.
 
-If the token was supplied through `TRACEABILITY_MANAGEMENT_TOKEN`, a 401
-response also skips the prompt: the env value expresses external intent
-and the CLI refuses to silently overwrite it — unset the variable if you
-want to re-authenticate interactively.
+The selected server comes from `--server`, then `TRACEABILITY_SERVER_URL`, then
+the stored configuration, then `http://localhost:3000`. The legacy
+`MANAGEMENT_AUTH_TOKEN`, `TRACEABILITY_MANAGEMENT_TOKEN`, and `--token` inputs
+are not supported.
 
-Configuration precedence is `--server` / `--token`, then
-`TRACEABILITY_SERVER_URL` / `TRACEABILITY_MANAGEMENT_TOKEN`, then
-`~/.traceability/config.json`, then the development defaults.
+## Projects and DSNs
 
-The legacy `app` command is a temporary alias for `project`. The fix-loop
-commands (`issue fix-request`, `issue attach-patch`, and `issue mark-fixed`)
-remain reserved and return exit code `2` until the server implements them.
+`project create` returns `{ project, key, dsn }` with `--json`, and its human
+output includes the first DSN. Projects can have multiple keys, so use
+`project dsn <project-id>` to list every key and its DSN. `project show
+<project-id>` includes the same `connections` collection.
+
+The removed `traceability app` alias is not supported. Use `project` directly.
+The fix-loop commands (`issue fix-request`, `issue attach-patch`, and `issue
+mark-fixed`) remain reserved and return exit code `2` until the server
+implements them.

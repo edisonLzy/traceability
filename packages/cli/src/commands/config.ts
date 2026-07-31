@@ -1,20 +1,29 @@
-import { Command } from "commander";
+import type { CAC } from "cac";
 
-import { saveConfig, getConfig } from "../lib/config.js";
+import { getConfig, saveConfig } from "../lib/config.js";
 
-export function configCommand(program: Command): void {
-  const cmd = program.command("config").description("CLI configuration");
-  cmd
-    .command("set")
-    .requiredOption("--server <url>")
-    .requiredOption("--token <token>")
-    .action((opts) => {
-      saveConfig({ server: opts.server, token: opts.token });
-      console.log("Saved.");
+interface ConfigOptions {
+  server?: string;
+}
+
+export function configCommand(cli: CAC): void {
+  cli
+    .command("config <action>", "manage CLI server configuration")
+    .option("--server <url>", "server URL")
+    .action((action: string, options: ConfigOptions) => {
+      switch (action) {
+        case "set": {
+          if (!options.server) throw new Error("config set requires --server <url>");
+          saveConfig({ ...getConfig(), server: options.server });
+          console.log("Saved server configuration.");
+          return;
+        }
+        case "show": {
+          console.log(`server: ${getConfig().server}`);
+          return;
+        }
+        default:
+          throw new Error(`Unknown config action: ${action}`);
+      }
     });
-  cmd.command("show").action(() => {
-    const cfg = getConfig();
-    console.log(`server: ${cfg.server}`);
-    console.log(`token:  ${cfg.token ? `${cfg.token.slice(0, 4)}…` : "(empty)"}`);
-  });
 }
