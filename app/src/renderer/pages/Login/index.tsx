@@ -1,7 +1,7 @@
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import loginAnimation from "@renderer/assets/secure-login.lottie";
-import { useAuth } from "@renderer/auth/AuthProvider";
 import { rendererTrpcClient } from "@renderer/lib/trpc";
+import { authStore } from "@renderer/store/auth";
 import type { AppRouterInputs } from "@shared/trpc-types";
 import { KeyRound, Loader2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -10,7 +10,6 @@ import { useForm } from "react-hook-form";
 type LoginFormValues = AppRouterInputs["auth"]["login"];
 
 export function LoginPage() {
-  const { accept: onAuthenticated } = useAuth();
   const {
     register,
     handleSubmit,
@@ -21,7 +20,7 @@ export function LoginPage() {
 
   const onSubmit = handleSubmit(async (data) => {
     const result = await rendererTrpcClient.auth.login.mutate(data);
-    await onAuthenticated(result);
+    await authStore.getState().completeLogin(result);
   });
 
   return (

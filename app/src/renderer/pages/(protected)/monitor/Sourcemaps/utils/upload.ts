@@ -1,4 +1,5 @@
-import { getRendererAccessToken, resolveRendererServerUrl } from "@renderer/lib/trpc";
+import { resolveRendererServerUrl } from "@renderer/lib/trpc";
+import { authStore } from "@renderer/store/auth";
 
 export interface UploadSourcemapResult {
   id: string;
@@ -33,12 +34,11 @@ export async function uploadSourcemap(input: UploadSourcemapInput): Promise<Uplo
   form.set("fileName", input.displayFileName ?? input.file.name);
   form.set("map", input.file, input.file.name);
 
+  const token = authStore.getState().accessToken;
   const response = await fetch(`${resolveRendererServerUrl()}/api/sourcemaps/upload`, {
     method: "POST",
     body: form,
-    headers: getRendererAccessToken()
-      ? { Authorization: `Bearer ${getRendererAccessToken()}` }
-      : {},
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 
   if (!response.ok) {
