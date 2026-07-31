@@ -1,18 +1,46 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 
-import { appCommand } from "./commands/app.js";
 import { configCommand } from "./commands/config.js";
 import { issueCommand } from "./commands/issue.js";
+import { projectCommand } from "./commands/project.js";
+import { sourcemapCommand } from "./commands/sourcemap.js";
+import { setConfigOverrides } from "./lib/config.js";
 
 const program = new Command();
-program.name("traceability").description("Traceability CLI").version("1.0.0");
+program
+  .name("traceability")
+  .description("Traceability CLI")
+  .version("1.0.0")
+  .option("--server <url>", "server URL override")
+  .option("--token <token>", "management token override");
+
+program.hook("preAction", (command) => {
+  const options = command.optsWithGlobals() as { server?: string; token?: string };
+  setConfigOverrides({ server: options.server, token: options.token });
+});
 
 configCommand(program);
-appCommand(program);
+projectCommand(program);
 issueCommand(program);
+sourcemapCommand(program);
 
 program.parseAsync(process.argv).catch((err) => {
+  if (err instanceof Error && err.name === "ExitPromptError") {
+    console.error("Aborted.");
+    process.exitCode = 130;
+    return;
+  }
   console.error(err instanceof Error ? err.message : String(err));
-  process.exit(1);
+  const code =
+    typeof err === "object" &&
+    err !== null &&
+    "data" in err &&
+    typeof err.data === "object" &&
+    err.data !== null &&
+    "code" in err.data &&
+    err.data.code === "UNAUTHORIZED"
+      ? 2
+      : 1;
+  process.exitCode = code;
 });

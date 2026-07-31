@@ -83,6 +83,9 @@ out
 dist
 .output
 
+# Turborepo
+.turbo
+
 # Gatsby files
 .cache/
 # Comment in the public line in if your project uses Gatsby and not Next.js
@@ -144,6 +147,7 @@ vite.config.ts.timestamp-*
 
 # Claude Code local settings (machine-specific permissions)
 .claude/settings.local.json
+.claude/worktrees/
 
 # Server SQLite databases
 server/data/*.db

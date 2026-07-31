@@ -5,7 +5,7 @@ import type { AvailableModel } from "@shared/models-ipc";
 
 /** Context pinned by a Traceability monitor page before a prompt is sent. */
 export interface MonitoringContext {
-  appId: string;
+  projectId: string;
   source: "general" | "issue" | "metric" | "performance";
   issueId?: string;
   metricName?: string;
@@ -16,7 +16,7 @@ export interface MonitoringContext {
 export interface Session {
   id: string;
   name: string;
-  appId: string;
+  projectId: string;
   cwd?: string;
   workspaceId?: string | null;
   parentSessionId?: string | null;

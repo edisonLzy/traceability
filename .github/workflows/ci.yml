@@ -27,5 +27,21 @@ jobs:
         run: pnpm type-check
       - name: Run all tests
         run: pnpm test
+      - name: Build all packages
+        env:
+          VITE_MANAGEMENT_TOKEN: traceability-ci-token
+        run: pnpm build
       - name: Lint check
         run: pnpm oxlint --fix-dry-run 2>&1 || true
+      - name: Reject removed legacy packages
+        run: |
+          if rg -n '@traceability/protocol|@traceability/client' app packages server; then
+            echo 'Removed legacy package reference detected.'
+            exit 1
+          fi
+      - name: Reject server runtime in renderer bundle
+        run: |
+          if rg -n '@trpc/server' app/out/renderer; then
+            echo 'Renderer bundle must not contain @trpc/server.'
+            exit 1
+          fi

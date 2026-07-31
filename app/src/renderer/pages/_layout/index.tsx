@@ -14,32 +14,32 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@renderer/components/ui/resizable";
-import { useCurrentApp } from "@renderer/context/current-app";
+import { useCurrentProject } from "@renderer/context/current-project";
 import { useMinimumLoading } from "@renderer/hooks/use-minimum-loading";
-import { Bug, Command, Compass, Gauge, Inbox, Radio } from "lucide-react";
+import { Bug, Command, Compass, FileCode2, Inbox, Radio } from "lucide-react";
 import { Fragment, useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { AgentPanel } from "./_agent";
-import { AppOnboardingGuide } from "./_components/AppOnboardingGuide";
 import { CommandPalette } from "./_components/CommandPalette";
-import { HeaderAppSwitcher } from "./_components/HeaderAppSwitcher";
+import { HeaderProjectSwitcher } from "./_components/HeaderProjectSwitcher";
+import { ProjectOnboardingGuide } from "./_components/ProjectOnboardingGuide";
 import { RefreshButton } from "./_components/RefreshButton";
 import { Sidebar } from "./_components/Sidebar";
 import { Titlebar } from "./_components/Titlebar";
 
 export function Layout() {
-  const { apps, loading } = useCurrentApp();
+  const { projects, loading } = useCurrentProject();
   const showLoading = useMinimumLoading(loading);
 
   if (showLoading) return <LoadingState />;
 
-  if (apps.length === 0) return <AppOnboardingGuide />;
+  if (projects.length === 0) return <ProjectOnboardingGuide />;
 
   return <AppLayout />;
 }
 
-/** Hooks below only apply once an application has been selected. */
+/** Hooks below only apply once a project has been selected. */
 function AppLayout() {
   const navigate = useNavigate();
 
@@ -66,14 +66,14 @@ function AppLayout() {
         action: () => navigate("/monitor/issues"),
       },
       {
-        id: "navigation.performance",
+        id: "navigation.sourcemaps",
         group: { id: "navigation", label: "Navigation", order: 10 },
-        title: "Go to Performance",
-        description: "Open performance monitoring",
-        icon: Gauge,
-        keywords: ["monitor"],
-        shortcut: "G P",
-        action: () => navigate("/monitor/performance"),
+        title: "Go to Sourcemaps",
+        description: "Manage uploaded source maps",
+        icon: FileCode2,
+        keywords: ["symbolicate", "debug"],
+        shortcut: "G M",
+        action: () => navigate("/monitor/sourcemaps"),
       },
       {
         id: "navigation.explorer",
@@ -148,8 +148,7 @@ function HeaderBreadcrumb() {
     const { pathname } = location;
     if (pathname === "/inbox") return [{ label: "Inbox" }];
     if (pathname === "/explorer") return [{ label: "Explorer" }];
-    if (pathname === "/monitor/performance")
-      return [{ label: "Monitor" }, { label: "Performance" }];
+    if (pathname === "/monitor/sourcemaps") return [{ label: "Monitor" }, { label: "Sourcemaps" }];
     const issueMatch = pathname.match(/^\/monitor\/issues\/(.+)$/);
     if (issueMatch)
       return [
@@ -164,7 +163,7 @@ function HeaderBreadcrumb() {
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem>
-          <HeaderAppSwitcher />
+          <HeaderProjectSwitcher />
         </BreadcrumbItem>
         {segments.map((segment, index) => {
           const isLast = index === segments.length - 1;

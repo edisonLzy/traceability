@@ -31,12 +31,14 @@ Edit the code to fix the root cause. Re-run the project's tests.
 
 ```bash
 git diff > ./fix.diff
-traceability issue attach-patch <id> --patch ./fix.diff --branch fix-<id-prefix>
-traceability issue mark-fixed <id>
+traceability issue attach-patch <id>
 ```
 
-The human reviewer will push the branch and open the MR (v1 does not auto-open MRs).
+The current Fastify/tRPC server does not implement the fix loop yet, so the
+command returns exit code `2`. Keep the patch locally and apply it through the
+normal review workflow.
 
 ## 6. Report
 
-Tell the user the branch name and that the issue is marked fixed in the Inbox.
+Tell the user which files were changed and that fix-loop submission is pending
+server support.

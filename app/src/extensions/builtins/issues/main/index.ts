@@ -1,85 +1,74 @@
 import { Type } from "@earendil-works/pi-ai";
-import { createTraceabilityClient } from "@traceability/client";
-import type { Issue, IssueStatus } from "@traceability/protocol";
 
+import { createMainTrpcClient } from "../../../../main/trpc-client.js";
+import type { Issue } from "../../../../shared/trpc-types.js";
 import { formatAssistantBlockFence } from "../../../core/common/index.js";
 import { defineMainExtension } from "../../../core/main/index.js";
 import type { MainExtensionContext } from "../../../core/main/index.js";
 import { ISSUES_EXTENSION } from "../common/extension.js";
 import { ISSUES_GET_TOOL, ISSUES_LIST_BLOCK_TYPE, ISSUES_LIST_TOOL } from "../common/types.js";
 
-// Transient server client for the issues extension. Server auth is disabled for
-// the MVP (tokens are ignored), but the client guards on a non-empty token.
-const client = createTraceabilityClient({
-  baseUrl: process.env.TRACEABILITY_SERVER_URL ?? "http://localhost:3000",
-  token: "traceability",
-});
+const client = createMainTrpcClient();
 
 export default defineMainExtension({
   ...ISSUES_EXTENSION,
   setup(ctx) {
     ctx.systemPrompt.register({
       id: "issues.prompt",
-      content: `Use the ${ISSUES_LIST_TOOL} tool to list issues for a Traceability app and ${ISSUES_GET_TOOL} to fetch a single issue's full detail.
-- Pass appId when known; if unknown, omit it and the user will pick an app.
-- Optional filters: status (open | fix-manual | fixing | fixed), limit (default 20).
+      content: `Use ${ISSUES_LIST_TOOL} to list issues for a Traceability project and ${ISSUES_GET_TOOL} to fetch one issue. Use projectId when known; if omitted, ask the user to choose a project. Supported statuses are unresolved, resolved, and ignored.
 
-After calling ${ISSUES_LIST_TOOL}, present the result as an interactive card by emitting a fenced ${ISSUES_LIST_BLOCK_TYPE} agent-block in your reply (do NOT render a markdown table for the issue list). The fence body is JSON with the exact props the card expects, and the issues array mirrors the Issue type. Example:
+After ${ISSUES_LIST_TOOL}, emit a fenced ${ISSUES_LIST_BLOCK_TYPE} agent-block with the exact props shape shown below:
 
 ${formatAssistantBlockFence({
   type: ISSUES_LIST_BLOCK_TYPE,
   props: {
-    appId: "<app-id>",
+    projectId: "<project-id>",
     nextCursor: null,
     issues: [
       {
         id: "<issue-id>",
-        appId: "<app-id>",
+        projectId: "<project-id>",
         fingerprint: "<fingerprint>",
         title: "TypeError: Cannot read properties of undefined",
         type: "error",
-        firstSeen: "2026-01-01T00:00:00.000Z",
-        lastSeen: "2026-01-02T00:00:00.000Z",
-        count: 5,
-        status: "open",
-        metadata: {},
+        eventCount: 5,
+        status: "unresolved",
       },
     ],
   },
-})}
-
-For ${ISSUES_GET_TOOL}, surface the single issue's detail as plain text only (no card).`,
+})}`,
     });
 
     ctx.tools.register({
       name: ISSUES_LIST_TOOL,
       label: "List Issues",
-      description:
-        "List issues for a Traceability app. appId is optional; if omitted, the user picks an app.",
+      description: "List issues for a Traceability project.",
       executionMode: "sequential",
       parameters: Type.Object({
-        appId: Type.Optional(Type.String({ description: "App ID. Omit to let the user pick." })),
-        status: Type.Optional(
-          Type.String({ description: "Filter: open | fix-manual | fixing | fixed" }),
-        ),
-        limit: Type.Optional(Type.Number({ description: "Max issues to return (default 20)." })),
+        projectId: Type.Optional(Type.String({ description: "Project ID." })),
+        status: Type.Optional(Type.String({ description: "unresolved | resolved | ignored" })),
+        limit: Type.Optional(Type.Number({ description: "Max issues to return." })),
       }),
       async execute(_toolCallId, args) {
-        let appId = typeof args.appId === "string" && args.appId ? args.appId : undefined;
-        if (!appId) appId = await resolveAppId(ctx);
-        const status = typeof args.status === "string" ? (args.status as IssueStatus) : undefined;
-        const res = await client.issues.list({
-          appId,
-          ...(status ? { status } : {}),
+        const projectId =
+          typeof args.projectId === "string" && args.projectId
+            ? args.projectId
+            : await resolveProjectId(ctx);
+        const result = await client.issues.list.query({
+          projectId,
           limit: args.limit ?? 20,
         });
+        const status = typeof args.status === "string" ? args.status : undefined;
+        const issues = status
+          ? result.data.filter((issue) => issue.status === status)
+          : result.data;
         return {
-          content: [{ type: "text", text: summarizeIssues(res.items) }],
+          content: [{ type: "text", text: summarizeIssues(issues) }],
           details: {
             type: "monitor.issues.runtime",
             assistantBlock: {
               type: ISSUES_LIST_BLOCK_TYPE,
-              props: { issues: res.items, appId, nextCursor: res.nextCursor },
+              props: { issues, projectId, nextCursor: result.nextCursor },
             },
           },
         };
@@ -91,13 +80,10 @@ For ${ISSUES_GET_TOOL}, surface the single issue's detail as plain text only (no
       label: "Get Issue Detail",
       description: "Get a single issue's full detail by ID.",
       executionMode: "sequential",
-      parameters: Type.Object({
-        issueId: Type.String({ description: "Issue ID." }),
-      }),
+      parameters: Type.Object({ issueId: Type.String({ description: "Issue ID." }) }),
       async execute(_toolCallId, args) {
-        const issue = await client.issues.get(args.issueId);
-        // No assistantBlock -> the renderer renders no card for this tool; the
-        // issue detail is surfaced as plain text only.
+        const issue = await client.issues.get.query(args.issueId);
+        if (!issue) throw new Error("Issue not found.");
         return {
           content: [{ type: "text", text: summarizeIssue(issue) }],
           details: { type: "monitor.issue.detail" },
@@ -107,58 +93,45 @@ For ${ISSUES_GET_TOOL}, surface the single issue's detail as plain text only (no
   },
 });
 
-/**
- * When the agent did not supply an appId, narrow it down: auto-pick the only
- * app, or ask the user to choose when more than one exists.
- */
-async function resolveAppId(ctx: MainExtensionContext): Promise<string> {
-  const apps = await client.apps.list();
-  if (apps.length === 0) {
-    throw new Error("No Traceability apps found.");
-  }
-  if (apps.length === 1) {
-    return apps[0]!.id;
-  }
+async function resolveProjectId(ctx: MainExtensionContext): Promise<string> {
+  const projects = await client.projects.list.query();
+  if (projects.length === 0) throw new Error("No Traceability projects found.");
+  if (projects.length === 1) return projects[0]!.id;
 
   const result = await ctx.extensionRuntime.askUserQuestion({
     questions: [
       {
-        header: "Select app",
-        question: "Which app's issues do you want to view?",
-        options: apps.map((app) => ({ label: app.name, description: app.id })),
+        header: "Select project",
+        question: "Which project's issues do you want to view?",
+        options: projects.map((project) => ({ label: project.name, description: project.id })),
       },
     ],
   });
   const selected = result.answers[0]?.selectedOptions[0];
-  const app = apps.find((item) => item.name === selected);
-  if (!app) {
-    throw new Error("No app selected.");
-  }
-  return app.id;
+  const project = projects.find((item) => item.name === selected);
+  if (!project) throw new Error("No project selected.");
+  return project.id;
 }
 
-function summarizeIssues(items: Issue[]): string {
-  if (items.length === 0) return "No issues found.";
-  return items
+function summarizeIssues(issues: Issue[]): string {
+  if (issues.length === 0) return "No issues found.";
+  return issues
     .map(
       (issue) =>
-        `- ${issue.title} [${issue.status}] (x${issue.count}, last ${issue.lastSeen}) - ${issue.id}`,
+        `- ${issue.title} [${issue.status}] (x${issue.eventCount}, last ${issue.lastSeen}) - ${issue.id}`,
     )
     .join("\n");
 }
 
 function summarizeIssue(issue: Issue): string {
-  const lines = [
+  return [
     `# ${issue.title}`,
     `ID: ${issue.id}`,
-    `App: ${issue.appId}`,
+    `Project: ${issue.projectId}`,
     `Type: ${issue.type}`,
     `Status: ${issue.status}`,
-    `Count: ${issue.count}`,
+    `Count: ${issue.eventCount}`,
     `First seen: ${issue.firstSeen}`,
     `Last seen: ${issue.lastSeen}`,
-  ];
-  if (issue.metadata.message) lines.push(`Message: ${issue.metadata.message}`);
-  if (issue.metadata.stacktrace) lines.push(`Stacktrace:\n${issue.metadata.stacktrace}`);
-  return lines.join("\n");
+  ].join("\n");
 }

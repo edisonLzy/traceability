@@ -1,0 +1,47 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "out/**"],
+      "inputs": [
+        "src/**",
+        "tsconfig*.json",
+        "package.json",
+        "electron.vite.config.ts",
+        "vite.config.ts",
+        "scripts/**",
+        "components.json",
+        "drizzle/**",
+        "drizzle.config.ts"
+      ],
+      "env": ["VITE_MANAGEMENT_TOKEN"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "tsconfig*.json", "package.json"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": ["src/**", "vitest.config.ts", "tsconfig*.json", "package.json"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "@traceability/app#build": {
+      "dependsOn": ["^build", "@traceability/server#build"]
+    },
+    "@traceability/app#typecheck": {
+      "dependsOn": ["^build", "@traceability/server#build"]
+    },
+    "@traceability/cli#build": {
+      "dependsOn": ["^build", "@traceability/server#build"]
+    },
+    "@traceability/cli#typecheck": {
+      "dependsOn": ["^build", "@traceability/server#build"]
+    }
+  }
+}

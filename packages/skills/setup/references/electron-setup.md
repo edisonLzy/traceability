@@ -19,7 +19,7 @@ Create `.env` (loaded in the **main** process). The skill fills the first two; *
 
 ```env
 TRACEABILITY_DSN=http://localhost:3000
-TRACEABILITY_APP_ID=<appId from app create, or an existing app id>
+TRACEABILITY_APP_ID=<project.sentryProjectId from project create>
 TRACEABILITY_API_TOKEN=<user fills: API token from the server admin>
 ```
 
@@ -138,5 +138,5 @@ captureException(new Error("traceability setup check"));
 Confirm it appears in the Inbox UI, or via the CLI:
 
 ```bash
-traceability issue list --appId <appId>
+traceability issue list --project-id <projectId>
 ```

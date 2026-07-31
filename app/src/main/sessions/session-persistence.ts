@@ -50,11 +50,11 @@ export class SessionPersistence
     };
   }
 
-  public createSession: SessionPersistenceIPC["createSession"] = async (appId) => {
+  public createSession: SessionPersistenceIPC["createSession"] = async (projectId) => {
     const now = Date.now();
     const session: Session = {
       id: uuidv4(),
-      appId,
+      projectId,
       name: "",
       cwd: "",
       workspaceId: null,
@@ -67,8 +67,8 @@ export class SessionPersistence
     return this.store.create(session);
   };
 
-  public listSessions: SessionPersistenceIPC["listSessions"] = async (appId) => {
-    return this.store.list(appId);
+  public listSessions: SessionPersistenceIPC["listSessions"] = async (projectId) => {
+    return this.store.list(projectId);
   };
 
   public getSession: SessionPersistenceIPC["getSession"] = async (sessionId) => {

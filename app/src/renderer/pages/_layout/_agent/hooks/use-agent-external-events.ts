@@ -1,4 +1,3 @@
-import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
 import type { AgentPromptEvent } from "@renderer/lib/agent-events";
 import { agentStore, type MonitoringContext } from "@renderer/store/agent";
 import type { AvailableModel } from "@shared/models-ipc";
@@ -9,7 +8,7 @@ import type { PromptSubmission } from "../prompt-types";
 
 interface UseAgentExternalEventsOptions {
   activeSessionId: string | null;
-  activeSession?: { appId?: string; model?: AvailableModel | null };
+  activeSession?: { projectId?: string; model?: AvailableModel | null };
   submitPrompt: (submission: PromptSubmission, contextOverride?: MonitoringContext) => void;
   createSession: () => Promise<{ id: string } | null>;
   refreshSessions: () => Promise<unknown>;
@@ -30,12 +29,13 @@ export function useAgentExternalEvents({
     const onPrompt = (event: Event) => {
       const detail = (event as CustomEvent<AgentPromptEvent>).detail;
       if (!detail) return;
-      const model = activeSession?.appId === detail.context.appId ? activeSession.model : null;
+      const model =
+        activeSession?.projectId === detail.context.projectId ? activeSession.model : null;
       if (!model) {
         setPanelError("No compatible model is configured.");
         return;
       }
-      if (activeSessionId && activeSession?.appId === detail.context.appId) {
+      if (activeSessionId && activeSession?.projectId === detail.context.projectId) {
         agentStore.getState().setMonitoringContext(activeSessionId, detail.context);
       }
       void submitPrompt(

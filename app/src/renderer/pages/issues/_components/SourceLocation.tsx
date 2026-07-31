@@ -1,12 +1,24 @@
 import { Badge } from "@renderer/components/ui/badge";
 import { cn } from "@renderer/lib/utils";
-import type { Issue } from "@traceability/protocol";
 
-export function SourceLocation({
-  location,
-}: {
-  location: NonNullable<Issue["metadata"]["source"]>;
-}) {
+export interface SourceLocationData {
+  file: string;
+  line: number;
+  column: number;
+  function?: string;
+  context?: {
+    lines: string[];
+    startLine: number;
+    errorLine: number;
+  };
+  generated?: {
+    file: string;
+    line: number;
+    column: number;
+  };
+}
+
+export function SourceLocation({ location }: { location: SourceLocationData }) {
   return (
     <div className="border-b border-hairline bg-surface-2">
       <div className="flex items-start justify-between gap-3 px-4.5 py-3.5">

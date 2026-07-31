@@ -17,10 +17,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@renderer/components/ui/sidebar";
-import { useCurrentApp } from "@renderer/context/current-app";
+import { useCurrentProject } from "@renderer/context/current-project";
 import { useIssues } from "@renderer/hooks/use-issues";
 import { cn } from "@renderer/lib/utils";
-import { Activity, Bug, Compass, Fingerprint, Gauge, Inbox, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  Bug,
+  Compass,
+  FileCode2,
+  Fingerprint,
+  Inbox,
+  type LucideIcon,
+} from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 type NavigationItem = {
@@ -108,8 +116,8 @@ function SidebarNavLink({
 }
 
 function MonitorNavigation() {
-  const { appId } = useCurrentApp();
-  const { data } = useIssues({ appId, status: "open", limit: 100 });
+  const { projectId } = useCurrentProject();
+  const { data } = useIssues({ projectId, limit: 100 });
 
   return (
     <SidebarNavigationMenu
@@ -120,9 +128,13 @@ function MonitorNavigation() {
           icon: Bug,
           label: "Issues",
           to: "/monitor/issues",
-          badge: data?.items.length ?? 0,
+          badge: data?.data.filter((issue) => issue.status === "unresolved").length ?? 0,
         },
-        { icon: Gauge, label: "Performance", to: "/monitor/performance" },
+        {
+          icon: FileCode2,
+          label: "Sourcemaps",
+          to: "/monitor/sourcemaps",
+        },
       ]}
     />
   );

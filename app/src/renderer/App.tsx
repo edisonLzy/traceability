@@ -1,5 +1,5 @@
-import appsExtension from "@extensions/builtins/apps/renderer";
 import issuesExtension from "@extensions/builtins/issues/renderer";
+import projectsExtension from "@extensions/builtins/projects/renderer";
 import subagentsExtension from "@extensions/builtins/subagents/renderer";
 import {
   ExtensionProvider,
@@ -10,36 +10,33 @@ import {
 } from "@extensions/core/renderer";
 import { CommandProvider } from "@renderer/commands";
 import { Toaster } from "@renderer/components/ui/sonner";
-import { CurrentAppProvider } from "@renderer/context/current-app";
+import { CurrentProjectProvider } from "@renderer/context/current-project";
 import { ElectronIPCProvider } from "@renderer/context/ElectronIPCProvider";
-import { connectWs } from "@renderer/lib/ws";
+import { rendererTrpcClient, trpc } from "@renderer/lib/trpc";
+import { TrpcErrorToaster } from "@renderer/lib/trpc-error-toaster";
 import { router } from "@renderer/router";
 import { agentStore } from "@renderer/store/agent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { RouterProvider } from "react-router-dom";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
       retry: 1,
-      staleTime: 30_000,
+      staleTime: 15_000,
     },
   },
 });
 
 const installedRendererExtensions: RendererExtensionDefinition[] = [
   subagentsExtension,
-  appsExtension,
+  projectsExtension,
   issuesExtension,
 ];
 
 export function App() {
-  useEffect(() => {
-    connectWs();
-  }, []);
-
   const extensionsContextAPI: ExtensionsContextAPI = useMemo(() => {
     return {
       getActiveSessionId: () => agentStore.getState().activeSessionId ?? null,
@@ -48,19 +45,22 @@ export function App() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ElectronIPCProvider>
-        <CurrentAppProvider>
-          <CommandProvider>
-            <ExtensionProvider extensions={installedRendererExtensions}>
-              <ExtensionsContextAPIProvider api={extensionsContextAPI}>
-                <RouterProvider router={router} />
-                <Toaster />
-              </ExtensionsContextAPIProvider>
-            </ExtensionProvider>
-          </CommandProvider>
-        </CurrentAppProvider>
-      </ElectronIPCProvider>
-    </QueryClientProvider>
+    <trpc.Provider client={rendererTrpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <ElectronIPCProvider>
+          <CurrentProjectProvider>
+            <CommandProvider>
+              <ExtensionProvider extensions={installedRendererExtensions}>
+                <ExtensionsContextAPIProvider api={extensionsContextAPI}>
+                  <RouterProvider router={router} />
+                  <TrpcErrorToaster />
+                  <Toaster />
+                </ExtensionsContextAPIProvider>
+              </ExtensionProvider>
+            </CommandProvider>
+          </CurrentProjectProvider>
+        </ElectronIPCProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }

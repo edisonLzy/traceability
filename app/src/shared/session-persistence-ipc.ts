@@ -8,7 +8,7 @@ export interface Session {
   createdAt: number;
   updatedAt: number;
   isTop: boolean;
-  appId: string;
+  projectId: string;
 }
 
 export type EntryType = "message" | "model_change";
@@ -44,8 +44,8 @@ export interface Entry {
 }
 
 export interface SessionPersistenceIPC {
-  createSession: (appId: string) => Promise<Session>;
-  listSessions: (appId: string) => Promise<Session[]>;
+  createSession: (projectId: string) => Promise<Session>;
+  listSessions: (projectId: string) => Promise<Session[]>;
   getSession: (sessionId: string) => Promise<Session | null>;
   getSessionEntries: (sessionId: string) => Promise<Entry[]>;
   renameSession: (sessionId: string, name: string) => Promise<void>;

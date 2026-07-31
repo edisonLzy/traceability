@@ -1,0 +1,11 @@
+.git
+.DS_Store
+**/node_modules
+**/dist
+**/coverage
+**/.vite
+.env
+.env.*
+!**/.env.example
+server/data
+server/drizzle/meta/*.snapshot.json

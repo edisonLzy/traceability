@@ -1,4 +1,4 @@
-import type { Issue, IssueStatus } from "@traceability/protocol";
+import type { Issue } from "@renderer/lib/trpc-types";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -24,24 +24,19 @@ export function relativeTime(iso: string): string {
 
 /** Display-ready source location for an issue's origin frame. */
 export function issueSource(issue: Issue): string {
-  const src = issue.metadata.source;
-  if (src) return `${src.file}:${src.line}`;
-  if (issue.metadata.frames?.[0]) {
-    const frame = issue.metadata.frames[0];
-    return `${frame.file}:${frame.line}`;
-  }
-  return issue.metadata.message ?? issue.fingerprint.slice(0, 12);
+  return issue.title || issue.fingerprint.slice(0, 12);
 }
 
-export type StatusGroup = "open" | "investigating" | "fixed";
+export type IssueStatus = "unresolved" | "resolved" | "ignored";
+export type StatusGroup = IssueStatus;
 
-export function statusGroup(status: IssueStatus): StatusGroup {
-  if (status === "open") return "open";
-  if (status === "fixed") return "fixed";
-  return "investigating"; // fix-manual | fixing | ignored
+export function statusGroup(status: string): StatusGroup {
+  if (status === "resolved") return "resolved";
+  if (status === "ignored") return "ignored";
+  return "unresolved";
 }
 
-export function statusLabel(status: IssueStatus): string {
+export function statusLabel(status: string): string {
   const group = statusGroup(status);
-  return group === "open" ? "Open" : group === "fixed" ? "Fixed" : "Investigating";
+  return group === "unresolved" ? "Open" : group === "resolved" ? "Resolved" : "Ignored";
 }

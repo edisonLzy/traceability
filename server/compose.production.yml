@@ -1,0 +1,114 @@
+services:
+  migrate:
+    image: ${TRACEABILITY_SERVER_IMAGE:-traceability-server:local}
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    command: ["node", "dist/db/migrate.js"]
+    environment: &server-environment
+      NODE_ENV: production
+      DATABASE_URL: postgresql://traceability:traceability@postgres:5432/traceability
+      DATABASE_POOL_MAX: 10
+      REDIS_URL: redis://redis:6379
+      PUBLIC_INGEST_URL: ${PUBLIC_INGEST_URL:-http://localhost:3000}
+      MANAGEMENT_AUTH_TOKEN: ${MANAGEMENT_AUTH_TOKEN:?MANAGEMENT_AUTH_TOKEN must be set}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  api:
+    image: ${TRACEABILITY_SERVER_IMAGE:-traceability-server:local}
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    command: ["node", "dist/app.js"]
+    environment:
+      <<: *server-environment
+      PORT: 3000
+      HOST: 0.0.0.0
+    ports:
+      - "${TRACEABILITY_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  dispatcher:
+    image: ${TRACEABILITY_SERVER_IMAGE:-traceability-server:local}
+    command: ["node", "dist/dispatcher.js"]
+    environment: *server-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  worker:
+    image: ${TRACEABILITY_SERVER_IMAGE:-traceability-server:local}
+    command: ["node", "dist/worker.js"]
+    environment: *server-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: traceability
+      POSTGRES_USER: traceability
+      POSTGRES_PASSWORD: traceability
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traceability -d traceability"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - traceability-postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - traceability-redis:/data
+
+volumes:
+  traceability-postgres:
+  traceability-redis:

@@ -1,10 +1,12 @@
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  schema: "./src/db/schema.ts",
+  schema: "./src/infrastructure/database/schema.ts",
   out: "./drizzle",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: "server/data/traceability.db",
+    url:
+      process.env.DATABASE_URL ??
+      "postgresql://traceability:traceability@127.0.0.1:5432/traceability",
   },
 });

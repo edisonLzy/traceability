@@ -17,7 +17,7 @@ Create `.env.local` (Vite exposes only `VITE_`-prefixed vars via `import.meta.en
 
 ```env
 VITE_TRACEABILITY_DSN=http://localhost:3000
-VITE_TRACEABILITY_APP_ID=<appId from app create, or an existing app id>
+VITE_TRACEABILITY_APP_ID=<project.sentryProjectId from project create>
 VITE_TRACEABILITY_TOKEN=<user fills: API token from the server admin>
 ```
 
@@ -62,15 +62,17 @@ import { MonitorErrorBoundary } from "@traceability/react";
 
 <MonitorErrorBoundary appName="message-module" fallback={<ErrorUI />}>
   <MessageApp />
-</MonitorErrorBoundary>
+</MonitorErrorBoundary>;
 ```
 
 Props:
+
 - `appName?` - tags captured errors with the owning module (useful in micro-frontends).
 - `fallback` - a `ReactNode`, or a render prop `({ error, componentStack, resetError }) => ReactNode`.
 - `onError?` - `(error: Error, componentStack: string | null) => void`.
 
 Recommended placement:
+
 - One boundary around each route-level component.
 - One boundary around each micro-app root.
 - Optionally one around flaky subtrees (third-party widgets).
@@ -89,5 +91,5 @@ captureException(new Error("traceability setup check"));
 Confirm it appears in the Inbox UI, or via the CLI:
 
 ```bash
-traceability issue list --appId <appId>
+traceability issue list --project-id <projectId>
 ```

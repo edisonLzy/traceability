@@ -7,7 +7,6 @@ export default defineConfig({
   },
   resolve: {
     extensions: [".ts", ".js"],
-    extensionAlias: { ".js": [".ts", ".js"] },
   },
   esbuild: {
     target: "es2022",

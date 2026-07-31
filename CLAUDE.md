@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-`AGENTS.md` covers conventions in more detail; the essentials are summarized here. Two corrections to AGENTS.md: the **server is Express + `ws`, not Fastify**, and `.npmrc` contains only Electron mirror settings (there is no `node-linker=hoisted`).
+`AGENTS.md` covers conventions in more detail. The server is Fastify + PostgreSQL; the management API is tRPC and Sentry envelopes remain raw HTTP.
 
 ## Commands
 
@@ -36,25 +36,23 @@ Lint/format run **only on commit** via husky + lint-staged (VS Code format-on-sa
 Traceability connects frontend error capture to an AI-assisted fix loop. End-to-end flow:
 
 ```
-SDK (@traceability/core) --Sentry envelope--> server /api/ingest/envelope/:appId
+SDK (@traceability/core) --Sentry envelope--> server /api/{sentryProjectId}/envelope/
                                                 | aggregates events into issues
                                                 v
-                                 server WS broadcast  <--->  Inbox (Electron app, VITE_SERVER_URL)
-                                                |
-   fix loop:  traceability issue show <id> --json  ->  agent edits code  ->  attach-patch + mark-fixed
+                                  tRPC management API  <--->  Inbox (Electron app)
 ```
 
 **Monorepo** (pnpm workspace + catalog): `packages/*` (SDK + types + CLI + skills), `server`, `app`, `examples/*`. Shared versions live in the `catalog:` block of `pnpm-workspace.yaml` (typescript ^7, vitest ^4, tsx ^4) and are referenced as `"vitest": "catalog:"`. Internal deps use `"workspace:*"`; package names are `@traceability/<name>`.
 
-**`@traceability/core`** wraps `@sentry/browser` with a custom bearer-token POST transport (`transport/serverTransport.ts`) targeting `/api/ingest/envelope/:appId`. `beforeSend` stamps `appId` and attaches an rrweb replay id; the public surface is `init` / `captureException` / `report` / `reportPerformance` / `setApp`. Integrations: CORS diagnostic, white-screen detection, rrweb replay, browser performance metrics (FCP/LCP/CLS/INP/TTFB).
+**`@traceability/core`** wraps `@sentry/browser` with a custom bearer-token POST transport (`transport/serverTransport.ts`) targeting the compatibility route `/api/ingest/envelope/:projectId` (the server's canonical Sentry route is `/api/:projectId/envelope/`). `beforeSend` stamps the SDK project identifier and attaches an rrweb replay id; the public surface is `init` / `captureException` / `report` / `reportPerformance` / `setApp`. Integrations: CORS diagnostic, white-screen detection, rrweb replay, browser performance metrics (FCP/LCP/CLS/INP/TTFB).
 
-**`server/`** — Express + `ws` + `better-sqlite3` + `drizzle-orm` + `pino` + Swagger. Domain-driven: each `src/domains/<name>/` has `db.ts` (drizzle queries), `service.ts` (logic), `router.ts` (Express routes with JSDoc consumed by Swagger). Domains: `apps`, `ingest`, `issues`, `performance`, `replays`, `source-maps`. Config via env: `PORT` (3000), `TRACEABILITY_DB_PATH` (`server/data/traceability.db`). `src/index.ts` wires middleware (request logging, cors, unified response envelope, swagger at `/api-docs`, global error handler) and attaches the WS broadcaster.
+**`server/`** — Fastify + PostgreSQL + Drizzle + Redis/BullMQ. The raw Sentry-compatible ingest route lives under `domains/ingest`; protected management procedures live under `src/trpc/` at `/api/trpc`. Projects and issues are the management model. Config is supplied through runtime environment variables, including `DATABASE_URL`, `REDIS_URL`, and `MANAGEMENT_AUTH_TOKEN`.
 
 **`app/`** — Electron 39 + electron-vite + React 19 + Tailwind 4 + react-query + react-router. Three builds: `src/main` (Node), `src/preload` (the only main↔renderer bridge), `src/renderer` (browser; aliases `@renderer`, `@shared`). The **main process owns state**: `main/agent/` (`AgentPool`/`AgentRuntime`/`ModelRegistry`/`SessionStore`/`monitor`, built on `@earendil-works/pi-agent-core` + `pi-ai`) and `main/db/database.ts` (SQLite at `userData/traceability-agent.sqlite`). IPC handlers in `main/index.ts` are **zod-validated** and exposed through `preload/index.ts`; the typed contract lives in `shared/ipc.ts`. Renderer routes: `issues`, `issues/:id`, `performance`; the chat agent UI is under `renderer/features/agent-panel`. **Auth is disabled for the MVP** — the server accepts all requests (tokens ignored), and the app reads its backend from `VITE_SERVER_URL`.
 
 > An in-progress migration (`docs/superpowers/plans/2026-07-13-agent-core-migration.md`) targets a flatter `main/` layout (`main/agent-*`, `main/sessions/`, split `shared/*-ipc.ts`). The current code is mid-migration; follow the current layout when editing and consult that plan before large refactors.
 
-**`packages/cli`** — `traceability` binary (commander). Commands: `config set`, `app create`, `issue list|show|fix-request|attach-patch|mark-fixed`. The fix loop (README §"The fix loop") is `issue show <id> --json` → edit → `attach-patch --patch ./fix.diff --branch …` → `mark-fixed`. v1 does not auto-open MRs.
+**`packages/cli`** — `traceability` binary (commander). Commands: `config set`, `project list|show|create|update|remove`, and `issue list|show`. The old `app` command remains as a deprecated project alias; fix-loop commands return exit code 2 until the server supports them.
 
 **`packages/skills`** — agent-facing `SKILL.md` modules (`instrumentation`, `diagnose-issue`, `add-boundary`) that teach coding agents how to call the core SDK and run the fix loop. Not built; consumed as docs.
 

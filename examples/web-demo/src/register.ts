@@ -1,10 +1,4 @@
-import {
-  report,
-  addBreadcrumb,
-  captureException,
-  setTag,
-  reportPerformance,
-} from "@traceability/monitor";
+import { addBreadcrumb, captureException, captureMessage, setTag } from "@traceability/monitor";
 
 /**
  * 用户注册表单控制器 -- 纯前端逻辑，不接入 Traceability SDK。
@@ -334,10 +328,10 @@ export function setupRegisterForm(): void {
     ];
     const firstBad = checks.find((c) => c.err !== null);
     if (firstBad) {
-      report({
-        type: "register-validate-failed",
-        payload: { field: firstBad.focus.id, error: firstBad.err },
+      captureMessage("register-validate-failed", {
+        level: "warning",
         tags: { flow: "register" },
+        extra: { field: firstBad.focus.id, error: firstBad.err },
       });
       firstBad.focus.focus();
       return;
@@ -365,10 +359,10 @@ export function setupRegisterForm(): void {
       localStorage.setItem("demo.simulateError", simulateErrorInput.checked ? "1" : "0");
 
       if (simulateErrorInput.checked) {
-        report({
-          type: "register-server-error",
-          payload: { username: usernameInput.value, email: emailInput.value },
+        captureMessage("register-server-error", {
+          level: "error",
           tags: { flow: "register" },
+          extra: { username: usernameInput.value, email: emailInput.value },
         });
         captureException(new Error(`simulated server error for ${usernameInput.value}`));
         formMessage.textContent = "服务端错误，请稍后重试。";
@@ -392,15 +386,14 @@ export function setupRegisterForm(): void {
       });
       prependUser(user);
 
-      report({
-        type: "register-done",
-        payload: { username: user.username, email: user.email },
+      captureMessage("register-done", {
+        level: "info",
         tags: { flow: "register" },
-      });
-      reportPerformance({
-        name: "register-total",
-        value: performance.now() - t0,
-        unit: "millisecond",
+        extra: {
+          username: user.username,
+          email: user.email,
+          register_total_ms: performance.now() - t0,
+        },
       });
 
       formMessage.textContent = `注册成功：${user.username} 已加入右侧列表。`;
@@ -419,10 +412,10 @@ export function setupRegisterForm(): void {
     if (!root) return;
     root.innerHTML = "";
     addBreadcrumb({ category: "simulate", message: "white screen triggered" });
-    report({
-      type: "simulate-whitescreen",
-      payload: { reason: "button-clicked" },
+    captureMessage("simulate-whitescreen", {
+      level: "warning",
       tags: { flow: "simulate" },
+      extra: { reason: "button-clicked" },
     });
   });
 }

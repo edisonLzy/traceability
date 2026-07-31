@@ -1,58 +1,30 @@
 import { useRegisterCommands } from "@renderer/commands";
-import { useCurrentApp } from "@renderer/context/current-app";
-import { useIssue, useIssueEvents, useIssueReplays, useReplay } from "@renderer/hooks/use-issue";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@renderer/components/ui/tabs";
+import { useCurrentProject } from "@renderer/context/current-project";
+import { useIssue, useIssueEvents, useUpdateIssue } from "@renderer/hooks/use-issue";
 import { promptAgent } from "@renderer/lib/agent-events";
-import { cn, issueSource, relativeTime, statusGroup, statusLabel } from "@renderer/lib/utils";
-import { RrwebReplayPlayer } from "@renderer/pages/issues/_components/RrwebReplayPlayer";
-import { SourceLocation } from "@renderer/pages/issues/_components/SourceLocation";
-import type { RrwebReplay } from "@traceability/protocol";
-import { ArrowLeft, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { cn, relativeTime, statusGroup } from "@renderer/lib/utils";
+import { ArrowLeft, Check, CircleOff, Sparkles } from "lucide-react";
+import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-type Tab = "stack" | "events" | "context" | "breadcrumbs" | "replay";
-
-const TAB_LABELS: Array<{ id: Tab; label: (n: number) => string }> = [
-  { id: "stack", label: () => "Stack trace" },
-  { id: "events", label: (n) => `Events · ${n}` },
-  { id: "context", label: () => "Context" },
-  { id: "breadcrumbs", label: () => "Breadcrumbs" },
-  { id: "replay", label: (n) => `Replay · ${n}` },
-];
+import { Stacktrace } from "./_components/Stacktrace";
 
 export function IssueDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentApp } = useCurrentApp();
+  const { currentProject } = useCurrentProject();
   const issueQuery = useIssue(id);
   const eventsQuery = useIssueEvents(id);
-  const replaysQuery = useIssueReplays(id);
-  const [selectedReplayId, setSelectedReplayId] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("stack");
-
-  useEffect(() => {
-    const first = replaysQuery.data?.[0]?.id;
-    if (first && selectedReplayId === null) setSelectedReplayId(first);
-    if (replaysQuery.data && replaysQuery.data.length === 0) setSelectedReplayId(null);
-  }, [replaysQuery.data, selectedReplayId]);
-
-  const replayQuery = useReplay(id, selectedReplayId, tab === "replay");
-
-  useEffect(() => {
-    if (issueQuery.error) toast(String(issueQuery.error));
-    if (replayQuery.error) toast(String(replayQuery.error));
-  }, [issueQuery.error, replayQuery.error]);
-
+  const updateIssue = useUpdateIssue();
   const issue = issueQuery.data ?? null;
   const events = eventsQuery.data ?? [];
-  const replays = replaysQuery.data ?? [];
-  const activeReplay: RrwebReplay | null = replayQuery.data ?? null;
-  const replayLoading = tab === "replay" && Boolean(selectedReplayId) && replayQuery.isLoading;
+
   const investigate = useCallback(() => {
     if (!issue) return;
     promptAgent({
-      context: { appId: issue.appId, source: "issue", issueId: issue.id },
+      context: { projectId: issue.projectId, source: "issue", issueId: issue.id },
       prompt: `Investigate ${issue.id}`,
     });
   }, [issue]);
@@ -78,14 +50,29 @@ export function IssueDetailPage() {
         action: investigate,
       },
     ];
-  }, [investigate, issue]);
+  }, [investigate, issue, navigate]);
 
-  if (!issue)
+  const changeStatus = async (status: "unresolved" | "resolved" | "ignored") => {
+    if (!issue) return;
+    try {
+      await updateIssue.mutateAsync({ issueId: issue.id, patch: { status } });
+      toast("Issue status updated");
+    } catch (cause) {
+      toast(String(cause));
+    }
+  };
+
+  if (!issue) {
     return (
       <div className="mx-auto block min-h-full max-w-[1260px] px-[22px] pt-[22px] pb-12">
-        <div className="px-5 py-12 text-center text-[12px] text-tertiary">Loading…</div>
+        <div className="px-5 py-12 text-center text-[12px] text-tertiary">
+          {issueQuery.isLoading ? "Loading…" : "Issue not found."}
+        </div>
       </div>
     );
+  }
+
+  const group = statusGroup(issue.status);
 
   return (
     <div className="mx-auto block min-h-full max-w-[1260px] px-[22px] pt-[22px] pb-12">
@@ -103,164 +90,78 @@ export function IssueDetailPage() {
             "mt-2.5 size-2.5 shrink-0 rounded-full",
             issue.type === "error" ? "bg-danger" : "bg-warning",
           )}
-          style={{
-            boxShadow:
-              issue.type === "error"
-                ? "0 0 0 3px rgba(241,124,124,0.1)"
-                : "0 0 0 3px rgba(228,181,90,0.1)",
-          }}
         />
         <div className="min-w-0 flex-1">
           <h1 className="m-0 text-[24px] font-[680] leading-[1.12] tracking-[-0.04em]">
             {issue.title}
           </h1>
           <div className="mt-1.5 font-mono text-[11px] text-tertiary">
-            {issue.id} · {currentApp?.name ?? issue.appId} · production
+            {issue.id} · {currentProject?.name ?? issue.projectId}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={investigate}
-            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-primary/40 bg-primary px-3 text-[12px] font-[590] text-[#111329] transition-colors hover:bg-primary-hover"
-          >
-            <Sparkles size={14} /> Investigate
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={investigate}
+          className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-primary/40 bg-primary px-3 text-[12px] font-[590] text-[#111329] transition-colors hover:bg-primary-hover"
+        >
+          <Sparkles size={14} /> Investigate
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-4.5 desktop:grid-cols-[minmax(0,1fr)_260px]">
         <section className="overflow-hidden rounded-2xl border border-hairline bg-white/[0.025]">
-          <div className="flex gap-4.5 overflow-auto border-b border-hairline px-4">
-            {TAB_LABELS.map((entry) => {
-              const count =
-                entry.id === "events" ? events.length : entry.id === "replay" ? replays.length : 0;
-              const active = tab === entry.id;
-              return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  onClick={() => setTab(entry.id)}
-                  className={cn(
-                    "relative flex-none h-[43px] border-0 bg-transparent text-[12px] text-tertiary transition-colors hover:text-muted",
-                    active && "font-[610] text-ink",
-                  )}
-                >
-                  {entry.label(count)}
-                  {active && (
-                    <span className="absolute inset-x-0 bottom-[-1px] h-0.5 rounded-t bg-primary" />
-                  )}
-                </button>
-              );
-            })}
+          <div className="border-b border-hairline px-4 py-3 text-[12px] font-[630] text-muted">
+            Event evidence · {events.length}
           </div>
-
-          {tab === "stack" && (
-            <div>
-              {issue.metadata.source && <SourceLocation location={issue.metadata.source} />}
-              <pre className="m-0 overflow-auto bg-[#0b0c10] px-5 py-4 font-mono text-[11px] leading-[1.8] text-[#d0d3dc]">
-                {issue.metadata.stacktrace ?? issue.metadata.message ?? "(no stacktrace)"}
-              </pre>
-            </div>
-          )}
-
-          {tab === "events" && (
-            <div className="px-4 py-2">
-              {events.map((e) => (
-                <div
-                  className="grid grid-cols-[134px_1fr] gap-3.5 border-b border-hairline py-3 text-[12px] last:border-b-0"
-                  key={e.id}
-                >
-                  <div className="text-[11px] text-tertiary">
-                    {new Date(e.receivedAt).toLocaleTimeString()}
-                  </div>
-                  <div className="break-all font-mono text-[11px] text-muted">
-                    {e.envelope.slice(0, 160)}
-                  </div>
+          <div className="px-4 py-2">
+            {events.map((event) => (
+              <div className="border-b border-hairline py-3 last:border-b-0" key={event.id}>
+                <div className="mb-2 text-[11px] text-tertiary">
+                  {new Date(event.receivedAt).toLocaleString()}
                 </div>
-              ))}
-              {events.length === 0 && (
-                <div className="px-5 py-12 text-center text-[12px] text-tertiary">No events.</div>
-              )}
-            </div>
-          )}
-
-          {tab === "context" && (
-            <div className="px-4 py-2">
-              <InfoRow k="Application" v={currentApp?.name ?? issue.appId} />
-              <InfoRow k="Fingerprint" v={issue.fingerprint} />
-              <InfoRow k="Type" v={issue.type} />
-              <InfoRow k="Context" v={JSON.stringify(issue.metadata.context ?? {})} last />
-            </div>
-          )}
-
-          {tab === "breadcrumbs" && (
-            <div className="px-5 py-12 text-center text-[12px] text-tertiary">
-              Breadcrumbs are captured inside each event envelope (see Events tab).
-            </div>
-          )}
-
-          {tab === "replay" && (
-            <div className="px-4 pt-3.5 pb-4">
-              {replays.length > 0 && (
-                <div className="mb-3 flex items-center gap-2">
-                  <select
-                    value={selectedReplayId ?? ""}
-                    onChange={(e) => setSelectedReplayId(e.target.value || null)}
-                    className="h-9 min-w-[min(420px,100%)] rounded-[9px] border border-hairline bg-surface-2 px-2.5 pr-7 text-[12px] text-muted outline-none focus:border-primary/55"
-                  >
-                    {replays.map((replay) => (
-                      <option key={replay.id} value={replay.id}>
-                        {new Date(replay.receivedAt).toLocaleString()} · {replay.eventCount} events
-                      </option>
-                    ))}
-                  </select>
-                  {activeReplay && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-success/15 px-2 py-0.5 text-[10px] font-[600] text-success">
-                      {formatBytes(activeReplay.sizeBytes)}
-                    </span>
-                  )}
-                </div>
-              )}
-              {replayLoading && (
-                <div className="px-5 py-12 text-center text-[12px] text-tertiary">
-                  Loading replay…
-                </div>
-              )}
-              {!replayLoading && replays.length === 0 && (
-                <div className="px-5 py-12 text-center text-[12px] text-tertiary">
-                  No replay captured for this issue.
-                </div>
-              )}
-              {!replayLoading && activeReplay && activeReplay.events.length === 0 && (
-                <div className="px-5 py-12 text-center text-[12px] text-tertiary">
-                  Replay is still uploading.
-                </div>
-              )}
-              {!replayLoading && activeReplay && activeReplay.events.length > 0 && (
-                <RrwebReplayPlayer replay={activeReplay} />
-              )}
-            </div>
-          )}
+                <EventBody event={event} />
+              </div>
+            ))}
+            {events.length === 0 && (
+              <div className="px-5 py-12 text-center text-[12px] text-tertiary">No events.</div>
+            )}
+          </div>
         </section>
 
         <aside className="h-max overflow-hidden rounded-2xl border border-hairline bg-white/[0.025]">
-          <div className="border-b border-hairline p-4 last:border-b-0">
+          <div className="border-b border-hairline p-4">
             <div className="mb-1.5 text-[10px] font-[660] uppercase tracking-[0.08em] text-tertiary">
               Status
             </div>
-            <StatusBadge group={statusGroup(issue.status)} />
-            <SideRow label="First seen" value={relativeTime(issue.firstSeen)} />
-            <SideRow label="Last seen" value={relativeTime(issue.lastSeen)} />
-            <SideRow label="Total events" value={`${issue.count} events`} />
+            <StatusBadge group={group} />
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <StatusButton
+                active={group === "unresolved"}
+                label="Open"
+                icon={CircleOff}
+                onClick={() => void changeStatus("unresolved")}
+              />
+              <StatusButton
+                active={group === "resolved"}
+                label="Resolved"
+                icon={Check}
+                onClick={() => void changeStatus("resolved")}
+              />
+              <StatusButton
+                active={group === "ignored"}
+                label="Ignored"
+                icon={CircleOff}
+                onClick={() => void changeStatus("ignored")}
+              />
+            </div>
+            <SideRow label="First seen" value={relativeTime(issue.firstSeen.toString())} />
+            <SideRow label="Last seen" value={relativeTime(issue.lastSeen.toString())} />
+            <SideRow label="Total events" value={`${issue.eventCount} events`} />
           </div>
           <div className="p-4">
-            <div className="mb-1.5 text-[10px] font-[660] uppercase tracking-[0.08em] text-tertiary">
-              Likely source
-            </div>
-            <div className="font-mono text-[10px] leading-[1.55] text-primary-hover">
-              {issueSource(issue)}
-            </div>
+            <SideRow label="Project" value={currentProject?.name ?? issue.projectId} />
+            <SideRow label="Fingerprint" value={issue.fingerprint} />
+            <SideRow label="Type" value={issue.type} last />
           </div>
         </aside>
       </div>
@@ -268,34 +169,60 @@ export function IssueDetailPage() {
   );
 }
 
-function InfoRow({ k, v, last }: { k: string; v: string; last?: boolean }) {
+interface EventLike {
+  id: string;
+  payload: Record<string, unknown>;
+}
+
+/**
+ * Show a stack-trace tab by default and a raw-JSON tab as escape hatch. When
+ * the payload doesn't contain a stacktrace at all (message-only events),
+ * we skip the tabbed layout and just show raw so the widget stays honest.
+ */
+function EventBody({ event }: { event: EventLike }) {
+  const hasStack = payloadHasStacktrace(event.payload);
+  if (!hasStack) return <RawPayload payload={event.payload} />;
   return (
-    <div
-      className={cn(
-        "grid grid-cols-[134px_1fr] gap-3.5 py-3 text-[12px]",
-        !last && "border-b border-hairline",
-      )}
-    >
-      <div className="text-[11px] text-tertiary">{k}</div>
-      <div className="break-all text-muted">{v}</div>
-    </div>
+    <Tabs defaultValue="stack" className="rounded-lg border border-hairline bg-white/[0.02]">
+      <TabsList className="border-b-0 px-3 py-0">
+        <TabsTrigger value="stack">Stack trace</TabsTrigger>
+        <TabsTrigger value="raw">Raw payload</TabsTrigger>
+      </TabsList>
+      <TabsContent value="stack">
+        <Stacktrace payload={event.payload} />
+      </TabsContent>
+      <TabsContent value="raw" className="px-4 py-3">
+        <RawPayload payload={event.payload} />
+      </TabsContent>
+    </Tabs>
   );
 }
 
-function SideRow({ label, value }: { label: string; value: string }) {
+function RawPayload({ payload }: { payload: Record<string, unknown> }) {
   return (
-    <>
-      <div className="mb-1.5 mt-4 text-[10px] font-[660] uppercase tracking-[0.08em] text-tertiary">
-        {label}
-      </div>
-      <div className="text-[12px] text-muted">{value}</div>
-    </>
+    <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] leading-[1.7] text-muted">
+      {JSON.stringify(payload, null, 2)}
+    </pre>
   );
 }
 
-function StatusBadge({ group }: { group: "open" | "investigating" | "fixed" }) {
-  const dot = group === "open" ? "bg-danger" : group === "investigating" ? "bg-info" : "bg-success";
-  const label = statusLabel(group === "open" ? "open" : group === "fixed" ? "fixed" : "fixing");
+function payloadHasStacktrace(payload: Record<string, unknown>): boolean {
+  const exception = payload.exception;
+  if (!exception || typeof exception !== "object" || Array.isArray(exception)) return false;
+  const values = (exception as { values?: unknown }).values;
+  if (!Array.isArray(values) || values.length === 0) return false;
+  const first = values[0];
+  if (!first || typeof first !== "object" || Array.isArray(first)) return false;
+  const stacktrace = (first as { stacktrace?: unknown }).stacktrace;
+  if (!stacktrace || typeof stacktrace !== "object" || Array.isArray(stacktrace)) return false;
+  const frames = (stacktrace as { frames?: unknown }).frames;
+  return Array.isArray(frames) && frames.length > 0;
+}
+
+function StatusBadge({ group }: { group: "unresolved" | "resolved" | "ignored" }) {
+  const dot =
+    group === "unresolved" ? "bg-danger" : group === "resolved" ? "bg-success" : "bg-muted";
+  const label = group === "unresolved" ? "Open" : group === "resolved" ? "Resolved" : "Ignored";
   return (
     <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-white/[0.04] px-2 text-[10px] font-[600] text-muted">
       <span className={cn("size-1.5 rounded-full", dot)} />
@@ -304,8 +231,38 @@ function StatusBadge({ group }: { group: "open" | "investigating" | "fixed" }) {
   );
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+function StatusButton({
+  active,
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  icon: typeof Check;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-[10px] text-muted",
+        active && "border-primary/60 bg-primary/10 text-ink",
+      )}
+    >
+      <Icon size={12} /> {label}
+    </button>
+  );
+}
+
+function SideRow({ label, value, last = false }: { label: string; value: string; last?: boolean }) {
+  return (
+    <div className={cn("mt-3 flex items-start justify-between gap-3", !last && "")}>
+      <span className="text-[11px] text-tertiary">{label}</span>
+      <span className="max-w-[150px] break-all text-right font-mono text-[10px] text-muted">
+        {value}
+      </span>
+    </div>
+  );
 }

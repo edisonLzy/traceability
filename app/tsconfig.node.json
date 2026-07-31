@@ -14,8 +14,8 @@
     "src/extensions/core/main/**/*.ts",
     "src/extensions/builtins/subagents/common/**/*.ts",
     "src/extensions/builtins/subagents/main/**/*.ts",
-    "src/extensions/builtins/apps/common/**/*.ts",
-    "src/extensions/builtins/apps/main/**/*.ts",
+    "src/extensions/builtins/projects/common/**/*.ts",
+    "src/extensions/builtins/projects/main/**/*.ts",
     "src/extensions/builtins/issues/common/**/*.ts",
     "src/extensions/builtins/issues/main/**/*.ts"
   ]
