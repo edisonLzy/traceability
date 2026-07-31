@@ -3,6 +3,7 @@ import fastifyPlugin from "fastify-plugin";
 import { describe, expect, it, vi } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
+import { createAccessToken } from "../../helper/auth.js";
 import type { ObjectStorage } from "../../infrastructure/object-storage/client.js";
 import { configPlugin } from "../../plugins/config.js";
 import { containerPlugin } from "../../plugins/container.js";
@@ -11,6 +12,13 @@ import { trpcPlugin } from "../../plugins/trpc.js";
 import { appRouter } from "../app-router.js";
 import type { Context } from "../context.js";
 import type { RequestContext } from "../trpc.js";
+
+const jwtSecret = "a secure secret that contains at least thirty-two characters";
+const createUserToken = () =>
+  createAccessToken(
+    { id: "00000000-0000-4000-8000-000000000001", username: "root", email: "root@root.com" },
+    { jwtSecret, jwtAccessTokenTtlSeconds: 900 },
+  );
 
 const stubObjectStorage: ObjectStorage = {
   put: vi.fn(async () => undefined),
@@ -59,13 +67,16 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
     getSegment: vi.fn().mockResolvedValue(null),
     deleteReplay: vi.fn().mockResolvedValue(false),
   } as unknown as Context["container"]["replays"];
+  const auth = {
+    login: vi.fn(),
+    refresh: vi.fn(),
+  } as unknown as Context["container"]["auth"];
 
   return {
-    config: {
-      managementAuthToken: "secret",
-    } as RuntimeConfig,
+    config: { jwtSecret, jwtAccessTokenTtlSeconds: 900 } as unknown as RuntimeConfig,
     database: {} as Context["database"],
     container: {
+      auth,
       projects: projects as unknown as Context["container"]["projects"],
       issues: issues as unknown as Context["container"]["issues"],
       ingest,
@@ -74,13 +85,21 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
       replays,
       ...overrides,
     },
-    req: { headers: { authorization: "Bearer secret" } } as RequestContext["req"],
+    req: {
+      headers: {
+        authorization: `Bearer ${createUserToken()}`,
+      },
+    } as RequestContext["req"],
   };
 }
 
 function makeDependencies() {
   return {
-    config: { managementAuthToken: "secret", redisUrl: "redis://127.0.0.1:6379" } as RuntimeConfig,
+    config: {
+      jwtSecret,
+      jwtAccessTokenTtlSeconds: 900,
+      redisUrl: "redis://127.0.0.1:6379",
+    } as unknown as RuntimeConfig,
     database: {
       db: {
         select: () => ({
@@ -163,7 +182,9 @@ describe("appRouter", () => {
       url:
         "/api/trpc/projects.get?input=" +
         encodeURIComponent(JSON.stringify("00000000-0000-4000-8000-000000000001")),
-      headers: { authorization: "Bearer secret" },
+      headers: {
+        authorization: `Bearer ${createUserToken()}`,
+      },
     });
     expect(authorized.statusCode).toBe(200);
     await app.close();

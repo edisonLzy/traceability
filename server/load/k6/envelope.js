@@ -2,7 +2,7 @@ import { check, sleep } from "k6";
 import http from "k6/http";
 
 const target = __ENV.TARGET_URL || "http://127.0.0.1:3000";
-const managementToken = __ENV.MANAGEMENT_AUTH_TOKEN;
+const accessToken = __ENV.ACCESS_TOKEN;
 const rate = Number(__ENV.RATE || 50);
 const duration = __ENV.DURATION || "15m";
 
@@ -25,7 +25,7 @@ export const options = {
 };
 
 export function setup() {
-  if (!managementToken) throw new Error("MANAGEMENT_AUTH_TOKEN is required");
+  if (!accessToken) throw new Error("ACCESS_TOKEN is required");
   const project = http.post(
     `${target}/api/trpc/projects.create`,
     JSON.stringify({
@@ -35,7 +35,7 @@ export function setup() {
     }),
     {
       headers: {
-        authorization: `Bearer ${managementToken}`,
+        authorization: `Bearer ${accessToken}`,
         "content-type": "application/json",
       },
     },

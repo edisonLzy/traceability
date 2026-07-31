@@ -17,7 +17,7 @@ const { list, get, projects } = vi.hoisted(() => ({
   projects: vi.fn(),
 }));
 
-vi.mock("../../../../../main/trpc-client.js", () => ({
+vi.mock("../../../../../main/trpc/client.js", () => ({
   createMainTrpcClient: () => ({
     projects: { list: { query: projects } },
     issues: { list: { query: list }, get: { query: get } },

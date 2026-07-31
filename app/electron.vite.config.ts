@@ -4,11 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "electron-vite";
 
-export default defineConfig(({ mode }) => {
-  if (mode === "production" && !process.env.VITE_MANAGEMENT_TOKEN?.trim()) {
-    throw new Error("VITE_MANAGEMENT_TOKEN must be set for production builds");
-  }
-
+export default defineConfig((_environment) => {
   return {
     main: {
       build: {

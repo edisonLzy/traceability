@@ -9,11 +9,11 @@ import {
   type RendererExtensionDefinition,
 } from "@extensions/core/renderer";
 import { CommandProvider } from "@renderer/commands";
+import { TrpcErrorToaster } from "@renderer/components/TrpcErrorToaster";
 import { Toaster } from "@renderer/components/ui/sonner";
 import { CurrentProjectProvider } from "@renderer/context/current-project";
 import { ElectronIPCProvider } from "@renderer/context/ElectronIPCProvider";
 import { rendererTrpcClient, trpc } from "@renderer/lib/trpc";
-import { TrpcErrorToaster } from "@renderer/lib/trpc-error-toaster";
 import { router } from "@renderer/router";
 import { agentStore } from "@renderer/store/agent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

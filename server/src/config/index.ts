@@ -11,7 +11,8 @@ const EnvironmentSchema = z.object({
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
   REDIS_URL: z.string().url().default("redis://127.0.0.1:6379"),
   PUBLIC_INGEST_URL: z.string().url().default("http://127.0.0.1:3000"),
-  MANAGEMENT_AUTH_TOKEN: z.string().min(16).optional(),
+  JWT_SECRET: z.string().min(32).optional(),
+  JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(86_400).default(900),
   INGEST_MAX_COMPRESSED_BYTES: z.coerce
     .number()
     .int()
@@ -61,7 +62,8 @@ export interface RuntimeConfig {
   databasePoolMax: number;
   redisUrl: string;
   publicIngestUrl: string;
-  managementAuthToken: string;
+  jwtSecret: string;
+  jwtAccessTokenTtlSeconds: number;
   ingestMaxCompressedBytes: number;
   ingestMaxDecompressedBytes: number;
   ingestMaxItems: number;
@@ -80,8 +82,8 @@ export interface RuntimeConfig {
 
 export function loadRuntimeConfig(environment: NodeJS.ProcessEnv = process.env): RuntimeConfig {
   const parsed = EnvironmentSchema.parse(environment);
-  if (parsed.NODE_ENV === "production" && !parsed.MANAGEMENT_AUTH_TOKEN) {
-    throw new Error("MANAGEMENT_AUTH_TOKEN is required in production");
+  if (parsed.NODE_ENV === "production" && !parsed.JWT_SECRET) {
+    throw new Error("JWT_SECRET is required in production");
   }
 
   return {
@@ -92,7 +94,8 @@ export function loadRuntimeConfig(environment: NodeJS.ProcessEnv = process.env):
     databasePoolMax: parsed.DATABASE_POOL_MAX,
     redisUrl: parsed.REDIS_URL,
     publicIngestUrl: parsed.PUBLIC_INGEST_URL,
-    managementAuthToken: parsed.MANAGEMENT_AUTH_TOKEN ?? "traceability-development-token",
+    jwtSecret: parsed.JWT_SECRET ?? "traceability-development-jwt-secret-change-me",
+    jwtAccessTokenTtlSeconds: parsed.JWT_ACCESS_TOKEN_TTL_SECONDS,
     ingestMaxCompressedBytes: parsed.INGEST_MAX_COMPRESSED_BYTES,
     ingestMaxDecompressedBytes: parsed.INGEST_MAX_DECOMPRESSED_BYTES,
     ingestMaxItems: parsed.INGEST_MAX_ITEMS,

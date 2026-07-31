@@ -3,6 +3,7 @@ import { join } from "path";
 import { app, BrowserWindow } from "electron";
 
 import { AgentPool } from "./agent-pool.js";
+import { AuthSession } from "./auth/auth-session.js";
 import { SessionPersistence } from "./sessions/index.js";
 
 void app
@@ -12,18 +13,21 @@ void app
 
     const agentPool = new AgentPool(browserWindow);
     const sessionPersistence = new SessionPersistence(browserWindow);
+    const authSession = new AuthSession(browserWindow);
 
     app.on("activate", () => {
       if (!browserWindow || browserWindow.isDestroyed()) {
         browserWindow = createWindow();
         agentPool.updateBrowserWindow(browserWindow);
         sessionPersistence.updateBrowserWindow(browserWindow);
+        authSession.updateBrowserWindow(browserWindow);
       }
     });
 
     app.on("quit", () => {
       void agentPool.destroyAll();
       void sessionPersistence.destroyAll();
+      void authSession.destroyAll();
     });
   })
   .catch((error: unknown) => {
