@@ -1,3 +1,5 @@
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import loginAnimation from "@renderer/assets/secure-login.lottie";
 import { useAuth } from "@renderer/auth/AuthProvider";
 import { rendererTrpcClient } from "@renderer/lib/trpc";
 import { KeyRound, Loader2, Mail } from "lucide-react";
@@ -10,10 +12,10 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   return (
-    <div className="app-drag-region relative flex h-screen items-center justify-center overflow-hidden bg-canvas px-6">
+    <div className="app-drag-region relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-canvas px-6">
       <div className="pointer-events-none absolute -top-40 left-1/2 h-[460px] w-[680px] -translate-x-1/2 rounded-full bg-primary/20 blur-[130px]" />
       <form
-        className="app-no-drag relative w-full max-w-[360px] rounded-2xl border border-hairline bg-surface-1/90 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+        className="app-no-drag relative w-full max-w-[360px]"
         onSubmit={(event) => {
           event.preventDefault();
           void (async () => {
@@ -30,9 +32,13 @@ export function LoginPage() {
           })();
         }}
       >
-        <div className="mb-5 grid size-10 place-items-center rounded-xl bg-primary text-[#111329]">
-          <KeyRound size={20} />
-        </div>
+        <DotLottieReact
+          src={loginAnimation}
+          autoplay
+          loop
+          aria-hidden="true"
+          className="mb-4 h-52 w-52"
+        />
         <h1 className="m-0 text-[22px] font-[670] tracking-[-0.03em] text-ink">
           登录 Traceability
         </h1>

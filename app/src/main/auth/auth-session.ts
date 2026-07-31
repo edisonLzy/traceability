@@ -28,26 +28,28 @@ export class AuthSession extends AbstractAgentIPCHandler<AuthIPC> implements Aut
     };
   }
 
-  public async getAuthSession(): Promise<AuthTokens | null> {
+  public getAuthSession: AuthIPC["getAuthSession"] = async (): Promise<AuthTokens | null> => {
     if (!safeStorage.isEncryptionAvailable() || !existsSync(this.filePath)) return null;
     try {
       return JSON.parse(safeStorage.decryptString(readFileSync(this.filePath))) as AuthTokens;
     } catch {
-      this.clearAuthSession();
+      await this.clearAuthSession();
       return null;
     }
-  }
+  };
 
-  public async saveAuthSession(tokens: AuthTokens): Promise<void> {
+  public saveAuthSession: AuthIPC["saveAuthSession"] = async (
+    tokens: AuthTokens,
+  ): Promise<void> => {
     if (!safeStorage.isEncryptionAvailable()) return;
     writeFileSync(this.filePath, safeStorage.encryptString(JSON.stringify(tokens)), {
       mode: 0o600,
     });
-  }
+  };
 
-  public async clearAuthSession(): Promise<void> {
+  public clearAuthSession: AuthIPC["clearAuthSession"] = async (): Promise<void> => {
     rmSync(this.filePath, { force: true });
-  }
+  };
 
   public destroyAll() {
     this.unbind?.();
