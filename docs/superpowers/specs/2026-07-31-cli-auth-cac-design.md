@@ -70,7 +70,7 @@ Bearer credential. Server deployments use `JWT_SECRET`, not
 
 ```text
 traceability auth
-traceability auth login [--server <url>]
+traceability auth login [--server <url>] [--email <email>] [--password-stdin]
 traceability auth status [--json]
 traceability auth logout
 ```
@@ -80,7 +80,10 @@ traceability auth logout
   interactive login flow in a TTY. In a non-TTY it prints an authentication
   instruction and exits 2.
 - `auth login` is the deterministic interface for agents and scripts. It asks
-  only for missing credentials, validates through `auth.login`, saves the
+  only for missing credentials in a TTY. Non-interactive callers must provide
+  `--email` and pass the password through `--password-stdin`; a password flag
+  is intentionally not supported, preventing exposure through shell history
+  and process listings. Login validates through `auth.login`, saves the
   response, and prints the user without either token. It does not offer
   registration.
 - `auth status` is always non-interactive. It reports the saved `{ id,
