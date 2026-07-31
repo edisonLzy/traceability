@@ -1,6 +1,6 @@
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import loginAnimation from "@renderer/assets/secure-login.lottie";
-import { rendererTrpcClient } from "@renderer/lib/trpc";
+import { trpc } from "@renderer/lib/trpc";
 import { authStore } from "@renderer/store/auth";
 import type { AppRouterInputs } from "@shared/trpc-types";
 import { KeyRound, Loader2, Mail } from "lucide-react";
@@ -10,6 +10,14 @@ import { useForm } from "react-hook-form";
 type LoginFormValues = AppRouterInputs["auth"]["login"];
 
 export function LoginPage() {
+  const loginMutation = trpc.auth.login.useMutation({
+    // 用 mutate（不 await）避免 reject 传播到 handleSubmit 再抛成 unhandled rejection；
+    // 失败路径统一走 TrpcErrorToaster 的 toast。
+    onSuccess: (result) => {
+      void authStore.getState().completeLogin(result);
+    },
+  });
+
   const {
     register,
     handleSubmit,
@@ -18,9 +26,8 @@ export function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = handleSubmit(async (data) => {
-    const result = await rendererTrpcClient.auth.login.mutate(data);
-    await authStore.getState().completeLogin(result);
+  const onSubmit = handleSubmit((data) => {
+    loginMutation.mutate(data);
   });
 
   return (
@@ -72,10 +79,13 @@ export function LoginPage() {
           </p>
         )}
         <button
-          disabled={isSubmitting}
+          disabled={isSubmitting || loginMutation.isPending}
           className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-primary text-[12px] font-[650] text-[#111329] disabled:opacity-60"
         >
-          {isSubmitting && <Loader2 size={14} className="animate-spin" />}登录
+          {(isSubmitting || loginMutation.isPending) && (
+            <Loader2 size={14} className="animate-spin" />
+          )}
+          登录
         </button>
       </form>
     </div>
