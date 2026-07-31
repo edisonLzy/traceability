@@ -9,7 +9,7 @@ import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import { Stacktrace } from "./_components/Stacktrace";
+import { Stacktrace } from "./components/Stacktrace";
 
 export function IssueDetailPage() {
   const { id } = useParams<{ id: string }>();

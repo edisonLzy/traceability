@@ -9,9 +9,9 @@ import { EditorContent } from "@tiptap/react";
 import { ArrowUp, Square } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 
-import type { PromptSubmission } from "../prompt-types";
-import { useChatEditor, type UseChatEditorOptions } from "../use-chat-editor";
-import { ModalSelector, useModalSelector } from "./modal-selector";
+import type { PromptSubmission } from "../promptTypes";
+import { useChatEditor, type UseChatEditorOptions } from "../useChatEditor";
+import { ModalSelector, useModalSelector } from "./ModalSelector";
 
 export interface PromptInputProps extends Pick<UseChatEditorOptions, "onCreate" | "onDestroy"> {
   disabled?: boolean;

@@ -12,7 +12,7 @@ import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useState } from "react";
 
-import { useAgentSkills } from "./hooks/use-agent-skills";
+import { useAgentSkills } from "./useAgentSkills";
 
 interface VirtualElement {
   getBoundingClientRect: () => DOMRect;

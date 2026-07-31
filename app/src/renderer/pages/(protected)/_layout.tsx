@@ -20,7 +20,7 @@ import { Bug, Command, Compass, FileCode2, Inbox, Radio } from "lucide-react";
 import { Fragment, useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { AgentPanel } from "./_agent";
+import { AgentPanel } from "./_components/AgentPanel";
 import { CommandPalette } from "./_components/CommandPalette";
 import { HeaderProjectSwitcher } from "./_components/HeaderProjectSwitcher";
 import { ProjectOnboardingGuide } from "./_components/ProjectOnboardingGuide";

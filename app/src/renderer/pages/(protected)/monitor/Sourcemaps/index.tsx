@@ -5,8 +5,8 @@ import { Copy, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
-import { DropZone } from "./_components/DropZone";
-import { readMapDebugId, uploadSourcemap } from "./_lib/upload";
+import { DropZone } from "./components/DropZone";
+import { readMapDebugId, uploadSourcemap } from "./utils/upload";
 
 export function SourcemapsPage() {
   const { currentProject } = useCurrentProject();

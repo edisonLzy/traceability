@@ -13,7 +13,7 @@ import {
 import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
-import { useCreateProject } from "../_hooks/use-create-project";
+import { useCreateProject } from "../_hooks/useCreateProject";
 
 const STEPS = ["Welcome", "Slug", "Name", "Review"] as const;
 

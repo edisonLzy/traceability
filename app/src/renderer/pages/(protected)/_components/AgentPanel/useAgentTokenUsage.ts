@@ -2,8 +2,8 @@ import type { Usage } from "@earendil-works/pi-ai";
 import { agentStore, type MessageEntry } from "@renderer/store/agent";
 import type { TokenUsage } from "@renderer/store/agent";
 
-import { isAssistantMessage, isMessageEntry } from "../messages/types";
-import { useSubscribeAgentEvents } from "./use-subscribe-agent-events";
+import { isAssistantMessage, isMessageEntry } from "./messages/types";
+import { useSubscribeAgentEvents } from "./useSubscribeAgentEvents";
 
 function addUsage(left: Usage, right: Usage): Usage {
   return {

@@ -5,10 +5,10 @@ import type { Session } from "@renderer/store/agent";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 
-import { PanelBody, PanelFooter, PanelHeader, PanelLayout } from "./components/panel-layout";
+import { PanelBody, PanelFooter, PanelHeader, PanelLayout } from "./PanelLayout";
 import { PromptInput } from "./prompt-input";
-import type { PromptSubmission } from "./prompt-types";
-import { createSessionTitleFromPrompt } from "./session-title";
+import type { PromptSubmission } from "./promptTypes";
+import { createSessionTitleFromPrompt } from "./sessionTitle";
 
 /** Shown when there is no active session. Creates a session on first prompt submission. */
 export function PendingSessionContent() {

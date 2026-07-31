@@ -1,7 +1,7 @@
 import type { Usage } from "@earendil-works/pi-ai";
 import { describe, expect, it } from "vitest";
 
-import { calculateEntryTokenUsage } from "./use-agent-token-usage";
+import { calculateEntryTokenUsage } from "./useAgentTokenUsage";
 
 const firstCall: Usage = {
   input: 10,

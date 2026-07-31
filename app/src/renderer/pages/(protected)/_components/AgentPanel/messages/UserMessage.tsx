@@ -11,10 +11,10 @@ import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useMemo, useState, type RefObject } from "react";
 import { toast } from "sonner";
 
-import { useChatEditor } from "../use-chat-editor";
-import { CopyMessageButton } from "./toolbar/copy-message-button";
-import { EditMessageButton } from "./toolbar/edit-message-button";
-import { MessageToolbar } from "./toolbar/message-toolbar";
+import { useChatEditor } from "../useChatEditor";
+import { CopyMessageButton } from "./toolbar/CopyMessageButton";
+import { EditMessageButton } from "./toolbar/EditMessageButton";
+import { MessageToolbar } from "./toolbar/MessageToolbar";
 
 interface UserMessageProps {
   message: AppUserMessage;

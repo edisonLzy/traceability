@@ -4,9 +4,9 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-import { AssistantMessage } from "./assistant-message";
+import { AssistantMessage } from "./AssistantMessage";
 import { isAssistantMessage, isUserMessage } from "./types";
-import { StickyUserMessage, UserMessage, useStickyUserMessage } from "./user-message";
+import { StickyUserMessage, UserMessage, useStickyUserMessage } from "./UserMessage";
 
 interface ChatMessagesProps {
   entries: SessionEntry[];

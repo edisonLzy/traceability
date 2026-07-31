@@ -1,11 +1,11 @@
-import { AuthGuard, GuestGuard } from "@renderer/auth/AuthRoutes";
-import { LoginPage } from "@renderer/auth/LoginPage";
-import { Layout } from "@renderer/pages/_layout";
-import { ExplorerPage } from "@renderer/pages/explorer";
-import { InboxPage } from "@renderer/pages/inbox";
-import { IssuesPage } from "@renderer/pages/issues";
-import { IssueDetailPage } from "@renderer/pages/issues/detail";
-import { SourcemapsPage } from "@renderer/pages/sourcemaps";
+import { Layout } from "@renderer/pages/(protected)/_layout";
+import { ExplorerPage } from "@renderer/pages/(protected)/Explorer";
+import { InboxPage } from "@renderer/pages/(protected)/Inbox";
+import { IssuesPage } from "@renderer/pages/(protected)/monitor/Issues";
+import { IssueDetailPage } from "@renderer/pages/(protected)/monitor/Issues/detail";
+import { SourcemapsPage } from "@renderer/pages/(protected)/monitor/Sourcemaps";
+import { AuthGuard, GuestGuard } from "@renderer/pages/_auth";
+import { LoginPage } from "@renderer/pages/Login";
 import { createMemoryRouter, Navigate, type RouteObject } from "react-router-dom";
 
 export const appRoutes: RouteObject[] = [

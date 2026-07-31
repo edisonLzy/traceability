@@ -1,8 +1,7 @@
+import { useAuth } from "@renderer/auth/AuthProvider";
 import { rendererTrpcClient } from "@renderer/lib/trpc";
 import { KeyRound, Loader2, Mail } from "lucide-react";
 import { useState } from "react";
-
-import { useAuth } from "./AuthProvider";
 
 export function LoginPage() {
   const { accept: onAuthenticated } = useAuth();

@@ -12,7 +12,7 @@ import { useCurrentProject } from "@renderer/context/current-project";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { useCreateProject } from "../_hooks/use-create-project";
+import { useCreateProject } from "../_hooks/useCreateProject";
 
 export function CreateProjectModal({
   open,

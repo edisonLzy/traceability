@@ -9,11 +9,11 @@ import type { ToolExecutionState } from "@renderer/store/agent";
 import { ChevronRightIcon, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { AssistantResponseMessage } from "./assistant-response-message";
-import { AssistantThinkingMessage } from "./assistant-thinking-message";
-import { AssistantToolMessage } from "./assistant-tool-message";
-import { CopyMessageButton } from "./toolbar/copy-message-button";
-import { MessageToolbar } from "./toolbar/message-toolbar";
+import { AssistantResponseMessage } from "./AssistantResponseMessage";
+import { AssistantThinkingMessage } from "./AssistantThinkingMessage";
+import { AssistantToolMessage } from "./AssistantToolMessage";
+import { CopyMessageButton } from "./toolbar/CopyMessageButton";
+import { MessageToolbar } from "./toolbar/MessageToolbar";
 
 interface AssistantMessageProps {
   completedAt?: number;

@@ -8,16 +8,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useStore } from "zustand";
 
-import { PanelBody, PanelFooter, PanelHeader, PanelLayout } from "./components/panel-layout";
-import { useAgentMessages } from "./hooks/use-agent-messages";
-import { useAgentTokenUsage } from "./hooks/use-agent-token-usage";
-import { AskUserQuestionPanel } from "./human-in-the-loop";
+import { AskUserQuestionPanel } from "./AskUserQuestionPanel";
 import { ChatMessages } from "./messages";
 import { getSelectedModel, isMessageEntry, isUserMessage, toSessionEntry } from "./messages/types";
-import { PendingMessages } from "./pending-messages";
+import { PanelBody, PanelFooter, PanelHeader, PanelLayout } from "./PanelLayout";
+import { PendingMessages } from "./PendingMessages";
 import { PromptInput, type PromptInputProps } from "./prompt-input";
-import type { PromptSubmission } from "./prompt-types";
-import { createSessionTitleFromPrompt, shouldAutoRenameSession } from "./session-title";
+import type { PromptSubmission } from "./promptTypes";
+import { createSessionTitleFromPrompt, shouldAutoRenameSession } from "./sessionTitle";
+import { useAgentMessages } from "./useAgentMessages";
+import { useAgentTokenUsage } from "./useAgentTokenUsage";
 
 /** Full chat UI for an active session. */
 export function ActiveSessionContent({ sessionId }: { sessionId: string }) {

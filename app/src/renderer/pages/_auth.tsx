@@ -1,6 +1,5 @@
+import { useAuth } from "@renderer/auth/AuthProvider";
 import { Navigate, Outlet } from "react-router-dom";
-
-import { useAuth } from "./AuthProvider";
 
 function AuthLoading() {
   return <div className="h-screen bg-canvas" />;

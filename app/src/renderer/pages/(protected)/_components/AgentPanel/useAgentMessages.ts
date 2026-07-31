@@ -9,8 +9,8 @@ import {
   isFailedAssistantMessage,
   isMessageEntry,
   isUserMessage,
-} from "../messages/types";
-import { useSubscribeAgentEvents } from "./use-subscribe-agent-events";
+} from "./messages/types";
+import { useSubscribeAgentEvents } from "./useSubscribeAgentEvents";
 
 function findMissingFailureMessage(entries: SessionEntry[], messages: unknown[]) {
   return messages.filter(isFailedAssistantMessage).find((message) => {
