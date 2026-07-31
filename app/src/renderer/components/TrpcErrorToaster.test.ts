@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatTrpcError } from "./trpc-error-toaster";
+import { formatTrpcError } from "./TrpcErrorToaster";
 
 describe("formatTrpcError", () => {
   it("uses an actionable message for authentication failures", () => {

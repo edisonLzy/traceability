@@ -5,7 +5,7 @@ import type { TRPCClientErrorLike } from "@trpc/client";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-import { copyTextToClipboard } from "./clipboard";
+import { copyTextToClipboard } from "../lib/clipboard";
 
 export function TrpcErrorToaster() {
   const queryClient = useQueryClient();
