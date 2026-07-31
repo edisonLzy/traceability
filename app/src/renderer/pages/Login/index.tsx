@@ -2,36 +2,32 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import loginAnimation from "@renderer/assets/secure-login.lottie";
 import { useAuth } from "@renderer/auth/AuthProvider";
 import { rendererTrpcClient } from "@renderer/lib/trpc";
+import type { AppRouterInputs } from "@shared/trpc-types";
 import { KeyRound, Loader2, Mail } from "lucide-react";
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+
+// 表单字段类型直接复用服务端 auth.login 的 input schema，避免两端重复定义。
+type LoginFormValues = AppRouterInputs["auth"]["login"];
 
 export function LoginPage() {
   const { accept: onAuthenticated } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    defaultValues: { email: "", password: "" },
+  });
+
+  const onSubmit = handleSubmit(async (data) => {
+    const result = await rendererTrpcClient.auth.login.mutate(data);
+    await onAuthenticated(result);
+  });
+
   return (
     <div className="app-drag-region relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-canvas px-6">
       <div className="pointer-events-none absolute -top-40 left-1/2 h-[460px] w-[680px] -translate-x-1/2 rounded-full bg-primary/20 blur-[130px]" />
-      <form
-        className="app-no-drag relative w-full max-w-[360px]"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void (async () => {
-            setLoading(true);
-            setError(null);
-            try {
-              const result = await rendererTrpcClient.auth.login.mutate({ email, password });
-              await onAuthenticated(result);
-            } catch {
-              setError("邮箱或密码不正确。");
-            } finally {
-              setLoading(false);
-            }
-          })();
-        }}
-      >
+      <form className="app-no-drag relative w-full max-w-[360px]" onSubmit={onSubmit}>
         <DotLottieReact
           src={loginAnimation}
           autoplay
@@ -48,35 +44,39 @@ export function LoginPage() {
         <label className="mt-5 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-white/[0.035] px-3 text-tertiary">
           <Mail size={14} />
           <input
-            required
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            {...register("email", {
+              required: "请输入邮箱地址。",
+              pattern: { value: /^\S+@\S+$/i, message: "请输入有效的邮箱地址。" },
+            })}
             placeholder="邮箱"
             className="min-w-0 flex-1 bg-transparent text-[12px] text-ink outline-none placeholder:text-tertiary"
           />
         </label>
+        {errors.email && (
+          <p role="alert" className="mt-1 text-[11px] text-danger">
+            {errors.email.message}
+          </p>
+        )}
         <label className="mt-2 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-white/[0.035] px-3 text-tertiary">
           <KeyRound size={14} />
           <input
-            required
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            {...register("password", { required: "请输入密码。" })}
             placeholder="密码"
             className="min-w-0 flex-1 bg-transparent text-[12px] text-ink outline-none placeholder:text-tertiary"
           />
         </label>
-        {error && (
-          <p role="alert" className="mt-3 text-[11px] text-danger">
-            {error}
+        {errors.password && (
+          <p role="alert" className="mt-1 text-[11px] text-danger">
+            {errors.password.message}
           </p>
         )}
         <button
-          disabled={loading}
+          disabled={isSubmitting}
           className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-primary text-[12px] font-[650] text-[#111329] disabled:opacity-60"
         >
-          {loading && <Loader2 size={14} className="animate-spin" />}登录
+          {isSubmitting && <Loader2 size={14} className="animate-spin" />}登录
         </button>
       </form>
     </div>
