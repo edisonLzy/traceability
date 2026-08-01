@@ -13,7 +13,7 @@ printf '%s' "$TRACEABILITY_PASSWORD" \
       --email engineer@example.com --password-stdin
 
 traceability project create --slug checkout-web --name "Checkout Web" --json
-traceability project dsn <project-id>
+traceability project show <project-id> --json
 traceability issue list --project-id <project-id> --json
 ```
 
@@ -46,9 +46,9 @@ are not supported.
 ## Projects and DSNs
 
 `project create` returns `{ project, key, dsn }` with `--json`, and its human
-output includes the first DSN. Projects can have multiple keys, so use
-`project dsn <project-id>` to list every key and its DSN. `project show
-<project-id>` includes the same `connections` collection.
+output includes the first DSN. Projects can have multiple keys, so the full
+key/DSN list lives in the `connections` collection returned by `project show
+<project-id>`.
 
 The removed `traceability app` alias is not supported. Use `project` directly.
 The fix-loop commands (`issue fix-request`, `issue attach-patch`, and `issue

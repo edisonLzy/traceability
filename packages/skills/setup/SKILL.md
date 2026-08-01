@@ -50,7 +50,7 @@ Ask the user whether a Traceability project already exists for this codebase.
   `project.sentryProjectId` for the SDK's legacy `appId` option.
 
 > The project creation response includes its first DSN. For an existing project,
-> use `traceability project dsn <projectId>` to retrieve its DSN connections.
+> use `traceability project show <projectId>` to retrieve its DSN connections.
 
 ## 3. Install deps + write config
 

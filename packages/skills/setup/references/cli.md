@@ -77,12 +77,7 @@ Lists projects. Use to discover an existing project's `id`.
 ### `project show <projectId> [--json]`
 
 Fetches one project with its DSN connection collection. Use to validate a
-user-provided project id.
-
-### `project dsn <projectId>`
-
-Lists every project key and its DSN. A project can have multiple active keys,
-so this is the canonical connection lookup command.
+user-provided project id and to look up a project's keys and DSNs.
 
 ### `project update <projectId> [--name <n>] [--enabled <boolean>]`
 
