@@ -1,4 +1,5 @@
 import { App } from "@renderer/App";
+import { GlobalErrorBoundary } from "@renderer/components/GlobalErrorBoundary";
 import React from "react";
 import ReactDOM from "react-dom/client";
 
@@ -13,6 +14,8 @@ document.documentElement.dataset.platform = /Mac/i.test(navigator.userAgent)
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <GlobalErrorBoundary>
+      <App />
+    </GlobalErrorBoundary>
   </React.StrictMode>,
 );

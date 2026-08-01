@@ -1,6 +1,7 @@
 import type { AgentEvent } from "@earendil-works/pi-agent-core";
 
 import type { AskUserQuestionRequestedEvent } from "./ask-user-question-ipc";
+import type { AuthIPC } from "./auth-ipc";
 import type { AgentModelsIPC } from "./models-ipc";
 import type { AgentSessionIPC } from "./session-ipc";
 import type { SessionPersistenceIPC } from "./session-persistence-ipc";
@@ -38,7 +39,8 @@ export type AllowedMainExposeEvents = {
 export type AgentRuntimeIPC = AgentModelsIPC &
   AgentSessionIPC &
   AgentSkillsIPC &
-  SessionPersistenceIPC;
+  SessionPersistenceIPC &
+  AuthIPC;
 
 export const ALLOWED_RENDER_INVOKE_EVENTS: (keyof AgentRuntimeIPC)[] = [
   "setModel",
@@ -66,6 +68,9 @@ export const ALLOWED_RENDER_INVOKE_EVENTS: (keyof AgentRuntimeIPC)[] = [
   "getBranch",
   "setLeaf",
   "buildContext",
+  "getAuthSession",
+  "saveAuthSession",
+  "clearAuthSession",
 ];
 
 export type AllowedRenderInvokeEvents = (typeof ALLOWED_RENDER_INVOKE_EVENTS)[number];

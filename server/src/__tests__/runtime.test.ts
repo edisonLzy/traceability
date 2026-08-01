@@ -12,7 +12,8 @@ const config: RuntimeConfig = {
   databasePoolMax: 1,
   redisUrl: "redis://127.0.0.1:6379",
   publicIngestUrl: "http://127.0.0.1:3000",
-  managementAuthToken: "traceability-development-token",
+  jwtSecret: "traceability-development-jwt-secret-change-me",
+  jwtAccessTokenTtlSeconds: 900,
   ingestMaxCompressedBytes: 1_048_576,
   ingestMaxDecompressedBytes: 5_242_880,
   ingestMaxItems: 20,
@@ -92,7 +93,7 @@ describe("runtime app", () => {
 
   it("does not register the tRPC panel in production", async () => {
     const app = await createApp({
-      config: { ...config, environment: "production", managementAuthToken: "production-token" },
+      config: { ...config, environment: "production" },
       database: createDatabase(),
     });
     mockRateLimiter(app);

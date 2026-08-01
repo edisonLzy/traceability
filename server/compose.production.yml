@@ -11,7 +11,7 @@ services:
       DATABASE_POOL_MAX: 10
       REDIS_URL: redis://redis:6379
       PUBLIC_INGEST_URL: ${PUBLIC_INGEST_URL:-http://localhost:3000}
-      MANAGEMENT_AUTH_TOKEN: ${MANAGEMENT_AUTH_TOKEN:?MANAGEMENT_AUTH_TOKEN must be set}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres:

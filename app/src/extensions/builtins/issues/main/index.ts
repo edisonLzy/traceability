@@ -1,6 +1,6 @@
 import { Type } from "@earendil-works/pi-ai";
 
-import { createMainTrpcClient } from "../../../../main/trpc-client.js";
+import { createMainTrpcClient } from "../../../../main/trpc/client.js";
 import type { Issue } from "../../../../shared/trpc-types.js";
 import { formatAssistantBlockFence } from "../../../core/common/index.js";
 import { defineMainExtension } from "../../../core/main/index.js";
