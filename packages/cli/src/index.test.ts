@@ -24,7 +24,7 @@ async function captureHelp(args: string[]): Promise<string> {
 const subcommandCases: Array<[string, string[]]> = [
   ["auth", ["login", "status", "logout"]],
   ["config", ["set", "show"]],
-  ["project", ["list", "create", "show", "dsn", "update", "remove"]],
+  ["project", ["list", "create", "show", "update", "remove"]],
   ["issue", ["list", "show", "fix-request", "attach-patch", "mark-fixed"]],
   ["sourcemap", ["upload"]],
 ];

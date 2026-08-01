@@ -72,16 +72,6 @@ export function projectCommand(program: Command): void {
     });
 
   cmd
-    .command("dsn <projectId>")
-    .option("--json", "output JSON")
-    .action(async (projectId: string, _opts: ProjectListOptions) => {
-      const client = await getTrpcClient();
-      const connections = await client.projects.listConnections.query(projectId);
-      if (!connections) throw new Error(`Project not found: ${projectId}`);
-      printJson({ projectId, connections });
-    });
-
-  cmd
     .command("update <projectId>")
     .option("--name <name>", "project name")
     .option("--enabled <boolean>", "whether the project is enabled")

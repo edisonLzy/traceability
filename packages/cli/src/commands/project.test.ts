@@ -65,15 +65,8 @@ describe("project commands", () => {
     });
   });
 
-  it("returns every project DSN through the explicit dsn subcommand", async () => {
-    const output = vi.spyOn(console, "log").mockImplementation(() => undefined);
-
-    await run(["dsn", "project-1"]);
-
-    expect(listConnections).toHaveBeenCalledWith("project-1");
-    expect(output).toHaveBeenCalledWith(
-      expect.stringContaining("http://public-key@ingest.example/1"),
-    );
+  it("rejects the removed dsn subcommand as an unknown command", async () => {
+    await expect(run(["dsn", "project-1"])).rejects.toBeInstanceOf(CommanderError);
   });
 
   it("show returns the project together with its connections", async () => {
