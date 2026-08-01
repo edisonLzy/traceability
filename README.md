@@ -53,13 +53,14 @@ available, start the server in development mode, then open
 [`http://localhost:3000/trpc-panel`](http://localhost:3000/trpc-panel):
 
 ```bash
-NODE_ENV=development MANAGEMENT_AUTH_TOKEN=traceability-development-token pnpm --filter @traceability/server dev
+pnpm --filter @traceability/server dev
 ```
 
-In the panel, open **Headers** and add `Authorization: Bearer traceability-development-token`
-before invoking a procedure. The panel shell is available only when `NODE_ENV` is not
-`production`; every management procedure still enforces `MANAGEMENT_AUTH_TOKEN`. Do not
-expose the development server or its fallback token to an untrusted network.
+In the panel, open **Headers** and add `Authorization: Bearer <access-token>` before
+invoking a procedure. Obtain an access token with `traceability auth login`, then read it
+from `~/.traceability/config.json` (the CLI deliberately never prints it). The panel shell
+is available only when `NODE_ENV` is not `production`; every management procedure still
+enforces the access JWT. Do not expose the development server to an untrusted network.
 
 ## Integrating the SDK
 
