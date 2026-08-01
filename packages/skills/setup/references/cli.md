@@ -52,23 +52,31 @@ the `auth` commands.
 
 ### `project create --slug <slug> --name <name> [--json]`
 
-Creates a project. With `--json`, prints the project record and generated key.
+Creates a project. With `--json`, prints the project record, the generated key, and the DSN.
 
 ```json
 {
   "project": {
     "id": "e4eac53d-846d-4c75-a6a0-402c15c69954",
-    "sentryProjectId": "7f2d4b1c9a6e4f1082d3c4b5a6e7f809",
+    "sentryProjectId": 1,
     "slug": "my-app",
     "name": "My App",
     "platform": "javascript",
     "enabled": true
   },
-  "dsn": "http://localhost:3000"
+  "key": {
+    "id": "c10e4b32-…",
+    "publicKey": "71d1744709c6987397c068d3f2ec4827",
+    "status": "active",
+    "createdAt": "…",
+    "lastUsedAt": null,
+    "revokedAt": null
+  },
+  "dsn": "http://71d1744709c6987397c068d3f2ec4827@127.0.0.1:3000/1"
 }
 ```
 
-> Required: `--slug` and `--name`. The response contains both a management `project.id` and an ingest `project.sentryProjectId`.
+> Required: `--slug` and `--name`. Use `project.id` for management commands. The **full `dsn`** (public key in its username, `sentryProjectId` in its path) is what the SDK config needs — the SDK has no separate `appId`/`token` options.
 
 ### `project list [--json]`
 
@@ -86,6 +94,14 @@ Updates a project's metadata.
 ### `project remove <projectId>`
 
 Deletes a project.
+
+## Sourcemaps
+
+### `sourcemap upload --project <slug> --dist <dir> [--concurrency <n>] [-s, --select] [--yes]`
+
+Scans a build output directory and uploads every `.js.map` file that carries a top-level `debug_id` field. Required: `--project` (the project **slug**, not id) and `--dist` (directory to scan recursively). `--concurrency` defaults to 4; `--select` prompts interactively to pick maps; `--yes` skips the picker even with `--select`.
+
+The maps must be stamped with a `debug_id` at build time — see `examples/web-demo/vite.config.ts` + `vite-plugins/debug-id-sourcemap.ts` for the Vite setup. Uploaded maps let the server symbolicate production stack traces.
 
 ## Issues (verification after setup)
 

@@ -13,15 +13,19 @@ When the user says "诊断 / 修复 / 排查 issue <id>" or "investigate issue <
 traceability issue show <id> --json
 ```
 
-Read `metadata.stacktrace`, `metadata.message`, `metadata.context`, and `tags.appName`.
+`issue show` returns the **issue row** (not the raw event): `id`, `projectId`, `title`, `type`, `status`, `eventCount`, `firstSeen`, `lastSeen`. The `title` is the aggregation key — for `captureMessage` events it's the message string, for exceptions it's derived from the error. There is **no** `metadata.*` / `tags.*` block in this response.
+
+> The CLI does not currently expose event payloads. To see a concrete event's stacktrace / `extra` / breadcrumbs:
+> - **Inbox UI** — open the issue; the event payloads are rendered there.
+> - **Server tRPC** — the `issues.events` procedure (`GET /api/trpc/issues.events?input=…` with the Bearer token from `~/.traceability/config.json`) returns the events with their `payload` (the original Sentry event JSON: `exception.values[].stacktrace.frames[]`, `tags`, `extra`, `breadcrumbs`). The CLI doesn't wrap it yet; if you need CLI access, add an `issue events <issueId>` command to `packages/cli/src/commands/issue.ts` (mirrors `issue show`).
 
 ## 2. Locate the code
 
-Parse the stacktrace's top frames. Open the files at the given `filename:lineno`. Identify the function and the failing expression.
+Get the event payload (see step 1) and parse the stacktrace's top frames. Open the files at the given `filename` + `lineno` (Sentry frames carry `abs_path`, `filename`, `lineno`, `function`). Identify the function and the failing expression. If only `title` is available (no frames, e.g. a bare `captureMessage`), grep the codebase for the message string to find the call site.
 
 ## 3. Add temporary diagnostic instrumentation (optional)
 
-If the root cause is unclear, wrap the suspected call site with `addBreadcrumb` (see the `trace` skill's `references/reporting-api.md`) to capture the inputs/state next time it runs. Deploy, let it reproduce, then re-fetch the issue events.
+If the root cause is unclear, wrap the suspected call site with `addBreadcrumb` (imported from `@traceability/monitor`, see the `trace` skill's `references/reporting-api.md`) to capture the inputs/state next time it runs. Deploy, let it reproduce, then re-fetch the issue events.
 
 ## 4. Produce a fix
 

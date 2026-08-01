@@ -7,7 +7,7 @@ description: Use when the user asks to set up / install / configure traceability
 
 When the user says "在项目里接入/安装/配置 traceability 监控 / 创建 project" or "set up / install / configure traceability in this project", follow this workflow.
 
-This skill targets projects **inside this monorepo** (dependencies use `workspace:*`). It does not publish packages.
+This skill targets projects **inside this monorepo** (dependencies use `workspace:*`). It does not publish packages. The SDK is the single package `@traceability/monitor`; subpaths select the platform (`@traceability/monitor` = browser, `@traceability/monitor/react`, `@traceability/monitor/electron-main`, `@traceability/monitor/electron-renderer`).
 
 ## 0. Pre-check the CLI
 
@@ -24,6 +24,8 @@ traceability auth status --json
 
 After this step, never read or print the CLI session tokens.
 
+The session points at a server but `auth status` only reads local config. If the server isn't reachable, `project create` / `issue list` will hang or fail — start it first (`cd server && pnpm dev`; requires Postgres/Redis, `pnpm db:up` per `server/.env.example`).
+
 ## 1. Detect the stack
 
 - **Electron** if any of: `package.json` has `electron` in dependencies/devDependencies; `main` points at an electron entry; `electron-vite` / `electron-builder` present; source imports from `"electron"`.
@@ -36,42 +38,41 @@ Select `references/web-setup.md` or `references/electron-setup.md`.
 
 Ask the user whether a Traceability project already exists for this codebase.
 
-- **Already exists** -> ask for the **projectId** used by management commands. Validate it:
+- **Already exists** -> ask for the **projectId** used by management commands. Validate it and fetch its DSN:
   ```bash
   traceability project show <projectId> --json
   ```
+  Take `project.id` for management commands and `connections[0].dsn` for the SDK config.
 - **Does not exist** -> pre-fill the project fields from the codebase, present them for confirmation/edit, then create:
   - `slug` ← a URL-safe form of `package.json` `name`
   - `name` ← `package.json` `name`
   ```bash
   traceability project create --name <name> --slug <slug> --json
   ```
-  Take `project.id` from the JSON output for management commands and
-  `project.sentryProjectId` for the SDK's legacy `appId` option.
+  The response returns `{ project, key, dsn }` — take `project.id` for management commands and `dsn` for the SDK config. (`sentryProjectId` is already embedded in the DSN path.)
 
-> The project creation response includes its first DSN. For an existing project,
-> use `traceability project show <projectId>` to retrieve its DSN connections.
+> The DSN is the only credential the SDK needs: the public key rides in its username (`http://<publicKey>@<server>/<sentryProjectId>`), the project in its path. The SDK has **no** `token`/`appId` option. Treat the DSN's public key like a secret — never print it or commit it.
 
 ## 3. Install deps + write config
 
 Follow the chosen reference:
 
-1. Add dependencies (`workspace:*`) and run `pnpm install` at the repo root.
-   - Web: `@traceability/core` (+ `@traceability/react` if React).
-   - Electron: `@traceability/core` + `@traceability/electron`.
-2. Write the project's `.env` / `.env.local`:
-   - Auto-fill `TRACEABILITY_DSN` / `VITE_TRACEABILITY_DSN` (from `config show`) and `TRACEABILITY_APP_ID` / `VITE_TRACEABILITY_APP_ID` (from Step 2).
-   - Leave the token entry empty/placeholder and **instruct the user to fill it**.
+1. Add the dependency (`workspace:*`) and run `pnpm install` at the repo root:
+   - Web: `@traceability/monitor` (the `./react` subpath is part of the same package — no extra install).
+   - Electron: `@traceability/monitor` (main + renderer subpaths).
+2. Write the project's `.env` / `.env.local` and fill in `TRACEABILITY_DSN` / `VITE_TRACEABILITY_DSN` with the DSN from Step 2. No token entry — the DSN's public key authenticates ingest.
 3. Write the monitor module + wire the entry point (per the reference doc).
-4. Ensure `.env*` is in `.gitignore` (add it if missing). Never clobber an existing token value.
+4. Ensure `.env*` is in `.gitignore` (add it if missing) — the DSN public key must not be committed. Never clobber an existing value.
 
 ## 4. Verify
 
-Run the project; trigger one event (`captureException(new Error("setup check"))` or a `report(...)`). Confirm it appears in the Inbox UI, or:
+Run the project; trigger one event (`captureException(new Error("setup check"))`). Confirm it appears in the Inbox UI, or:
 
 ```bash
   traceability issue list --project-id <projectId>
 ```
+
+For web projects, sourcemaps can be uploaded separately (`traceability sourcemap upload`, see `references/cli.md`) so production stack traces symbolicate.
 
 ## 5. Commit
 
@@ -80,4 +81,4 @@ git add -A
 git commit -m "feat: set up traceability monitoring"
 ```
 
-Tell the user the project IDs, that they still need to fill the token in `.env`, and that events should now appear in the Inbox.
+Tell the user the project id, that events should now appear in the Inbox, and (web) that sourcemaps can be uploaded with `traceability sourcemap upload`.

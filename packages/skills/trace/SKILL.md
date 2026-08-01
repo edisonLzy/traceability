@@ -1,6 +1,6 @@
 ---
 name: traceability-trace
-description: Use when the user names a user flow / 链路 (登录流程, 下单流程, 发消息流程, …) and wants it instrumented end-to-end without manually tracing the code. The agent analyzes the codebase to map the flow, identifies the key positions, and auto-adds @traceability/core reporting calls.
+description: Use when the user names a user flow / 链路 (登录流程, 下单流程, 发消息流程, …) and wants it instrumented end-to-end without manually tracing the code. The agent analyzes the codebase to map the flow, identifies the key positions, and auto-adds @traceability/monitor reporting calls.
 ---
 
 # Trace Skill
@@ -15,7 +15,7 @@ Restate the named flow as **entry trigger → desired outcome** (e.g. "用户登
 
 ## 1. Verify the SDK is set up
 
-Check that `init({ dsn, appId, token })` is already wired at app entry (search for an `init(` import from `@traceability/core` / `@traceability/electron`).
+Check that `init({ dsn })` is already wired at app entry (search for an `init(` import from `@traceability/monitor` — browser, `electron-main`, or `electron-renderer` subpath).
 
 - **Wired** → continue.
 - **Not wired** → stop and tell the user to run the `setup` skill first. This skill only adds reporting calls; it does not install or configure the SDK.
@@ -37,38 +37,38 @@ This list is the output of this step - it replaces the user manually reading the
 
 ## 3. Choose the API per position
 
-See `references/reporting-api.md` for the full how-to. Summary:
+See `references/reporting-api.md` for the full how-to. Summary (all from `@traceability/monitor`):
 
 - `setTag("flow", "<flow-name>")` - group every event in this flow under one tag (call at entry).
 - `addBreadcrumb({ category, message, data })` - at entry and each step; attaches context to the next error.
-- `report({ type: "<flow>-<step>", payload, tags: { flow } })` - on each step's success.
-- `report({ type: "<flow>-<step>-failed", payload, tags: { flow } })` + `captureException(err)` - on each error path.
-- `reportPerformance(metric)` - end-to-end timing at the exit.
+- `captureMessage("<flow>-<step>", { level, tags: { flow }, extra })` - on each step's success and on validation-style non-throwing failures (see `examples/web-demo/src/register.ts`).
+- `captureMessage(...)` + `captureException(err)` - on each real error path.
+- `captureMessage("<flow>-done", { level: "info", tags: { flow }, extra })` - at the exit, with timing in `extra`.
 
-Use stable, kebab-case, feature-prefixed `type` strings so events aggregate (see `references/reporting-api.md` § Event type naming).
+Use stable, kebab-case, feature-prefixed message strings so events aggregate (see `references/reporting-api.md` § Event type naming).
 
 ## 4. Instrument
 
 Add the calls at each key position from step 2.
 
-- Plain modules: `import { report, addBreadcrumb, captureException, setTag } from "@traceability/core";`
-- React components: `import { useMonitorReport, useMonitorTag } from "@traceability/react";` (or wrap the flow root with `MonitorErrorBoundary`).
+- Plain modules: `import { addBreadcrumb, captureException, captureMessage, setTag } from "@traceability/monitor";`
+- React components: `import { useMonitorTag } from "@traceability/monitor/react";` (or wrap the flow root with `MonitorErrorBoundary`).
 
 Minimal shape (full worked example in `references/reporting-api.md`):
 
 ```ts
-import { report, addBreadcrumb, captureException, setTag } from "@traceability/core";
+import { addBreadcrumb, captureException, captureMessage, setTag } from "@traceability/monitor";
 
 async function login(email: string, password: string) {
   setTag("flow", "login");
   addBreadcrumb({ category: "login", message: "submit start", data: { email } });
   try {
     const res = await api.post("/login", { email, password });
-    report({ type: "login-api-ok", payload: { userId: res.id }, tags: { flow: "login" } });
+    captureMessage("login-api-ok", { level: "info", tags: { flow: "login" }, extra: { userId: res.id } });
     // …store token, redirect…
-    report({ type: "login-done", payload: { userId: res.id }, tags: { flow: "login" } });
+    captureMessage("login-done", { level: "info", tags: { flow: "login" }, extra: { userId: res.id } });
   } catch (err) {
-    report({ type: "login-failed", payload: { email, error: String(err) }, tags: { flow: "login" } });
+    captureMessage("login-failed", { level: "error", tags: { flow: "login" }, extra: { email, error: String(err) } });
     captureException(err);
     throw err;
   }
@@ -83,7 +83,7 @@ Trigger the flow once end-to-end. Confirm the events appear in the Inbox UI, or:
   traceability issue list --project-id <projectId>
 ```
 
-Check that the whole flow's events share the `flow: <flow-name>` tag and aggregate into issues by `type`.
+Check that the whole flow's events share the `flow: <flow-name>` tag and aggregate into issues by message/fingerprint.
 
 ## 6. Commit
 

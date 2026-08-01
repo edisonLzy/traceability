@@ -11,9 +11,9 @@ Teaches a coding agent how to instrument an entire **user flow / 链路** end-to
 ## Scope
 
 - **Whole flow / 链路** - the user names a flow; the agent reads the code, maps the chain, and instruments **every key position** along it. (This is what this skill does.)
-- **Single call site** - if you only need one function instrumented, treat it as a one-step flow: an entry `addBreadcrumb` plus success/error `report` calls.
+- **Single call site** - if you only need one function instrumented, treat it as a one-step flow: an entry `addBreadcrumb` plus success/error `captureMessage` calls.
 
 ## Files
 
 - `SKILL.md` - workflow the agent follows (analyze -> map key positions -> instrument -> verify -> commit)
-- `references/reporting-api.md` - how to use the `@traceability/core` reporting methods in a flow context
+- `references/reporting-api.md` - how to use the `@traceability/monitor` reporting methods in a flow context
