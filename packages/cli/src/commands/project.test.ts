@@ -1,7 +1,7 @@
-import { cac } from "cac";
+import { Command, CommanderError } from "commander";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { list, create, listConnections } = vi.hoisted(() => ({
+const { list, create, listConnections, get, update, remove } = vi.hoisted(() => ({
   list: vi
     .fn()
     .mockResolvedValue([
@@ -17,6 +17,9 @@ const { list, create, listConnections } = vi.hoisted(() => ({
     .mockResolvedValue([
       { key: { id: "key-1", status: "active" }, dsn: "http://public-key@ingest.example/1" },
     ]),
+  get: vi.fn().mockResolvedValue({ id: "project-1", slug: "checkout-web", enabled: true }),
+  update: vi.fn().mockResolvedValue({ id: "project-1", slug: "checkout-web", enabled: true }),
+  remove: vi.fn().mockResolvedValue({ id: "project-1", slug: "checkout-web" }),
 }));
 
 vi.mock("../lib/trpc.js", () => ({
@@ -25,6 +28,9 @@ vi.mock("../lib/trpc.js", () => ({
       list: { query: list },
       create: { mutate: create },
       listConnections: { query: listConnections },
+      get: { query: get },
+      update: { mutate: update },
+      remove: { mutate: remove },
     },
   }),
 }));
@@ -34,14 +40,13 @@ import { projectCommand } from "./project.js";
 afterEach(() => vi.restoreAllMocks());
 
 async function run(args: string[]): Promise<void> {
-  const cli = cac("traceability");
-  projectCommand(cli);
-  cli.parse(["node", "traceability", "project", ...args], { run: false });
-  await cli.runMatchedCommand();
+  const program = new Command().exitOverride();
+  projectCommand(program);
+  await program.parseAsync(["node", "traceability", "project", ...args]);
 }
 
 describe("project commands", () => {
-  it("lists projects through the CAC action dispatcher", async () => {
+  it("lists projects through the commander action dispatcher", async () => {
     const output = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     await run(["list"]);
@@ -60,15 +65,7 @@ describe("project commands", () => {
     });
   });
 
-  it("does not register the removed app alias", async () => {
-    const cli = cac("traceability");
-    projectCommand(cli);
-    cli.parse(["node", "traceability", "app", "list"], { run: false });
-
-    expect(cli.matchedCommand).toBeUndefined();
-  });
-
-  it("returns every project DSN through the explicit dsn action", async () => {
+  it("returns every project DSN through the explicit dsn subcommand", async () => {
     const output = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     await run(["dsn", "project-1"]);
@@ -77,5 +74,29 @@ describe("project commands", () => {
     expect(output).toHaveBeenCalledWith(
       expect.stringContaining("http://public-key@ingest.example/1"),
     );
+  });
+
+  it("show returns the project together with its connections", async () => {
+    const output = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    await run(["show", "project-1"]);
+
+    expect(get).toHaveBeenCalledWith("project-1");
+    expect(listConnections).toHaveBeenCalledWith("project-1");
+    const printed = output.mock.calls[0]?.[0] as string;
+    expect(printed).toContain('"project"');
+    expect(printed).toContain('"connections"');
+    expect(printed).toContain("http://public-key@ingest.example/1");
+  });
+
+  it("requires --slug and --name for create", async () => {
+    await expect(run(["create"])).rejects.toMatchObject({
+      name: "CommanderError",
+      code: "commander.missingMandatoryOptionValue",
+    });
+  });
+
+  it("rejects the removed app alias as an unknown command", async () => {
+    await expect(run(["app", "list"])).rejects.toBeInstanceOf(CommanderError);
   });
 });

@@ -1,4 +1,4 @@
-import type { CAC } from "cac";
+import { Command } from "commander";
 
 import {
   AuthCancelledError,
@@ -18,28 +18,30 @@ interface AuthOptions {
   json?: boolean;
 }
 
-export function authCommand(cli: CAC): void {
-  cli
-    .command("auth [action]", "log in, inspect, or clear the local session")
+export function authCommand(program: Command): void {
+  // 父命令自带 action,使裸 `traceability auth` 走默认流程(有 session 打印,否则 TTY 交互登录)。
+  // 注意:父命令不要声明 --json,否则会抢在 status/login 子命令前面消费同名选项。
+  const auth = program
+    .command("auth")
+    .description("log in, inspect, or clear the local session")
+    .action((opts: AuthOptions) => handleDefault(opts));
+
+  auth
+    .command("login")
     .option("--email <email>", "account email")
     .option("--password-stdin", "read the password from standard input")
     .option("--json", "output JSON")
-    .action(async (action: string | undefined, options: AuthOptions) => {
-      switch (action) {
-        case undefined:
-          return handleDefault(options);
-        case "login":
-          return loginAndPrint(options);
-        case "status":
-          return printStatus(options.json);
-        case "logout":
-          clearSession();
-          console.log("Signed out.");
-          return;
-        default:
-          throw new Error(`Unknown auth action: ${action}`);
-      }
-    });
+    .action((opts: AuthOptions) => loginAndPrint(opts));
+
+  auth
+    .command("status")
+    .option("--json", "output JSON")
+    .action((opts: AuthOptions) => printStatus(opts.json));
+
+  auth.command("logout").action(() => {
+    clearSession();
+    console.log("Signed out.");
+  });
 }
 
 async function handleDefault(options: AuthOptions): Promise<void> {

@@ -3,7 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 import { isCancel, multiselect } from "@clack/prompts";
-import type { CAC } from "cac";
+import { Command } from "commander";
 
 import { AuthRequiredError } from "../lib/auth.js";
 import { uploadSourcemap } from "../lib/upload.js";
@@ -14,26 +14,24 @@ interface Candidate {
 }
 
 interface SourcemapOptions {
-  project?: string;
-  dist?: string;
+  project: string;
+  dist: string;
   concurrency?: string;
   select?: boolean;
   yes?: boolean;
 }
 
-export function sourcemapCommand(cli: CAC): void {
-  cli
-    .command("sourcemap <action>", "manage source maps")
-    .option("--project <slug>", "project slug")
-    .option("--dist <dir>", "directory to scan for *.js.map")
-    .option("--concurrency <n>", "parallel uploads", { default: "4" })
+export function sourcemapCommand(program: Command): void {
+  const cmd = program.command("sourcemap").description("manage source maps");
+  cmd
+    .command("upload")
+    .description("scan a build output directory and upload .js.map files that carry a debug_id")
+    .requiredOption("--project <slug>", "project slug")
+    .requiredOption("--dist <dir>", "directory to scan for *.js.map")
+    .option("--concurrency <n>", "parallel uploads", "4")
     .option("-s, --select", "interactively pick source maps")
     .option("--yes", "skip the interactive picker even when --select is set")
-    .action(async (action: string, opts: SourcemapOptions) => {
-      if (action !== "upload") throw new Error(`Unknown sourcemap action: ${action}`);
-      if (!opts.project || !opts.dist) {
-        throw new Error("sourcemap upload requires --project <slug> and --dist <dir>");
-      }
+    .action(async (opts: SourcemapOptions) => {
       const discovered = await findSourcemaps(opts.dist);
       if (discovered.length === 0) {
         throw new Error(`No .js.map files with a debug_id found in ${opts.dist}.`);
@@ -59,11 +57,11 @@ export function sourcemapCommand(cli: CAC): void {
           const index = cursor++;
           const candidate = maps[index];
           if (!candidate) continue;
-          const label = relative(opts.dist as string, candidate.path);
+          const label = relative(opts.dist, candidate.path);
           try {
             const result = await uploadSourcemap({
               filePath: candidate.path,
-              projectSlug: opts.project as string,
+              projectSlug: opts.project,
               debugId: candidate.debugId,
             });
             if (result.reused) reused += 1;

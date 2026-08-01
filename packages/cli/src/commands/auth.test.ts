@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { cac } from "cac";
+import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { saveConfig } from "../lib/config.js";
@@ -26,10 +26,9 @@ describe("auth commands", () => {
   });
 
   async function run(args: string[]): Promise<void> {
-    const cli = cac("traceability");
-    authCommand(cli);
-    cli.parse(["node", "traceability", "auth", ...args], { run: false });
-    await cli.runMatchedCommand();
+    const program = new Command().exitOverride();
+    authCommand(program);
+    await program.parseAsync(["node", "traceability", "auth", ...args]);
   }
 
   it("reports local session identity as JSON without secrets", async () => {
