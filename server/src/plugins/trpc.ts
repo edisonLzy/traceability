@@ -18,22 +18,20 @@ export const trpcPlugin = fastifyPlugin(
       },
     });
 
-    // tRPC panel — development only; the panel shell is intentionally public
-    // so it can be opened directly, but the procedures it invokes still enforce
-    // the management Bearer token.
-    if (app.config.environment !== "production") {
-      const { renderTrpcPanel } = await import("@ajayche/trpc-panel");
-      app.get("/trpc-panel", async (_request, reply) => {
-        const html = renderTrpcPanel(appRouter, {
-          url: "/api/trpc",
-          meta: {
-            title: "Traceability tRPC",
-            description: "Development-only UI for browsing and invoking management procedures.",
-          },
-        });
-        return reply.type("text/html; charset=utf-8").send(html);
+    // tRPC panel — served in all environments. The panel shell is intentionally
+    // public so it can be opened directly, but the procedures it invokes still
+    // enforce the management Bearer token.
+    const { renderTrpcPanel } = await import("@ajayche/trpc-panel");
+    app.get("/trpc-panel", async (_request, reply) => {
+      const html = renderTrpcPanel(appRouter, {
+        url: "/api/trpc",
+        meta: {
+          title: "Traceability tRPC",
+          description: "UI for browsing and invoking management procedures.",
+        },
       });
-    }
+      return reply.type("text/html; charset=utf-8").send(html);
+    });
   },
   {
     name: "trpc",

@@ -15,6 +15,7 @@ import { healthPlugin } from "./plugins/health.js";
 import { objectStoragePlugin } from "./plugins/object-storage.js";
 import { observabilityPlugin } from "./plugins/observability.js";
 import { redisPlugin } from "./plugins/redis.js";
+import { swaggerPlugin } from "./plugins/swagger.js";
 import { trpcPlugin } from "./plugins/trpc.js";
 
 export interface AppDependencies {
@@ -39,13 +40,14 @@ export async function createApp(deps: AppDependencies): Promise<FastifyInstance>
 
   // Plugins are registered in dependency order:
   //   config → database, redis, object-storage → container → error-handler,
-  //   observability, cors, health, ingest, trpc
+  //   swagger, observability, cors, health, ingest, trpc
   await app.register(configPlugin, { config: deps.config });
   await app.register(databasePlugin, { database: deps.database });
   await app.register(redisPlugin);
   await app.register(objectStoragePlugin);
   await app.register(containerPlugin);
   await app.register(errorHandlerPlugin);
+  await app.register(swaggerPlugin);
   await app.register(observabilityPlugin);
   await app.register(cors, {
     credentials: false,

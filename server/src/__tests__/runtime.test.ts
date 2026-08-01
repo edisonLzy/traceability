@@ -77,8 +77,11 @@ describe("runtime app", () => {
     expect(database.ping).not.toHaveBeenCalled();
   });
 
-  it("serves the tRPC panel outside production", async () => {
-    const app = await createApp({ config, database: createDatabase() });
+  it("serves the tRPC panel in all environments", async () => {
+    const app = await createApp({
+      config: { ...config, environment: "production" },
+      database: createDatabase(),
+    });
     mockRateLimiter(app);
     stubObjectStorage(app);
     apps.push(app);
@@ -91,18 +94,25 @@ describe("runtime app", () => {
     expect(response.body).toContain("/api/trpc");
   });
 
-  it("does not register the tRPC panel in production", async () => {
-    const app = await createApp({
-      config: { ...config, environment: "production" },
-      database: createDatabase(),
-    });
+  it("serves the Swagger UI and OpenAPI document", async () => {
+    const app = await createApp({ config, database: createDatabase() });
     mockRateLimiter(app);
     stubObjectStorage(app);
     apps.push(app);
 
-    const response = await app.inject({ method: "GET", url: "/trpc-panel" });
+    const ui = await app.inject({ method: "GET", url: "/docs" });
+    expect(ui.statusCode).toBe(200);
+    expect(ui.headers["content-type"]).toContain("text/html");
+    expect(ui.body).toContain("swagger-ui");
 
-    expect(response.statusCode).toBe(404);
+    const spec = await app.inject({ method: "GET", url: "/docs/json" });
+    expect(spec.statusCode).toBe(200);
+    expect(spec.headers["content-type"]).toContain("application/json");
+
+    const document = spec.json();
+    expect(document.openapi).toBe("3.0.3");
+    expect(document.paths).toHaveProperty("/health/live");
+    expect(document.paths).toHaveProperty("/api/ingest/envelope/{projectId}");
   });
 
   it("reports readiness only when PostgreSQL is reachable", async () => {

@@ -31,9 +31,12 @@
     "db:setup": "pnpm db:up && sleep 2 && pnpm db:migrate"
   },
   "dependencies": {
+    "@ajayche/trpc-panel": "^2.1.0",
     "@aws-sdk/client-s3": "^3.1097.0",
     "@fastify/cors": "^11.3.0",
     "@fastify/multipart": "^10.1.0",
+    "@fastify/swagger": "9.8.1",
+    "@fastify/swagger-ui": "6.1.1",
     "@trpc/server": "^11.18.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.81.0",
@@ -50,7 +53,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@ajayche/trpc-panel": "^2.1.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.15.6",
