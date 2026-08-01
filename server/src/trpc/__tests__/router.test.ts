@@ -42,6 +42,7 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
     createProject: vi.fn().mockResolvedValue({ project: { id: "project-1" } }),
     updateProject: vi.fn().mockResolvedValue({ id: "project-1" }),
     listKeys: vi.fn().mockResolvedValue([]),
+    listConnections: vi.fn().mockResolvedValue([]),
     createKey: vi.fn().mockResolvedValue({ key: { id: "key-1" } }),
     revokeKey: vi.fn().mockResolvedValue({ id: "key-1" }),
     getPolicy: vi.fn().mockResolvedValue({ projectId: "project-1" }),
@@ -122,6 +123,18 @@ describe("appRouter", () => {
     await expect(
       caller.projects.create({ slug: "demo", name: "Demo", platform: "javascript" }),
     ).resolves.toEqual({ project: { id: "project-1" } });
+  });
+
+  it("returns DSN connections through the project service", async () => {
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
+    const projectId = "00000000-0000-4000-8000-000000000001";
+
+    await expect(caller.projects.listConnections(projectId)).resolves.toEqual([]);
+    const projects = ctx.container.projects as unknown as {
+      listConnections: ReturnType<typeof vi.fn>;
+    };
+    expect(projects.listConnections).toHaveBeenCalledWith(projectId);
   });
 
   it("passes issue pagination input to the issue service", async () => {

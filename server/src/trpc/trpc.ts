@@ -14,8 +14,8 @@ export type RequestContext = Context & { req: FastifyRequest };
 const t = initTRPC.context<RequestContext>().create();
 
 /**
- * tRPC middleware that enforces the management Bearer token against the
- * server's configured `MANAGEMENT_AUTH_TOKEN`.
+ * tRPC middleware that requires a valid user access JWT in the
+ * Authorization header (issued by auth.login / auth.refresh).
  */
 const requireManagementAuth = t.middleware(trpcAuthMiddleware());
 
@@ -24,5 +24,5 @@ export { t };
 /** A procedure that does not require authentication. */
 export const publicProcedure = t.procedure;
 
-/** A procedure that requires the management Bearer token. */
+/** A procedure that requires a valid user access JWT. */
 export const procedure = t.procedure.use(requireManagementAuth);

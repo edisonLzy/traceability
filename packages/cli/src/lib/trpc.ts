@@ -1,23 +1,19 @@
 import type { AppRouter } from "@traceability/server/trpc";
 import { TRPCClientError, createTRPCClient, httpBatchLink, type TRPCClient } from "@trpc/client";
 
-import {
-  NonInteractiveAuthError,
-  ensureConfig,
-  reconfigureAfter401,
-} from "./config-interactive.js";
-import type { CliConfig } from "./config.js";
+import { getSession, refreshOrLogin, type AuthSession } from "./auth.js";
+import { getConfig } from "./config.js";
 
-interface CfgRef {
-  current: CliConfig;
+interface SessionRef {
+  current: AuthSession;
 }
 
-function buildClient(ref: CfgRef): TRPCClient<AppRouter> {
+function buildClient(ref: SessionRef): TRPCClient<AppRouter> {
   return createTRPCClient<AppRouter>({
     links: [
       httpBatchLink({
-        url: `${ref.current.server.replace(/\/$/, "")}/api/trpc`,
-        headers: () => ({ authorization: `Bearer ${ref.current.token}` }),
+        url: `${getConfig().server.replace(/\/$/, "")}/api/trpc`,
+        headers: () => ({ authorization: `Bearer ${ref.current.accessToken}` }),
       }),
     ],
   });
@@ -28,35 +24,31 @@ function isUnauthorized(err: unknown): boolean {
     const data = err.data as { code?: string; httpStatus?: number } | undefined;
     if (data?.code === "UNAUTHORIZED" || data?.httpStatus === 401) return true;
   }
-  // Structural fallback in case `instanceof` fails across module boundaries.
   if (typeof err === "object" && err !== null) {
     const anyErr = err as {
       data?: { code?: string; httpStatus?: number };
       shape?: { data?: { code?: string; httpStatus?: number } };
     };
-    if (anyErr.data?.code === "UNAUTHORIZED" || anyErr.data?.httpStatus === 401) return true;
-    if (anyErr.shape?.data?.code === "UNAUTHORIZED" || anyErr.shape?.data?.httpStatus === 401) {
-      return true;
-    }
+    return (
+      anyErr.data?.code === "UNAUTHORIZED" ||
+      anyErr.data?.httpStatus === 401 ||
+      anyErr.shape?.data?.code === "UNAUTHORIZED" ||
+      anyErr.shape?.data?.httpStatus === 401
+    );
   }
   return false;
 }
 
 /**
- * Wraps the TRPC client with a Proxy that intercepts terminal method calls
- * (`.query(...)` / `.mutate(...)`) and, on UNAUTHORIZED, prompts for new
- * credentials and retries the call exactly once against a freshly built
- * client. Non-terminal property access is forwarded verbatim so procedure
- * paths (`client.projects.list.query`) keep working.
+ * Wrap terminal tRPC calls so a single UNAUTHORIZED can rotate the refresh
+ * token through the public auth client and retry exactly the original call.
  */
-function wrapWithReauth(ref: CfgRef): TRPCClient<AppRouter> {
+function wrapWithRefresh(ref: SessionRef): TRPCClient<AppRouter> {
   const primary = buildClient(ref);
 
   const wrap = (target: object, pathSegments: string[]): unknown =>
     new Proxy(target, {
       get(inner, prop, receiver) {
-        // Never intercept symbols or promise-integration keys — this proxy is
-        // returned from an async function, so `await` inspects `.then`.
         if (typeof prop !== "string") return Reflect.get(inner, prop, receiver);
         if (prop === "then" || prop === "catch" || prop === "finally") {
           return Reflect.get(inner, prop, receiver);
@@ -76,20 +68,11 @@ function wrapWithReauth(ref: CfgRef): TRPCClient<AppRouter> {
               return await call(primary);
             } catch (err) {
               if (!isUnauthorized(err)) throw err;
-              try {
-                ref.current = await reconfigureAfter401(ref.current);
-              } catch (reauthErr) {
-                if (reauthErr instanceof NonInteractiveAuthError) throw err;
-                throw reauthErr;
-              }
-              const rebuilt = buildClient(ref);
-              return await call(rebuilt);
+              ref.current = await refreshOrLogin(ref.current);
+              return await call(buildClient(ref));
             }
           };
         }
-        // Recurse into anything object-like (the tRPC recursive proxy returns
-        // a callable function for every intermediate path, so include function
-        // values, not just plain objects).
         if (value !== null && (typeof value === "object" || typeof value === "function")) {
           return wrap(value as object, [...pathSegments, prop]);
         }
@@ -101,6 +84,6 @@ function wrapWithReauth(ref: CfgRef): TRPCClient<AppRouter> {
 }
 
 export async function getTrpcClient(): Promise<TRPCClient<AppRouter>> {
-  const ref: CfgRef = { current: await ensureConfig() };
-  return wrapWithReauth(ref);
+  const ref: SessionRef = { current: getSession(getConfig()) };
+  return wrapWithRefresh(ref);
 }

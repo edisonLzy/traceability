@@ -39,6 +39,16 @@ export class ProjectService {
     return this.repository.listKeys(projectId);
   }
 
+  async listConnections(projectId: string) {
+    const project = await this.repository.findById(projectId);
+    if (!project) return null;
+    const keys = await this.repository.listKeys(projectId);
+    return keys.map((key) => ({
+      key,
+      dsn: this.createDsn(key.publicKey, project.sentryProjectId),
+    }));
+  }
+
   async createKey(projectId: string) {
     const project = await this.repository.findById(projectId);
     if (!project) return null;

@@ -32,8 +32,8 @@ pnpm -r run build
 # 1. start server
 cd server && pnpm dev &          # http://localhost:3000
 
-# 2. create a project
-cd ../packages/cli && node dist/index.js config set --server http://localhost:3000 --token dev-token
+# 2. log in and create a project
+cd ../packages/cli && node dist/index.js auth login --server http://localhost:3000
 node dist/index.js project create --slug demo --name Demo --json
 # copy the project.sentryProjectId for SDK ingest, and project.id for management commands
 
@@ -41,9 +41,9 @@ node dist/index.js project create --slug demo --name Demo --json
 cd ../../app && echo 'VITE_SERVER_URL=http://localhost:3000' > .env && pnpm dev
 ```
 
-Management requests require a Bearer token. The desktop app reads `VITE_SERVER_URL` and
-`VITE_MANAGEMENT_TOKEN`; the CLI reads `--server`/`--token`, environment variables, or its
-config file.
+Management requests require a user access JWT. The CLI obtains and rotates it
+through `traceability auth login`, persisting its local session without
+displaying token values.
 
 ### tRPC debugging panel
 
@@ -53,13 +53,14 @@ available, start the server in development mode, then open
 [`http://localhost:3000/trpc-panel`](http://localhost:3000/trpc-panel):
 
 ```bash
-NODE_ENV=development MANAGEMENT_AUTH_TOKEN=traceability-development-token pnpm --filter @traceability/server dev
+pnpm --filter @traceability/server dev
 ```
 
-In the panel, open **Headers** and add `Authorization: Bearer traceability-development-token`
-before invoking a procedure. The panel shell is available only when `NODE_ENV` is not
-`production`; every management procedure still enforces `MANAGEMENT_AUTH_TOKEN`. Do not
-expose the development server or its fallback token to an untrusted network.
+In the panel, open **Headers** and add `Authorization: Bearer <access-token>` before
+invoking a procedure. Obtain an access token with `traceability auth login`, then read it
+from `~/.traceability/config.json` (the CLI deliberately never prints it). The panel shell
+is available only when `NODE_ENV` is not `production`; every management procedure still
+enforces the access JWT. Do not expose the development server to an untrusted network.
 
 ## Integrating the SDK
 

@@ -46,6 +46,10 @@ export const projectsRouter = t.router({
     return ctx.container.projects.listKeys(input);
   }),
 
+  listConnections: procedure.input(projectIdInput).query(({ ctx, input }) => {
+    return ctx.container.projects.listConnections(input);
+  }),
+
   createKey: procedure.input(projectIdInput).mutation(({ ctx, input }) => {
     return ctx.container.projects.createKey(input);
   }),

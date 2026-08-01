@@ -1,19 +1,21 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+
+import type { AuthSession } from "./auth.js";
 
 export interface CliConfig {
   server: string;
-  token: string;
+  user?: AuthSession["user"];
+  accessToken?: string;
+  refreshToken?: string;
 }
 
 export interface CliConfigOverrides {
   server?: string;
-  token?: string;
 }
 
 export const DEFAULT_SERVER = "http://localhost:3000";
-export const DEFAULT_TOKEN = "traceability-development-token";
 
 let commandLineOverrides: CliConfigOverrides = {};
 
@@ -33,13 +35,25 @@ export function getConfig(overrides: CliConfigOverrides = commandLineOverrides):
   return {
     server:
       overrides.server ?? process.env.TRACEABILITY_SERVER_URL ?? stored.server ?? DEFAULT_SERVER,
-    token:
-      overrides.token ?? process.env.TRACEABILITY_MANAGEMENT_TOKEN ?? stored.token ?? DEFAULT_TOKEN,
+    ...(stored.user ? { user: stored.user } : {}),
+    ...(stored.accessToken ? { accessToken: stored.accessToken } : {}),
+    ...(stored.refreshToken ? { refreshToken: stored.refreshToken } : {}),
   };
 }
 
 export function saveConfig(cfg: CliConfig): void {
   const path = configPath();
-  mkdirSync(join(path, ".."), { recursive: true });
-  writeFileSync(path, JSON.stringify(cfg, null, 2), { mode: 0o600 });
+  const directory = dirname(path);
+  mkdirSync(directory, { recursive: true });
+  const temporary = `${path}.tmp`;
+  writeFileSync(temporary, JSON.stringify(cfg, null, 2), { mode: 0o600 });
+  renameSync(temporary, path);
+}
+
+export function saveSession(server: string, session: AuthSession): void {
+  saveConfig({ server, ...session });
+}
+
+export function clearSession(): void {
+  saveConfig({ server: getConfig().server });
 }
