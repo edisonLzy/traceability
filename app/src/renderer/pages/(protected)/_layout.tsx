@@ -16,7 +16,19 @@ import {
   ResizablePanelGroup,
 } from "@renderer/components/ui/resizable";
 import { useMinimumLoading } from "@renderer/hooks/use-minimum-loading";
-import { Bug, Command, Compass, FileCode2, Inbox, Monitor, Moon, Radio, Sun } from "lucide-react";
+import { authStore } from "@renderer/store/auth";
+import {
+  Bug,
+  Command,
+  Compass,
+  FileCode2,
+  Inbox,
+  LogOut,
+  Monitor,
+  Moon,
+  Radio,
+  Sun,
+} from "lucide-react";
 import { Fragment, useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -113,6 +125,17 @@ function AppLayout() {
         icon: Monitor,
         keywords: ["appearance", "theme", "auto"],
         action: () => setTheme("system"),
+      },
+      {
+        id: "account.logout",
+        group: { id: "account", label: "Account", order: 70 },
+        title: "Logout",
+        description: "Sign out and clear your session",
+        icon: LogOut,
+        keywords: ["sign out", "auth", "exit"],
+        action: () => {
+          void authStore.getState().logout();
+        },
       },
     ],
     [navigate, setTheme],
