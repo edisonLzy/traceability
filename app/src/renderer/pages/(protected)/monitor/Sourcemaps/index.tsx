@@ -1,16 +1,17 @@
 import { trpc } from "@renderer/lib/trpc";
 import { cn, relativeTime } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import { Copy, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useStore } from "zustand";
 
-import { useCurrentProject } from "../../_hooks/useCurrentProject";
 import { DropZone } from "./components/DropZone";
 import { readMapDebugId, uploadSourcemap } from "./utils/upload";
 
 export function SourcemapsPage() {
-  const { currentProject } = useCurrentProject();
-  const projectId = currentProject?.id;
+  const currentProject = useStore(projectStore, (s) => s.currentProject);
+  const projectId = currentProject?.id ?? "";
   const projectSlug = currentProject?.slug;
 
   const artifactsQuery = trpc.sourcemaps.listByProject.useQuery(projectId ?? "", {

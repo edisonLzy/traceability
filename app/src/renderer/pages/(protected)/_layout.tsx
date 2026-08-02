@@ -27,10 +27,10 @@ import { ProjectOnboardingGuide } from "./_components/ProjectOnboardingGuide";
 import { RefreshButton } from "./_components/RefreshButton";
 import { Sidebar } from "./_components/Sidebar";
 import { Titlebar } from "./_components/Titlebar";
-import { useCurrentProject } from "./_hooks/useCurrentProject";
+import { useSetupProjects } from "./_hooks/useSetupProjects";
 
 export function Layout() {
-  const { projects, loading } = useCurrentProject();
+  const { projects, loading } = useSetupProjects();
   const showLoading = useMinimumLoading(loading);
 
   if (showLoading) return <LoadingState />;

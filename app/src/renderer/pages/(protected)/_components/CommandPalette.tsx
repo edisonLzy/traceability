@@ -17,15 +17,16 @@ import {
 } from "@renderer/components/ui/dialog";
 import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
 import type { Session } from "@renderer/store/agent";
+import { projectStore } from "@renderer/store/project";
 import { ArrowLeft, MessageCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-
-import { useCurrentProject } from "../_hooks/useCurrentProject";
+import { useStore } from "zustand";
 
 export function CommandPalette() {
   const { invoke } = useElectronIPC();
-  const { currentProject, projectId } = useCurrentProject();
+  const currentProject = useStore(projectStore, (s) => s.currentProject);
+  const projectId = currentProject?.id ?? "";
   const palette = useCommandPalette();
   const commands = useRegisteredCommands();
   const [query, setQuery] = useState("");

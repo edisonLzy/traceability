@@ -20,6 +20,7 @@ import {
 } from "@renderer/components/ui/sidebar";
 import { useIssues } from "@renderer/hooks/use-issues";
 import { cn } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import {
   Activity,
   Bug,
@@ -30,8 +31,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-
-import { useCurrentProject } from "../_hooks/useCurrentProject";
+import { useStore } from "zustand";
 
 type NavigationItem = {
   icon: LucideIcon;
@@ -114,7 +114,7 @@ function SidebarNavLink({
 }
 
 function MonitorNavigation() {
-  const { projectId } = useCurrentProject();
+  const projectId = useStore(projectStore, (s) => s.currentProject?.id ?? "");
   const { data } = useIssues({ projectId, limit: 100 });
 
   return (

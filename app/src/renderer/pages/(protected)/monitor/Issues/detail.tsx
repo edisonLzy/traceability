@@ -3,18 +3,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@renderer/components/u
 import { useIssue, useIssueEvents, useUpdateIssue } from "@renderer/hooks/use-issue";
 import { promptAgent } from "@renderer/lib/agent-events";
 import { cn, relativeTime, statusGroup } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import { ArrowLeft, Check, CircleOff, Sparkles } from "lucide-react";
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { useStore } from "zustand";
 
-import { useCurrentProject } from "../../_hooks/useCurrentProject";
 import { Stacktrace } from "./components/Stacktrace";
 
 export function IssueDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentProject } = useCurrentProject();
+  const currentProject = useStore(projectStore, (s) => s.currentProject);
   const issueQuery = useIssue(id);
   const eventsQuery = useIssueEvents(id);
   const updateIssue = useUpdateIssue();

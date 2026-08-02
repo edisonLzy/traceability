@@ -1,4 +1,5 @@
 import { cn } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -13,7 +14,6 @@ import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
 import { useCreateProject } from "../_hooks/useCreateProject";
-import { useCurrentProject } from "../_hooks/useCurrentProject";
 
 const STEPS = ["Welcome", "Slug", "Name", "Review"] as const;
 
@@ -25,7 +25,6 @@ const AVATAR_GRADIENT = "linear-gradient(145deg,#9ba7ff,#626fd2)";
  * new project is selected and the normal shell takes over (projects.length > 0).
  */
 export function ProjectOnboardingGuide() {
-  const { setProjectId } = useCurrentProject();
   const createProjectMutation = useCreateProject();
   const [step, setStep] = useState(0);
   const [slug, setSlug] = useState("");
@@ -45,7 +44,7 @@ export function ProjectOnboardingGuide() {
         name: name.trim(),
         slug: slug.trim(),
       });
-      setProjectId(project.project.id);
+      projectStore.getState().setCurrentProject(project.project);
       toast("Project created");
     } catch (cause) {
       toast(String(cause));

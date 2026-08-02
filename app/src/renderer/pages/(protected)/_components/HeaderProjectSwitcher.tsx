@@ -1,10 +1,11 @@
 import { useRegisterCommands } from "@renderer/commands";
 import { Popover, PopoverContent, PopoverTrigger } from "@renderer/components/ui/popover";
 import { cn } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import { AppWindow, Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useStore } from "zustand";
 
-import { useCurrentProject } from "../_hooks/useCurrentProject";
 import { CreateProjectModal } from "./CreateProjectModal";
 
 /**
@@ -13,7 +14,8 @@ import { CreateProjectModal } from "./CreateProjectModal";
  * RefreshButton (UI + command registration in one component).
  */
 export function HeaderProjectSwitcher() {
-  const { projects, currentProject, setProjectId } = useCurrentProject();
+  const projects = useStore(projectStore, (s) => s.projects);
+  const currentProject = useStore(projectStore, (s) => s.currentProject);
   const [open, setOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [query, setQuery] = useState("");
@@ -122,7 +124,7 @@ export function HeaderProjectSwitcher() {
                 key={app.id}
                 type="button"
                 onClick={() => {
-                  setProjectId(app.id);
+                  projectStore.getState().setCurrentProject(app);
                   setOpen(false);
                 }}
                 className={cn(

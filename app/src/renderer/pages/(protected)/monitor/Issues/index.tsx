@@ -1,12 +1,12 @@
 import { useIssues } from "@renderer/hooks/use-issues";
 import { cn, issueSource, relativeTime, statusGroup } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-import { useCurrentProject } from "../../_hooks/useCurrentProject";
+import { useStore } from "zustand";
 
 const STATUS_ITEMS: Array<{
   value: "all" | "unresolved" | "resolved" | "ignored";
@@ -19,7 +19,7 @@ const STATUS_ITEMS: Array<{
 ];
 
 export function IssuesPage() {
-  const { currentProject, projectId } = useCurrentProject();
+  const projectId = useStore(projectStore, (s) => s.currentProject?.id ?? "");
   const nav = useNavigate();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");

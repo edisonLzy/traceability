@@ -8,11 +8,11 @@ import {
   DialogTitle,
 } from "@renderer/components/ui/dialog";
 import { Field } from "@renderer/components/ui/field";
+import { projectStore } from "@renderer/store/project";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useCreateProject } from "../_hooks/useCreateProject";
-import { useCurrentProject } from "../_hooks/useCurrentProject";
 
 export function CreateProjectModal({
   open,
@@ -21,7 +21,6 @@ export function CreateProjectModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { setProjectId } = useCurrentProject();
   const createProjectMutation = useCreateProject();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -44,7 +43,7 @@ export function CreateProjectModal({
         name: name.trim(),
         slug: slug.trim(),
       });
-      setProjectId(project.project.id);
+      projectStore.getState().setCurrentProject(project.project);
       onOpenChange(false);
       toast("Project added");
     } catch (cause) {
