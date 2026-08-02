@@ -1,3 +1,4 @@
+import { ModeToggle } from "@renderer/components/Themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,9 +18,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@renderer/components/ui/sidebar";
-import { useCurrentProject } from "@renderer/context/current-project";
 import { useIssues } from "@renderer/hooks/use-issues";
 import { cn } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import {
   Activity,
   Bug,
@@ -30,6 +31,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useStore } from "zustand";
 
 type NavigationItem = {
   icon: LucideIcon;
@@ -42,7 +44,7 @@ export function Sidebar() {
   return (
     <SidebarRoot
       aria-label="Primary navigation"
-      className="relative z-20 w-[52px] shrink-0 overflow-visible border-r border-hairline bg-[rgba(18,19,23,0.84)] px-2 pb-3 backdrop-blur-2xl"
+      className="relative z-20 w-[52px] shrink-0 overflow-visible border-r border-hairline bg-surface-glass px-2 pb-3 backdrop-blur-2xl"
     >
       <SidebarHeader className="items-center pt-3">
         <div className="grid h-7 w-8 place-items-center" aria-label="Traceability">
@@ -73,11 +75,7 @@ export function Sidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="items-center border-t border-hairline pt-2.5">
-        <span
-          className="size-1.5 rounded-full bg-success"
-          style={{ boxShadow: "0 0 0 3px rgba(88,199,123,0.1)" }}
-          title="Connected to Traceability"
-        />
+        <ModeToggle />
       </SidebarFooter>
     </SidebarRoot>
   );
@@ -105,8 +103,8 @@ function SidebarNavLink({
         isActive={active}
         onClick={() => navigate(to)}
         className={cn(
-          "size-8 border border-hairline bg-white/[0.025] text-muted hover:border-hairline-strong hover:bg-white/[0.07] hover:text-ink",
-          active && "border-hairline-strong bg-white/[0.07] text-ink",
+          "size-8 border border-hairline bg-overlay text-muted hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink",
+          active && "border-hairline-strong bg-overlay-strong text-ink",
         )}
       >
         <Icon size={15} className={cn(active && "text-primary-hover")} />
@@ -116,7 +114,7 @@ function SidebarNavLink({
 }
 
 function MonitorNavigation() {
-  const { projectId } = useCurrentProject();
+  const projectId = useStore(projectStore, (s) => s.currentProject?.id ?? "");
   const { data } = useIssues({ projectId, limit: 100 });
 
   return (
@@ -164,8 +162,8 @@ function SidebarNavigationMenu({
               aria-label={label}
               isActive={isActive}
               className={cn(
-                "size-8 border border-hairline bg-white/[0.025] text-muted hover:border-hairline-strong hover:bg-white/[0.07] hover:text-ink",
-                isActive && "border-hairline-strong bg-white/[0.07] text-ink",
+                "size-8 border border-hairline bg-overlay text-muted hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink",
+                isActive && "border-hairline-strong bg-overlay-strong text-ink",
               )}
             />
           }

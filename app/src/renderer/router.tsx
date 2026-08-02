@@ -19,7 +19,7 @@ export const appRoutes: RouteObject[] = [
       {
         element: <Layout />,
         children: [
-          { index: true, element: <Navigate to="/inbox" replace /> },
+          { index: true, element: <Navigate to="/monitor" replace /> },
           { path: "inbox", element: <InboxPage /> },
           {
             path: "monitor",

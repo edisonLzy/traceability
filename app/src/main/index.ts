@@ -1,19 +1,26 @@
 import { join } from "path";
 
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, nativeTheme } from "electron";
 
 import { AgentPool } from "./agent-pool.js";
 import { AuthSession } from "./auth/auth-session.js";
+import { initMonitor } from "./monitor.js";
 import { SessionPersistence } from "./sessions/index.js";
+import { applyPersistedThemeSource, ThemeController } from "./theme.js";
+
+void initMonitor();
 
 void app
   .whenReady()
   .then(() => {
+    applyPersistedThemeSource();
+
     let browserWindow: BrowserWindow | null = createWindow();
 
     const agentPool = new AgentPool(browserWindow);
     const sessionPersistence = new SessionPersistence(browserWindow);
     const authSession = new AuthSession(browserWindow);
+    const themeController = new ThemeController(browserWindow);
 
     app.on("activate", () => {
       if (!browserWindow || browserWindow.isDestroyed()) {
@@ -21,6 +28,7 @@ void app
         agentPool.updateBrowserWindow(browserWindow);
         sessionPersistence.updateBrowserWindow(browserWindow);
         authSession.updateBrowserWindow(browserWindow);
+        themeController.updateBrowserWindow(browserWindow);
       }
     });
 
@@ -28,6 +36,7 @@ void app
       void agentPool.destroyAll();
       void sessionPersistence.destroyAll();
       void authSession.destroyAll();
+      themeController.destroyAll();
     });
   })
   .catch((error: unknown) => {
@@ -41,6 +50,14 @@ app.on("window-all-closed", () => {
 
 console.log("Traceability main process started!");
 
+/** Track the native theme so the titlebar overlay icon color stays legible. */
+nativeTheme.on("updated", () => {
+  const overlayColor = nativeTheme.shouldUseDarkColors ? "#f5f5f7" : "#1a1a1f";
+  BrowserWindow.getAllWindows().forEach((window) => {
+    window.setTitleBarOverlay?.({ symbolColor: overlayColor });
+  });
+});
+
 function createWindow() {
   const isMac = process.platform === "darwin";
   const mainWindow = new BrowserWindow({
@@ -51,7 +68,7 @@ function createWindow() {
       : {
           titleBarOverlay: {
             color: "#00000000",
-            symbolColor: "#f5f5f7",
+            symbolColor: nativeTheme.shouldUseDarkColors ? "#f5f5f7" : "#1a1a1f",
             height: 30,
           },
         }),

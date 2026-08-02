@@ -9,9 +9,9 @@ import {
   type RendererExtensionDefinition,
 } from "@extensions/core/renderer";
 import { CommandProvider } from "@renderer/commands";
+import { ThemeProvider } from "@renderer/components/Themes";
 import { TrpcErrorToaster } from "@renderer/components/TrpcErrorToaster";
 import { Toaster } from "@renderer/components/ui/sonner";
-import { CurrentProjectProvider } from "@renderer/context/current-project";
 import { ElectronIPCProvider } from "@renderer/context/ElectronIPCProvider";
 import { rendererTrpcClient, trpc } from "@renderer/lib/trpc";
 import { router } from "@renderer/router";
@@ -48,7 +48,7 @@ export function App() {
     <trpc.Provider client={rendererTrpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <ElectronIPCProvider>
-          <CurrentProjectProvider>
+          <ThemeProvider>
             <CommandProvider>
               <ExtensionProvider extensions={installedRendererExtensions}>
                 <ExtensionsContextAPIProvider api={extensionsContextAPI}>
@@ -58,7 +58,7 @@ export function App() {
                 </ExtensionsContextAPIProvider>
               </ExtensionProvider>
             </CommandProvider>
-          </CurrentProjectProvider>
+          </ThemeProvider>
         </ElectronIPCProvider>
       </QueryClientProvider>
     </trpc.Provider>

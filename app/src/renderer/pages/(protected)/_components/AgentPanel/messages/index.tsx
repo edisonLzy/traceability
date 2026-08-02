@@ -56,7 +56,7 @@ export function ChatMessages({
     return (
       <div className="grid h-full place-items-center px-6 text-center">
         <div className="max-w-[280px]">
-          <span className="mx-auto mb-3 grid size-10 place-items-center rounded-[11px] border border-hairline bg-white/[0.025] text-primary-hover">
+          <span className="mx-auto mb-3 grid size-10 place-items-center rounded-[11px] border border-hairline bg-overlay text-primary-hover">
             <Sparkles size={17} />
           </span>
           <strong className="block text-[13px] font-[620] text-ink">

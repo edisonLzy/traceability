@@ -3,6 +3,12 @@ import loginAnimation from "@renderer/assets/secure-login.lottie";
 import { trpc } from "@renderer/lib/trpc";
 import { authStore } from "@renderer/store/auth";
 import type { AppRouterInputs } from "@shared/trpc-types";
+import {
+  addBreadcrumb,
+  captureException,
+  captureMessage,
+  setTag,
+} from "@traceability/monitor/electron-renderer";
 import { KeyRound, Loader2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 
@@ -11,10 +17,27 @@ type LoginFormValues = AppRouterInputs["auth"]["login"];
 
 export function LoginPage() {
   const loginMutation = trpc.auth.login.useMutation({
-    // 用 mutate（不 await）避免 reject 传播到 handleSubmit 再抛成 unhandled rejection；
-    // 失败路径统一走 TrpcErrorToaster 的 toast。
     onSuccess: (result) => {
+      const t0 = performance.now();
+      captureMessage("login-api-ok", {
+        level: "info",
+        tags: { flow: "login" },
+        extra: { email: result.user.email },
+      });
       void authStore.getState().completeLogin(result);
+      captureMessage("login-done", {
+        level: "info",
+        tags: { flow: "login" },
+        extra: { email: result.user.email, login_total_ms: performance.now() - t0 },
+      });
+    },
+    onError: (err) => {
+      captureMessage("login-failed", {
+        level: "error",
+        tags: { flow: "login" },
+        extra: { error: err.message },
+      });
+      captureException(err);
     },
   });
 
@@ -27,6 +50,8 @@ export function LoginPage() {
   });
 
   const onSubmit = handleSubmit((data) => {
+    setTag("flow", "login");
+    addBreadcrumb({ category: "login", message: "submit start", data: { email: data.email } });
     loginMutation.mutate(data);
   });
 
@@ -47,7 +72,7 @@ export function LoginPage() {
         <p className="mt-2 text-[12px] leading-relaxed text-tertiary">
           使用系统分配的邮箱和密码继续。当前不开放注册。
         </p>
-        <label className="mt-5 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-white/[0.035] px-3 text-tertiary">
+        <label className="mt-5 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-3 text-tertiary">
           <Mail size={14} />
           <input
             type="email"
@@ -64,7 +89,7 @@ export function LoginPage() {
             {errors.email.message}
           </p>
         )}
-        <label className="mt-2 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-white/[0.035] px-3 text-tertiary">
+        <label className="mt-2 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-3 text-tertiary">
           <KeyRound size={14} />
           <input
             type="password"
@@ -80,7 +105,7 @@ export function LoginPage() {
         )}
         <button
           disabled={isSubmitting || loginMutation.isPending}
-          className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-primary text-[12px] font-[650] text-[#111329] disabled:opacity-60"
+          className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-primary text-[12px] font-[650] text-primary-foreground disabled:opacity-60"
         >
           {(isSubmitting || loginMutation.isPending) && (
             <Loader2 size={14} className="animate-spin" />

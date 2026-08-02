@@ -13,7 +13,7 @@ export function IconNode({ icon, children, className, onRemove, ...props }: Icon
   return (
     <span
       className={cn(
-        "inline-flex h-5 max-w-full items-center gap-1 rounded-[5px] border border-primary/30 bg-primary/[0.09] px-1.5 py-0 align-middle text-[10px] leading-none font-[620] text-[#d9dcff]",
+        "inline-flex h-5 max-w-full items-center gap-1 rounded-[5px] border border-primary/30 bg-primary/[0.09] px-1.5 py-0 align-middle text-[10px] leading-none font-[620] text-primary-soft",
         className,
       )}
       {...props}
@@ -23,7 +23,7 @@ export function IconNode({ icon, children, className, onRemove, ...props }: Icon
       {onRemove ? (
         <button
           aria-label="Remove skill"
-          className="grid size-3 shrink-0 place-items-center rounded text-[#d9dcff]/75 transition-colors hover:bg-white/[0.1] hover:text-[#d9dcff]"
+          className="grid size-3 shrink-0 place-items-center rounded text-primary-soft/75 transition-colors hover:bg-overlay-strong hover:text-primary-soft"
           onMouseDown={(event) => {
             event.preventDefault();
             event.stopPropagation();

@@ -24,7 +24,7 @@ import type { ExtensionService, ExtensionToolRuntimeContext } from "./extension-
 /**
  * Programmatic multi-agent runtime backing the main extension host.
  *
- * Extension tools (e.g. `subagents/run`) call this API to spawn focused
+ * Extension tools (e.g. `subagents_run`) call this API to spawn focused
  * sub-agents, stream their events, and drive them to completion - without
  * going through the IPC surface used by the renderer-driven main session.
  */

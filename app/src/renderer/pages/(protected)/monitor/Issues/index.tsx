@@ -1,12 +1,12 @@
-import { useCurrentProject } from "@renderer/context/current-project";
 import { useIssues } from "@renderer/hooks/use-issues";
-import { promptAgent } from "@renderer/lib/agent-events";
 import { cn, issueSource, relativeTime, statusGroup } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import { useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Search, Sparkles } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useStore } from "zustand";
 
 const STATUS_ITEMS: Array<{
   value: "all" | "unresolved" | "resolved" | "ignored";
@@ -19,7 +19,7 @@ const STATUS_ITEMS: Array<{
 ];
 
 export function IssuesPage() {
-  const { currentProject, projectId } = useCurrentProject();
+  const projectId = useStore(projectStore, (s) => s.currentProject?.id ?? "");
   const nav = useNavigate();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
@@ -51,14 +51,6 @@ export function IssuesPage() {
     toast("Monitoring data refreshed");
   };
 
-  const askAboutIssues = () => {
-    if (!currentProject) return;
-    promptAgent({
-      context: { projectId: currentProject.id, source: "general" },
-      prompt: "Summarize the current open issues",
-    });
-  };
-
   return (
     <div className="mx-auto block min-h-full max-w-[1260px] px-[22px] pt-[22px] pb-12">
       <header className="mb-[18px] flex items-start justify-between gap-5">
@@ -76,21 +68,14 @@ export function IssuesPage() {
           <button
             type="button"
             onClick={refresh}
-            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-hairline bg-white/[0.045] px-3 text-[12px] font-[590] text-muted transition-colors hover:border-hairline-strong hover:bg-white/[0.08] hover:text-ink"
+            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-hairline bg-overlay px-3 text-[12px] font-[590] text-muted transition-colors hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink"
           >
             <RefreshCw size={14} /> Refresh
-          </button>
-          <button
-            type="button"
-            onClick={askAboutIssues}
-            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-primary/40 bg-primary px-3 text-[12px] font-[590] text-[#111329] transition-colors hover:bg-primary-hover"
-          >
-            <Sparkles size={14} /> Ask about issues
           </button>
         </div>
       </header>
 
-      <div className="mb-[18px] grid grid-cols-4 overflow-hidden rounded-2xl border border-hairline bg-white/[0.025]">
+      <div className="mb-[18px] grid grid-cols-4 overflow-hidden rounded-2xl border border-hairline bg-overlay">
         <Metric label="Open issues" value={open} note="Needs triage" noteClass="text-warning" />
         <Metric
           label="Events · 24h"
@@ -108,7 +93,7 @@ export function IssuesPage() {
       </div>
 
       <div className="mb-3.5 flex items-center gap-2">
-        <label className="flex h-9 max-w-[400px] min-w-[240px] flex-1 items-center gap-2 rounded-[9px] border border-hairline bg-white/[0.035] px-2.5 text-tertiary focus-within:border-primary/55 focus-within:shadow-[0_0_0_3px_rgba(143,156,255,0.1)]">
+        <label className="flex h-9 max-w-[400px] min-w-[240px] flex-1 items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-2.5 text-tertiary focus-within:border-primary/55 focus-within:shadow-[0_0_0_3px_rgba(143,156,255,0.1)]">
           <Search size={14} />
           <input
             type="search"
@@ -136,7 +121,7 @@ export function IssuesPage() {
         </span>
       </div>
 
-      <section className="overflow-hidden rounded-2xl border border-hairline bg-white/[0.025]">
+      <section className="overflow-hidden rounded-2xl border border-hairline bg-overlay">
         <div className="flex min-h-12 items-center border-b border-hairline px-4">
           <span className="text-[12px] font-[630] text-muted">All issues</span>
           <span className="ml-auto text-[11px] text-tertiary">Updated in real time</span>
@@ -165,7 +150,7 @@ export function IssuesPage() {
                 <tr
                   key={issue.id}
                   onClick={() => nav(`/monitor/issues/${issue.id}`)}
-                  className="cursor-pointer transition-colors hover:bg-white/[0.045]"
+                  className="cursor-pointer transition-colors hover:bg-overlay"
                 >
                   <td className="border-b border-hairline px-4 py-3 text-[12px] text-muted">
                     <div className="flex items-start gap-2.5">
@@ -240,7 +225,7 @@ function StatusBadge({ group }: { group: "unresolved" | "resolved" | "ignored" }
     group === "unresolved" ? "bg-danger" : group === "resolved" ? "bg-success" : "bg-muted";
   const label = group === "unresolved" ? "Open" : group === "resolved" ? "Resolved" : "Ignored";
   return (
-    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-white/[0.04] px-2 text-[10px] font-[600] text-muted">
+    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-overlay px-2 text-[10px] font-[600] text-muted">
       <span className={cn("size-1.5 rounded-full", dot)} />
       {label}
     </span>

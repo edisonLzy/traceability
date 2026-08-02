@@ -67,7 +67,7 @@ function BreadcrumbSeparator({ children, className, ...props }: React.ComponentP
       role="presentation"
       aria-hidden="true"
       data-slot="breadcrumb-separator"
-      className={cn("inline-flex shrink-0 items-center text-[#55565d]", className)}
+      className={cn("inline-flex shrink-0 items-center text-subtle", className)}
       {...props}
     >
       {children ?? <Slash className="size-3" />}

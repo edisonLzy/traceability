@@ -87,7 +87,7 @@ export function ModalSelector({ value, onChange }: ModalSelectorProps) {
       disabled={isLoading || models.length === 0}
     >
       <SelectTrigger
-        className="h-7 w-auto max-w-50 gap-1 rounded-[6px] border border-hairline bg-black/10 px-2 !text-ink shadow-none hover:border-hairline-strong hover:bg-white/[0.055] data-popup-open:border-primary/55 data-popup-open:bg-white/[0.05] focus:ring-0"
+        className="h-7 w-auto max-w-50 gap-1 rounded-[6px] border border-hairline bg-overlay px-2 !text-ink shadow-none hover:border-hairline-strong hover:bg-overlay-strong data-popup-open:border-primary/55 data-popup-open:bg-overlay focus:ring-0"
         aria-label="Select model"
       >
         <SelectValue className="pointer-events-none min-w-0">
@@ -106,7 +106,7 @@ export function ModalSelector({ value, onChange }: ModalSelectorProps) {
       <SelectContent
         align="end"
         sideOffset={8}
-        className="max-h-none w-max min-w-56 max-w-80 overflow-hidden rounded-[10px] border border-hairline-strong bg-[rgba(30,31,37,0.98)] p-0 text-ink shadow-[0_18px_50px_rgba(0,0,0,0.38)]"
+        className="max-h-none w-max min-w-56 max-w-80 overflow-hidden rounded-[10px] border border-hairline-strong bg-surface-glass-elevated p-0 text-ink shadow-[0_18px_50px_rgba(0,0,0,0.38)]"
       >
         <div className="border-b border-hairline px-2 py-2">
           <Input
@@ -131,8 +131,8 @@ export function ModalSelector({ value, onChange }: ModalSelectorProps) {
                 key={modelValue}
                 value={modelValue}
                 className={cn(
-                  "mb-0.5 last:mb-0 w-full overflow-hidden rounded-[7px] border border-transparent px-2 py-2 text-ink focus:bg-white/[0.07] focus:text-ink",
-                  isSelected && "bg-white/[0.055] text-ink",
+                  "mb-0.5 last:mb-0 w-full overflow-hidden rounded-[7px] border border-transparent px-2 py-2 text-ink focus:bg-overlay-strong focus:text-ink",
+                  isSelected && "bg-overlay text-ink",
                 )}
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden pr-6">

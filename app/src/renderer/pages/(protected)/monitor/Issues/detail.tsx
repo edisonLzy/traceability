@@ -1,20 +1,21 @@
 import { useRegisterCommands } from "@renderer/commands";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@renderer/components/ui/tabs";
-import { useCurrentProject } from "@renderer/context/current-project";
 import { useIssue, useIssueEvents, useUpdateIssue } from "@renderer/hooks/use-issue";
 import { promptAgent } from "@renderer/lib/agent-events";
 import { cn, relativeTime, statusGroup } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import { ArrowLeft, Check, CircleOff, Sparkles } from "lucide-react";
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { useStore } from "zustand";
 
 import { Stacktrace } from "./components/Stacktrace";
 
 export function IssueDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentProject } = useCurrentProject();
+  const currentProject = useStore(projectStore, (s) => s.currentProject);
   const issueQuery = useIssue(id);
   const eventsQuery = useIssueEvents(id);
   const updateIssue = useUpdateIssue();
@@ -102,14 +103,14 @@ export function IssueDetailPage() {
         <button
           type="button"
           onClick={investigate}
-          className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-primary/40 bg-primary px-3 text-[12px] font-[590] text-[#111329] transition-colors hover:bg-primary-hover"
+          className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-primary/40 bg-primary px-3 text-[12px] font-[590] text-primary-foreground transition-colors hover:bg-primary-hover"
         >
           <Sparkles size={14} /> Investigate
         </button>
       </div>
 
       <div className="grid grid-cols-1 gap-4.5 desktop:grid-cols-[minmax(0,1fr)_260px]">
-        <section className="overflow-hidden rounded-2xl border border-hairline bg-white/[0.025]">
+        <section className="overflow-hidden rounded-2xl border border-hairline bg-overlay">
           <div className="border-b border-hairline px-4 py-3 text-[12px] font-[630] text-muted">
             Event evidence · {events.length}
           </div>
@@ -128,7 +129,7 @@ export function IssueDetailPage() {
           </div>
         </section>
 
-        <aside className="h-max overflow-hidden rounded-2xl border border-hairline bg-white/[0.025]">
+        <aside className="h-max overflow-hidden rounded-2xl border border-hairline bg-overlay">
           <div className="border-b border-hairline p-4">
             <div className="mb-1.5 text-[10px] font-[660] uppercase tracking-[0.08em] text-tertiary">
               Status
@@ -183,7 +184,7 @@ function EventBody({ event }: { event: EventLike }) {
   const hasStack = payloadHasStacktrace(event.payload);
   if (!hasStack) return <RawPayload payload={event.payload} />;
   return (
-    <Tabs defaultValue="stack" className="rounded-lg border border-hairline bg-white/[0.02]">
+    <Tabs defaultValue="stack" className="rounded-lg border border-hairline bg-overlay">
       <TabsList className="border-b-0 px-3 py-0">
         <TabsTrigger value="stack">Stack trace</TabsTrigger>
         <TabsTrigger value="raw">Raw payload</TabsTrigger>
@@ -224,7 +225,7 @@ function StatusBadge({ group }: { group: "unresolved" | "resolved" | "ignored" }
     group === "unresolved" ? "bg-danger" : group === "resolved" ? "bg-success" : "bg-muted";
   const label = group === "unresolved" ? "Open" : group === "resolved" ? "Resolved" : "Ignored";
   return (
-    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-white/[0.04] px-2 text-[10px] font-[600] text-muted">
+    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-overlay px-2 text-[10px] font-[600] text-muted">
       <span className={cn("size-1.5 rounded-full", dot)} />
       {label}
     </span>

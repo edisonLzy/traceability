@@ -27,7 +27,7 @@ function PopoverContent({
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(
-            "rounded-[14px] border border-hairline-strong bg-[rgba(28,29,35,0.96)] shadow-[0_16px_50px_rgba(0,0,0,0.34),0_2px_12px_rgba(0,0,0,0.22)] backdrop-blur-2xl outline-none",
+            "rounded-[14px] border border-hairline-strong bg-surface-glass-elevated shadow-[0_16px_50px_rgba(0,0,0,0.34),0_2px_12px_rgba(0,0,0,0.22)] backdrop-blur-2xl outline-none",
             className,
           )}
           {...props}

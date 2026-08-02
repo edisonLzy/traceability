@@ -51,7 +51,7 @@ export async function createApp(deps: AppDependencies): Promise<FastifyInstance>
   await app.register(observabilityPlugin);
   await app.register(cors, {
     credentials: false,
-    origin: deps.config.corsOrigins.length > 0 ? deps.config.corsOrigins : false,
+    origin: "*",
   });
   await app.register(healthPlugin);
   await app.register(ingestRouter);

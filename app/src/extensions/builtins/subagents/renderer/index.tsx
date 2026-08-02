@@ -77,7 +77,7 @@ export default defineRendererExtension({
           .focus()
           .deleteRange(range)
           .insertContent(
-            "Use subagents to run this in parallel. Split the work into focused subagents, call subagents/run, then merge their findings into one final answer.\n\nTask: ",
+            "Use subagents to run this in parallel. Split the work into focused subagents, call subagents_run, then merge their findings into one final answer.\n\nTask: ",
           )
           .run();
       },

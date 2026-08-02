@@ -10,7 +10,7 @@ export function PanelLayout({ children }: PanelLayoutProps) {
   return (
     <aside
       aria-label="Traceability Agent"
-      className="relative flex h-full min-w-0 flex-col bg-[rgba(16,17,21,0.86)] backdrop-blur-2xl"
+      className="relative flex h-full min-w-0 flex-col bg-surface-glass backdrop-blur-2xl"
     >
       {children}
     </aside>
@@ -65,7 +65,7 @@ interface PanelFooterProps {
 
 export function PanelFooter({ children }: PanelFooterProps) {
   return (
-    <section className="shrink-0 border-t border-hairline bg-[rgba(14,15,18,0.94)] px-3 pt-2 pb-2.5">
+    <section className="shrink-0 border-t border-hairline bg-surface-glass-elevated px-3 pt-2 pb-2.5">
       {children}
     </section>
   );

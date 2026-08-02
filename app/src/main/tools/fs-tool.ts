@@ -10,7 +10,7 @@ const PathParams = Type.Object({
 });
 
 export const fsReadTextFileTool: AppTool<typeof PathParams> = {
-  name: "fs/read_text_file",
+  name: "fs_read_text_file",
   label: "Read File",
   description: "Read the contents of a text file from the local filesystem",
   riskLevel: "medium",

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 import { Command, CommanderError } from "commander";
@@ -105,6 +106,9 @@ function isNetworkError(err: unknown): boolean {
   return false;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// 入口检测:全局链接时 node 从符号链接路径加载,import.meta.url 会解析到
+// 真实路径而 process.argv[1] 保留链接路径,二者不一致会静默跳过执行,
+// 所以先用 realpath 归一化再比较。
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   void runCli().catch(reportError);
 }

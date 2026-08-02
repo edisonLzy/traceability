@@ -1,6 +1,7 @@
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import errorAnimation from "@renderer/assets/error-warning.lottie";
 import { copyTextToClipboard } from "@renderer/lib/clipboard";
+import { captureException } from "@traceability/monitor/electron-renderer";
 import { CheckIcon, CopyIcon, RefreshCwIcon } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 
@@ -31,9 +32,8 @@ export class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
-    // Surface the React stack alongside the native stack so the user has enough
-    // context to report or self-diagnose before retrying.
     console.error("[GlobalErrorBoundary] render error:", error, info.componentStack);
+    captureException(error);
   }
 
   private reset = () => {

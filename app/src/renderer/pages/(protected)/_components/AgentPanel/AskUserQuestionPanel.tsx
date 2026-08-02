@@ -59,7 +59,7 @@ export function AskUserQuestionPanel({ request, sessionId }: AskUserQuestionPane
                   return (
                     <label
                       key={option.label}
-                      className="flex cursor-pointer items-start gap-2 rounded-[7px] border border-transparent px-2 py-1.5 text-[11px] text-muted transition-colors hover:border-hairline hover:bg-white/[0.035]"
+                      className="flex cursor-pointer items-start gap-2 rounded-[7px] border border-transparent px-2 py-1.5 text-[11px] text-muted transition-colors hover:border-hairline hover:bg-overlay"
                     >
                       <input
                         checked={checked}

@@ -10,7 +10,7 @@
       "@extensions/*": ["./src/extensions/*"]
     }
   },
-  "include": ["src", "src/preload/index.d.ts", "electron.vite.config.ts"],
+  "include": ["src", "src/preload/index.d.ts", "electron.vite.config.ts", "env.d.ts"],
   "exclude": [
     "src/main/**",
     "src/preload/index.ts",

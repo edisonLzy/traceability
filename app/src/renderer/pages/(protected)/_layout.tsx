@@ -1,6 +1,7 @@
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import loadingAnimation from "@renderer/assets/loading-animation.lottie";
 import { useCommandPalette, useRegisterCommands } from "@renderer/commands";
+import { useTheme } from "@renderer/components/Themes";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,9 +15,20 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@renderer/components/ui/resizable";
-import { useCurrentProject } from "@renderer/context/current-project";
 import { useMinimumLoading } from "@renderer/hooks/use-minimum-loading";
-import { Bug, Command, Compass, FileCode2, Inbox, Radio } from "lucide-react";
+import { authStore } from "@renderer/store/auth";
+import {
+  Bug,
+  Command,
+  Compass,
+  FileCode2,
+  Inbox,
+  LogOut,
+  Monitor,
+  Moon,
+  Radio,
+  Sun,
+} from "lucide-react";
 import { Fragment, useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -27,9 +39,10 @@ import { ProjectOnboardingGuide } from "./_components/ProjectOnboardingGuide";
 import { RefreshButton } from "./_components/RefreshButton";
 import { Sidebar } from "./_components/Sidebar";
 import { Titlebar } from "./_components/Titlebar";
+import { useSetupProjects } from "./_hooks/useSetupProjects";
 
 export function Layout() {
-  const { projects, loading } = useCurrentProject();
+  const { projects, loading } = useSetupProjects();
   const showLoading = useMinimumLoading(loading);
 
   if (showLoading) return <LoadingState />;
@@ -42,6 +55,7 @@ export function Layout() {
 /** Hooks below only apply once a project has been selected. */
 function AppLayout() {
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
 
   useRegisterCommands(
     () => [
@@ -85,8 +99,46 @@ function AppLayout() {
         shortcut: "G X",
         action: () => navigate("/explorer"),
       },
+      {
+        id: "theme.light",
+        group: { id: "theme", label: "主题", order: 60 },
+        title: "Light mode",
+        description: "Switch to the light theme",
+        icon: Sun,
+        keywords: ["appearance", "theme"],
+        action: () => setTheme("light"),
+      },
+      {
+        id: "theme.dark",
+        group: { id: "theme", label: "主题", order: 60 },
+        title: "Dark mode",
+        description: "Switch to the dark theme",
+        icon: Moon,
+        keywords: ["appearance", "theme"],
+        action: () => setTheme("dark"),
+      },
+      {
+        id: "theme.system",
+        group: { id: "theme", label: "主题", order: 60 },
+        title: "System theme",
+        description: "Follow the operating system theme",
+        icon: Monitor,
+        keywords: ["appearance", "theme", "auto"],
+        action: () => setTheme("system"),
+      },
+      {
+        id: "account.logout",
+        group: { id: "account", label: "Account", order: 70 },
+        title: "Logout",
+        description: "Sign out and clear your session",
+        icon: LogOut,
+        keywords: ["sign out", "auth", "exit"],
+        action: () => {
+          void authStore.getState().logout();
+        },
+      },
     ],
-    [navigate],
+    [navigate, setTheme],
   );
 
   return (
@@ -97,7 +149,7 @@ function AppLayout() {
         <ResizablePanelGroup orientation="horizontal" className="min-w-0 flex-1">
           <ResizablePanel defaultSize="60%" minSize="45%">
             <main className="flex h-full min-w-0 flex-col">
-              <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-[rgba(12,13,16,0.55)] px-[22px] backdrop-blur-xl">
+              <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-surface-glass px-[22px] backdrop-blur-xl">
                 <HeaderBreadcrumb />
                 <div className="ml-auto flex items-center gap-2">
                   <CommandKButton />
@@ -205,7 +257,7 @@ function CommandKButton() {
       type="button"
       onClick={openCommands}
       title="Open command palette"
-      className="inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-hairline bg-white/[0.035] px-2 text-[10px] text-tertiary transition-colors hover:border-hairline-strong hover:bg-white/[0.07] hover:text-muted"
+      className="inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-hairline bg-overlay px-2 text-[10px] text-tertiary transition-colors hover:border-hairline-strong hover:bg-overlay-strong hover:text-muted"
     >
       <Command size={13} /> Command <kbd className="font-mono">⌘K</kbd>
     </button>
