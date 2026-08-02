@@ -42,7 +42,7 @@ function AgentBlockRenderer({ code, isIncomplete }: CustomRendererProps) {
 
   if (result.status === "pending") {
     return (
-      <div className="my-2 rounded-md border border-hairline bg-white/[0.025] px-2 py-1.5 text-[10px] text-tertiary">
+      <div className="my-2 rounded-md border border-hairline bg-overlay px-2 py-1.5 text-[10px] text-tertiary">
         Rendering block…
       </div>
     );
@@ -50,7 +50,7 @@ function AgentBlockRenderer({ code, isIncomplete }: CustomRendererProps) {
 
   if (result.status === "invalid") {
     return (
-      <div className="my-2 rounded-md border border-hairline bg-white/[0.025] px-2 py-1.5 text-[10px] text-tertiary">
+      <div className="my-2 rounded-md border border-hairline bg-overlay px-2 py-1.5 text-[10px] text-tertiary">
         Unsupported assistant block
       </div>
     );
@@ -59,7 +59,7 @@ function AgentBlockRenderer({ code, isIncomplete }: CustomRendererProps) {
   const Block = registration?.render;
   if (!Block) {
     return (
-      <div className="my-2 rounded-md border border-hairline bg-white/[0.025] px-2 py-1.5 text-[10px] text-tertiary">
+      <div className="my-2 rounded-md border border-hairline bg-overlay px-2 py-1.5 text-[10px] text-tertiary">
         Unsupported assistant block: <span className="font-mono">{result.payload.type}</span>
       </div>
     );

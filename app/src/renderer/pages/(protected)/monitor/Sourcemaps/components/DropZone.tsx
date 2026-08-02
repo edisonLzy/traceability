@@ -29,7 +29,7 @@ export function DropZone({ onFiles, disabled = false, hint }: DropZoneProps) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-hairline bg-white/[0.02] px-6 py-10 text-center transition-colors",
+        "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-hairline bg-overlay px-6 py-10 text-center transition-colors",
         dragging && "border-primary/60 bg-primary/5",
         disabled && "cursor-not-allowed opacity-60",
       )}
@@ -64,7 +64,7 @@ export function DropZone({ onFiles, disabled = false, hint }: DropZoneProps) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={disabled}
-        className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-white/[0.04] px-3 py-1.5 text-[12px] text-muted hover:border-hairline-strong hover:bg-white/[0.08] hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-overlay px-3 py-1.5 text-[12px] text-muted hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Upload size={13} /> Choose files
       </button>

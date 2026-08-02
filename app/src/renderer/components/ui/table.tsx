@@ -36,7 +36,7 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
   return (
     <th
       className={cn(
-        "border-b border-hairline bg-[#0b0c0d] px-4 py-2.5 text-left text-[11px] font-medium text-tertiary [&:has([role=checkbox])]:pr-0",
+        "border-b border-hairline bg-surface-3 px-4 py-2.5 text-left text-[11px] font-medium text-tertiary [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}

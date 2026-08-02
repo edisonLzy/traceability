@@ -96,7 +96,7 @@ function CommandItem({ className, ...props }: React.ComponentProps<typeof Comman
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "grid cursor-default grid-cols-[27px_minmax(0,1fr)_auto] items-center gap-2 rounded-[9px] px-2 py-2 text-left text-muted outline-none select-none data-[selected=true]:bg-white/[0.075] data-[selected=true]:text-ink data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
+        "grid cursor-default grid-cols-[27px_minmax(0,1fr)_auto] items-center gap-2 rounded-[9px] px-2 py-2 text-left text-muted outline-none select-none data-[selected=true]:bg-overlay-strong data-[selected=true]:text-ink data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
         className,
       )}
       {...props}

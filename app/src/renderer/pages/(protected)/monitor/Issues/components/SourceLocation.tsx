@@ -26,7 +26,7 @@ export function SourceLocation({ location }: { location: SourceLocationData }) {
           <div className="text-[11px] uppercase tracking-[0.06em] text-tertiary">
             Source map resolved location
           </div>
-          <div className="mt-1 break-all font-mono text-xs text-[#bfc7ff]">
+          <div className="mt-1 break-all font-mono text-xs text-primary-soft">
             {location.file}:{location.line}:{location.column}
           </div>
         </div>
@@ -35,7 +35,7 @@ export function SourceLocation({ location }: { location: SourceLocationData }) {
       {location.context && (
         <pre
           className={cn(
-            "m-0 overflow-auto bg-[#090a0b] px-5 py-4.5 font-mono text-xs leading-7 text-[#c7cbd3]",
+            "m-0 overflow-auto bg-code-bg px-5 py-4.5 font-mono text-xs leading-7 text-code-text",
             "max-h-50 border-y border-hairline",
           )}
         >
@@ -46,11 +46,13 @@ export function SourceLocation({ location }: { location: SourceLocationData }) {
                 className={cn(
                   "block",
                   lineNumber === location.context!.errorLine &&
-                    "-mx-5 bg-primary/15 px-5 text-white",
+                    "-mx-5 bg-primary/15 px-5 text-primary-soft",
                 )}
                 key={lineNumber}
               >
-                <span className="inline-block w-7.5 select-none text-[#474b52]">{lineNumber}</span>
+                <span className="inline-block w-7.5 select-none text-code-line-number">
+                  {lineNumber}
+                </span>
                 {line}
               </span>
             );

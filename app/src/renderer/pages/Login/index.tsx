@@ -47,7 +47,7 @@ export function LoginPage() {
         <p className="mt-2 text-[12px] leading-relaxed text-tertiary">
           使用系统分配的邮箱和密码继续。当前不开放注册。
         </p>
-        <label className="mt-5 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-white/[0.035] px-3 text-tertiary">
+        <label className="mt-5 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-3 text-tertiary">
           <Mail size={14} />
           <input
             type="email"
@@ -64,7 +64,7 @@ export function LoginPage() {
             {errors.email.message}
           </p>
         )}
-        <label className="mt-2 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-white/[0.035] px-3 text-tertiary">
+        <label className="mt-2 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-3 text-tertiary">
           <KeyRound size={14} />
           <input
             type="password"
@@ -80,7 +80,7 @@ export function LoginPage() {
         )}
         <button
           disabled={isSubmitting || loginMutation.isPending}
-          className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-primary text-[12px] font-[650] text-[#111329] disabled:opacity-60"
+          className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-primary text-[12px] font-[650] text-primary-foreground disabled:opacity-60"
         >
           {(isSubmitting || loginMutation.isPending) && (
             <Loader2 size={14} className="animate-spin" />

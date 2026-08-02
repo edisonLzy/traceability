@@ -6,6 +6,7 @@ import type { AgentModelsIPC } from "./models-ipc";
 import type { AgentSessionIPC } from "./session-ipc";
 import type { SessionPersistenceIPC } from "./session-persistence-ipc";
 import type { AgentSkillsIPC } from "./skills-ipc";
+import type { NativeThemeUpdatedEvent, ThemeIPC } from "./theme-ipc";
 
 export type AgentSessionScope = "main" | "side-chat";
 type SessionTagged<T> = T & { scope: AgentSessionScope; sessionId: string };
@@ -24,14 +25,21 @@ export const ALLOWED_MAIN_EXPOSE_EVENTS = [
   "tool_execution_update",
   "tool_execution_end",
   "ask_user_question_requested",
+  "native_theme_updated",
 ] as const;
 
 /**
- * Each agent event is tagged with the sessionId so the renderer can
+ * Agent-runtime events, each tagged with the sessionId so the renderer can
  * route multi-session events to the correct session's state store.
  */
-export type AllowedMainExposeEvents = {
+export type AgentExposeEvents = {
   [K in AgentRuntimeEvent as K["type"]]: SessionTagged<K>;
+};
+
+/** Full main -> renderer surface: agent-runtime events plus app-level events
+    (e.g. native theme changes) that are not tied to any session. */
+export type AllowedMainExposeEvents = AgentExposeEvents & {
+  native_theme_updated: NativeThemeUpdatedEvent;
 };
 
 // render -> main
@@ -40,7 +48,8 @@ export type AgentRuntimeIPC = AgentModelsIPC &
   AgentSessionIPC &
   AgentSkillsIPC &
   SessionPersistenceIPC &
-  AuthIPC;
+  AuthIPC &
+  ThemeIPC;
 
 export const ALLOWED_RENDER_INVOKE_EVENTS: (keyof AgentRuntimeIPC)[] = [
   "setModel",
@@ -71,6 +80,8 @@ export const ALLOWED_RENDER_INVOKE_EVENTS: (keyof AgentRuntimeIPC)[] = [
   "getAuthSession",
   "saveAuthSession",
   "clearAuthSession",
+  "setThemeSource",
+  "getThemeSource",
 ];
 
 export type AllowedRenderInvokeEvents = (typeof ALLOWED_RENDER_INVOKE_EVENTS)[number];

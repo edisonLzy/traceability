@@ -73,8 +73,8 @@ export function HeaderProjectSwitcher() {
             title="Switch project"
             aria-label="Switch project"
             className={cn(
-              "inline-flex min-w-0 items-center gap-1.5 rounded-[7px] px-1.5 text-[12px] text-tertiary transition-colors hover:bg-white/[0.05] hover:text-ink",
-              open && "bg-white/[0.05] text-ink",
+              "inline-flex min-w-0 items-center gap-1.5 rounded-[7px] px-1.5 text-[12px] text-tertiary transition-colors hover:bg-overlay hover:text-ink",
+              open && "bg-overlay text-ink",
             )}
           />
         }
@@ -126,7 +126,7 @@ export function HeaderProjectSwitcher() {
                   setOpen(false);
                 }}
                 className={cn(
-                  "grid w-full grid-cols-[28px_minmax(0,1fr)_18px] items-center gap-2.5 rounded-[9px] px-1.5 py-1.5 text-left text-muted transition-colors hover:bg-white/[0.07] hover:text-ink",
+                  "grid w-full grid-cols-[28px_minmax(0,1fr)_18px] items-center gap-2.5 rounded-[9px] px-1.5 py-1.5 text-left text-muted transition-colors hover:bg-overlay-strong hover:text-ink",
                   selected && "bg-primary/15 text-ink",
                 )}
               >
@@ -159,7 +159,7 @@ export function HeaderProjectSwitcher() {
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="ml-auto inline-flex h-7.5 items-center gap-1.5 rounded-[7px] px-2.5 text-[12px] text-muted transition-colors hover:bg-white/[0.07] hover:text-ink"
+            className="ml-auto inline-flex h-7.5 items-center gap-1.5 rounded-[7px] px-2.5 text-[12px] text-muted transition-colors hover:bg-overlay-strong hover:text-ink"
           >
             <X size={14} /> Close
           </button>

@@ -78,7 +78,7 @@ function SymbolicationBadge({ status }: { status: SymbolicatedStatus | undefined
 
   const entry = status ? config[status] : { dot: "bg-subtle", label: "Raw stack" };
   return (
-    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-white/[0.04] px-2 text-[10px] font-[600] text-muted">
+    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-overlay px-2 text-[10px] font-[600] text-muted">
       <span className={cn("size-1.5 rounded-full", entry.dot)} />
       {entry.label}
     </span>

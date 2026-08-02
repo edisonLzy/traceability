@@ -85,7 +85,7 @@ export function CreateProjectModal({
             </button>
             <button
               type="submit"
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-primary bg-primary px-3 text-sm font-medium text-[#111329] transition-colors hover:bg-primary-hover"
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-primary bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               Add project
             </button>

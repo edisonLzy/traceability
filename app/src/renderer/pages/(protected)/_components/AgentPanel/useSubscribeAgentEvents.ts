@@ -1,13 +1,15 @@
 import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
-import type { AllowedMainExposeEvents } from "@shared/events-ipc";
+import type { AgentExposeEvents, AllowedMainExposeEvents } from "@shared/events-ipc";
 import { useEffect, useRef } from "react";
 
 export type AgentEventHandlers = {
   [K in keyof AllowedMainExposeEvents]?: (event: AllowedMainExposeEvents[K]) => void;
 };
 
-type AgentEventPayload = AllowedMainExposeEvents[keyof AllowedMainExposeEvents];
-type AgentEventName = Extract<keyof AllowedMainExposeEvents, string>;
+/** Agent-runtime events only (session-scoped); app-level events like theme
+    changes are handled elsewhere and must not surface in the agent subscribers. */
+type AgentEventPayload = AgentExposeEvents[keyof AgentExposeEvents];
+type AgentEventName = Extract<keyof AgentExposeEvents, string>;
 
 interface AgentEventSubscriptionOptions {
   shouldHandleEvent?: (event: AgentEventPayload) => boolean;

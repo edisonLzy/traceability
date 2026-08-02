@@ -13,6 +13,8 @@ import { TrpcErrorToaster } from "@renderer/components/TrpcErrorToaster";
 import { Toaster } from "@renderer/components/ui/sonner";
 import { CurrentProjectProvider } from "@renderer/context/current-project";
 import { ElectronIPCProvider } from "@renderer/context/ElectronIPCProvider";
+import { NativeThemeSync } from "@renderer/context/NativeThemeSync";
+import { ThemeProvider } from "@renderer/context/theme";
 import { rendererTrpcClient, trpc } from "@renderer/lib/trpc";
 import { router } from "@renderer/router";
 import { agentStore } from "@renderer/store/agent";
@@ -45,22 +47,25 @@ export function App() {
   }, []);
 
   return (
-    <trpc.Provider client={rendererTrpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <ElectronIPCProvider>
-          <CurrentProjectProvider>
-            <CommandProvider>
-              <ExtensionProvider extensions={installedRendererExtensions}>
-                <ExtensionsContextAPIProvider api={extensionsContextAPI}>
-                  <RouterProvider router={router} />
-                  <TrpcErrorToaster />
-                  <Toaster />
-                </ExtensionsContextAPIProvider>
-              </ExtensionProvider>
-            </CommandProvider>
-          </CurrentProjectProvider>
-        </ElectronIPCProvider>
-      </QueryClientProvider>
-    </trpc.Provider>
+    <ThemeProvider>
+      <trpc.Provider client={rendererTrpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <ElectronIPCProvider>
+            <CurrentProjectProvider>
+              <NativeThemeSync />
+              <CommandProvider>
+                <ExtensionProvider extensions={installedRendererExtensions}>
+                  <ExtensionsContextAPIProvider api={extensionsContextAPI}>
+                    <RouterProvider router={router} />
+                    <TrpcErrorToaster />
+                    <Toaster />
+                  </ExtensionsContextAPIProvider>
+                </ExtensionProvider>
+              </CommandProvider>
+            </CurrentProjectProvider>
+          </ElectronIPCProvider>
+        </QueryClientProvider>
+      </trpc.Provider>
+    </ThemeProvider>
   );
 }

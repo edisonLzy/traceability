@@ -106,7 +106,7 @@ function AmbientBackground() {
       <div
         className="pointer-events-none absolute inset-0 opacity-60"
         style={{
-          backgroundImage: "radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(var(--overlay) 1px, transparent 1px)",
           backgroundSize: "24px 24px",
           maskImage: "radial-gradient(ellipse at 50% 42%, black, transparent 72%)",
           WebkitMaskImage: "radial-gradient(ellipse at 50% 42%, black, transparent 72%)",
@@ -127,7 +127,7 @@ function Stepper({ current }: { current: number }) {
               <div
                 className={cn(
                   "grid size-6 place-items-center rounded-full border text-[10px] font-[620] transition-colors",
-                  state === "done" && "border-primary bg-primary text-[#111329]",
+                  state === "done" && "border-primary bg-primary text-primary-foreground",
                   state === "active" && "border-primary bg-primary/15 text-primary",
                   state === "upcoming" && "border-hairline text-tertiary",
                 )}
@@ -177,7 +177,7 @@ function WelcomeStep() {
         {pills.map(({ icon: Icon, label }) => (
           <span
             key={label}
-            className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-white/[0.03] px-3 py-1.5 text-[11px] text-muted"
+            className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-overlay px-3 py-1.5 text-[11px] text-muted"
           >
             <Icon size={12} className="text-primary-hover" /> {label}
           </span>
@@ -235,7 +235,7 @@ function NameStep({
 }) {
   return (
     <div className="flex flex-col items-center text-center">
-      <div className="mb-6 grid size-20 place-items-center rounded-[22px] border border-hairline bg-white/[0.03] text-primary-hover shadow-[0_14px_36px_rgba(0,0,0,0.36)]">
+      <div className="mb-6 grid size-20 place-items-center rounded-[22px] border border-hairline bg-overlay text-primary-hover shadow-[0_14px_36px_rgba(0,0,0,0.36)]">
         <GitBranch size={34} />
       </div>
       <h2 className="m-0 text-[20px] font-[660] tracking-[-0.02em] text-ink">
@@ -310,7 +310,7 @@ function Footer({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex h-10 items-center gap-1.5 rounded-[10px] border border-hairline bg-white/[0.03] px-4 text-[12px] text-muted transition-colors hover:bg-white/[0.07] hover:text-ink"
+          className="inline-flex h-10 items-center gap-1.5 rounded-[10px] border border-hairline bg-overlay px-4 text-[12px] text-muted transition-colors hover:bg-overlay-strong hover:text-ink"
         >
           <ArrowLeft size={14} /> Back
         </button>
@@ -320,7 +320,7 @@ function Footer({
           type="button"
           onClick={onCreate}
           disabled={creating}
-          className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-primary bg-primary px-5 text-[12px] font-[600] text-[#111329] transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-primary bg-primary px-5 text-[12px] font-[600] text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {creating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
           {creating ? "Creating…" : "Create project"}
@@ -330,7 +330,7 @@ function Footer({
           type="button"
           onClick={onNext}
           disabled={!canContinue}
-          className="inline-flex h-10 items-center gap-1.5 rounded-[10px] border border-primary bg-primary px-5 text-[12px] font-[600] text-[#111329] transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-10 items-center gap-1.5 rounded-[10px] border border-primary bg-primary px-5 text-[12px] font-[600] text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {step === 0 ? "Get started" : "Continue"}
           <ArrowRight size={14} />

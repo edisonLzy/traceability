@@ -34,7 +34,7 @@ export function RefreshButton() {
       type="button"
       onClick={refresh}
       title="Refresh data"
-      className="grid size-7 place-items-center rounded-[7px] text-tertiary transition-colors hover:bg-white/10 hover:text-ink"
+      className="grid size-7 place-items-center rounded-[7px] text-tertiary transition-colors hover:bg-overlay-strong hover:text-ink"
     >
       <RefreshCw size={15} />
     </button>

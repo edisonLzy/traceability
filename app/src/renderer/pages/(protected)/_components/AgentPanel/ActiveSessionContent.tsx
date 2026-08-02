@@ -148,7 +148,7 @@ function SessionActions({ activeSessionId, onCreate, onSelect }: SessionActionsP
       <SessionSwitcher activeSessionId={activeSessionId} onSelect={onSelect} />
       <button
         aria-label="New conversation"
-        className="grid size-7 place-items-center rounded-[7px] text-tertiary transition-colors hover:bg-white/[0.07] hover:text-ink"
+        className="grid size-7 place-items-center rounded-[7px] text-tertiary transition-colors hover:bg-overlay-strong hover:text-ink"
         onClick={onCreate}
         title="New conversation"
         type="button"
@@ -185,7 +185,7 @@ function SessionSwitcher({ activeSessionId, onSelect }: SessionSwitcherProps) {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Switch conversation"
-        className="grid size-7 place-items-center rounded-[7px] text-tertiary transition-colors hover:bg-white/[0.07] hover:text-ink"
+        className="grid size-7 place-items-center rounded-[7px] text-tertiary transition-colors hover:bg-overlay-strong hover:text-ink"
         onClick={() => setOpen((current) => !current)}
         title="Switch conversation"
         type="button"
@@ -222,7 +222,7 @@ function SessionMenu({ activeSessionId, onClose, onSelect, sessions }: SessionMe
       />
       <div
         aria-label="Conversations"
-        className="absolute top-[calc(100%+8px)] right-0 z-40 w-[min(320px,calc(100vw-24px))] overflow-hidden rounded-[10px] border border-hairline-strong bg-[rgba(30,31,37,0.98)] shadow-[0_18px_50px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
+        className="absolute top-[calc(100%+8px)] right-0 z-40 w-[min(320px,calc(100vw-24px))] overflow-hidden rounded-[10px] border border-hairline-strong bg-surface-glass-elevated shadow-[0_18px_50px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
         role="menu"
       >
         <div className="border-b border-hairline px-2.5 py-2 text-[10px] font-[650] uppercase tracking-[0.07em] text-tertiary">
@@ -235,8 +235,8 @@ function SessionMenu({ activeSessionId, onClose, onSelect, sessions }: SessionMe
           {sessions.map((session) => {
             const active = session.id === activeSessionId;
             const className = active
-              ? "grid w-full grid-cols-[18px_minmax(0,1fr)_16px] items-center gap-2 rounded-[7px] bg-white/[0.075] px-2 py-2 text-left text-[11px] text-ink transition-colors"
-              : "grid w-full grid-cols-[18px_minmax(0,1fr)_16px] items-center gap-2 rounded-[7px] px-2 py-2 text-left text-[11px] text-muted transition-colors hover:bg-white/[0.06] hover:text-ink";
+              ? "grid w-full grid-cols-[18px_minmax(0,1fr)_16px] items-center gap-2 rounded-[7px] bg-overlay-strong px-2 py-2 text-left text-[11px] text-ink transition-colors"
+              : "grid w-full grid-cols-[18px_minmax(0,1fr)_16px] items-center gap-2 rounded-[7px] px-2 py-2 text-left text-[11px] text-muted transition-colors hover:bg-overlay hover:text-ink";
 
             return (
               <button

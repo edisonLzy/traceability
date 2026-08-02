@@ -142,7 +142,7 @@ export function PromptInput({
     <div>
       <div
         className={cn(
-          "rounded-[11px] border border-hairline-strong bg-white/[0.035] shadow-[0_10px_28px_rgba(0,0,0,0.18)] transition-[border-color,box-shadow] focus-within:border-primary/55 focus-within:shadow-[0_0_0_3px_rgba(143,156,255,0.08),0_10px_28px_rgba(0,0,0,0.18)]",
+          "rounded-[11px] border border-hairline-strong bg-overlay shadow-[0_10px_28px_rgba(0,0,0,0.18)] transition-[border-color,box-shadow] focus-within:border-primary/55 focus-within:shadow-[0_0_0_3px_rgba(143,156,255,0.08),0_10px_28px_rgba(0,0,0,0.18)]",
           disabled && !isRunning && "opacity-80",
         )}
       >

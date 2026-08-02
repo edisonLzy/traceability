@@ -26,7 +26,7 @@ export function CopyMessageButton({ text }: CopyMessageButtonProps) {
       type="button"
       onClick={handleCopy}
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-[6px] border border-transparent px-1.5 text-[10px] font-[610] text-subtle transition-colors hover:border-hairline hover:bg-white/[0.055] hover:text-ink focus-visible:border-primary/55",
+        "inline-flex h-6 items-center gap-1 rounded-[6px] border border-transparent px-1.5 text-[10px] font-[610] text-subtle transition-colors hover:border-hairline hover:bg-overlay hover:text-ink focus-visible:border-primary/55",
         copied && "text-signal-green",
       )}
     >

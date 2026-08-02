@@ -85,7 +85,7 @@ export function SourcemapsPage() {
         />
       </div>
 
-      <section className="overflow-hidden rounded-2xl border border-hairline bg-white/[0.025]">
+      <section className="overflow-hidden rounded-2xl border border-hairline bg-overlay">
         <div className="flex items-center justify-between border-b border-hairline px-4 py-3 text-[12px] font-[630] text-muted">
           <span>Artifacts {artifactsQuery.data ? `· ${artifactsQuery.data.length}` : ""}</span>
           {projectSlug && (
@@ -100,7 +100,7 @@ export function SourcemapsPage() {
         {!artifactsQuery.isLoading && (artifactsQuery.data?.length ?? 0) === 0 && (
           <div className="px-5 py-12 text-center text-[12px] text-tertiary">
             No source maps uploaded yet. Drop maps above, or run{" "}
-            <code className="rounded bg-white/[0.06] px-1 py-0.5 font-mono text-[11px] text-ink">
+            <code className="rounded bg-overlay-strong px-1 py-0.5 font-mono text-[11px] text-ink">
               traceability sourcemap upload --project {projectSlug ?? "&lt;slug&gt;"} --dist ./dist
             </code>{" "}
             in your build.
@@ -172,7 +172,7 @@ function DebugIdCell({ debugId }: { debugId: string }) {
             () => toast("Copy failed."),
           );
         }}
-        className="rounded p-0.5 text-tertiary transition-colors hover:bg-white/[0.05] hover:text-ink"
+        className="rounded p-0.5 text-tertiary transition-colors hover:bg-overlay hover:text-ink"
       >
         <Copy size={11} />
       </button>
