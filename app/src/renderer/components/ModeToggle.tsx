@@ -1,6 +1,7 @@
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
@@ -34,22 +35,24 @@ export function ModeToggle() {
         }
       />
       <DropdownMenuContent side="right" sideOffset={8} align="start" className="w-[168px]">
-        <DropdownMenuLabel>Theme</DropdownMenuLabel>
-        {THEME_OPTIONS.map((option) => {
-          const Icon = option.icon;
-          const active = theme === option.value;
-          return (
-            <DropdownMenuItem
-              key={option.value}
-              onClick={() => setTheme(option.value)}
-              className={active ? "bg-primary/15 font-[610] text-ink" : undefined}
-            >
-              <Icon size={14} />
-              <span>{option.label}</span>
-              {active ? <Check size={13} className="ml-auto text-primary-hover" /> : null}
-            </DropdownMenuItem>
-          );
-        })}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Theme</DropdownMenuLabel>
+          {THEME_OPTIONS.map((option) => {
+            const Icon = option.icon;
+            const active = theme === option.value;
+            return (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => setTheme(option.value)}
+                className={active ? "bg-primary/15 font-[610] text-ink" : undefined}
+              >
+                <Icon size={14} />
+                <span>{option.label}</span>
+                {active ? <Check size={13} className="ml-auto text-primary-hover" /> : null}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

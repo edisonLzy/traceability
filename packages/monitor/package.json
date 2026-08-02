@@ -19,6 +19,11 @@
     "./electron-renderer": {
       "types": "./dist/electron-renderer/index.d.ts",
       "import": "./dist/electron-renderer/index.js"
+    },
+    "./electron-preload": {
+      "types": "./dist/electron-preload/index.d.ts",
+      "import": "./dist/electron-preload/index.js",
+      "require": "./dist/electron-preload/index.js"
     }
   },
   "scripts": {

@@ -13,7 +13,11 @@ export default defineConfig((_environment) => {
     },
     preload: {
       build: {
-        externalizeDeps: true,
+        // Bundle @traceability/monitor/electron-preload (and the Sentry IPC it
+        // pulls in) into the preload: the monitor package is ESM, so leaving it
+        // external would emit a require() of ESM in this CJS preload. Electron
+        // itself stays external.
+        externalizeDeps: { exclude: ["@traceability/monitor"] },
         // Keep preload compatible with Electron's renderer sandbox. The app
         // package is ESM, so Electron Vite emits this CJS preload as index.cjs.
         rollupOptions: {
