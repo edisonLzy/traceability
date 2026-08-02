@@ -17,7 +17,6 @@ import { rendererTrpcClient, trpc } from "@renderer/lib/trpc";
 import { router } from "@renderer/router";
 import { agentStore } from "@renderer/store/agent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MonitorErrorBoundary } from "@traceability/monitor/react";
 import { useMemo } from "react";
 import { RouterProvider } from "react-router-dom";
 
@@ -53,16 +52,7 @@ export function App() {
             <CommandProvider>
               <ExtensionProvider extensions={installedRendererExtensions}>
                 <ExtensionsContextAPIProvider api={extensionsContextAPI}>
-                  <MonitorErrorBoundary
-                    appName="traceability"
-                    fallback={
-                      <div className="flex h-screen items-center justify-center bg-canvas">
-                        <p className="text-[12px] text-tertiary">应用遇到错误，请刷新重试。</p>
-                      </div>
-                    }
-                  >
-                    <RouterProvider router={router} />
-                  </MonitorErrorBoundary>
+                  <RouterProvider router={router} />
                   <TrpcErrorToaster />
                   <Toaster />
                 </ExtensionsContextAPIProvider>
