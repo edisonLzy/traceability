@@ -5,20 +5,20 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./src/browser/index.ts",
-      "import": "./src/browser/index.ts"
+      "types": "./dist/browser/index.d.ts",
+      "import": "./dist/browser/index.js"
     },
     "./react": {
-      "types": "./src/react/index.ts",
-      "import": "./src/react/index.ts"
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
     },
     "./electron-main": {
-      "types": "./src/electron-main/index.ts",
-      "import": "./src/electron-main/index.ts"
+      "types": "./dist/electron-main/index.d.ts",
+      "import": "./dist/electron-main/index.js"
     },
     "./electron-renderer": {
-      "types": "./src/electron-renderer/index.ts",
-      "import": "./src/electron-renderer/index.ts"
+      "types": "./dist/electron-renderer/index.d.ts",
+      "import": "./dist/electron-renderer/index.js"
     }
   },
   "scripts": {
