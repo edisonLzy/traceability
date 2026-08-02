@@ -7,12 +7,12 @@ import { init, startResourceMonitor } from "@traceability/monitor/electron-main"
  * windows are created.
  */
 export function initMonitor(): void {
-  const dsn = process.env.TRACEABILITY_DSN;
+  const dsn = import.meta.env.MAIN_VITE_TRACEABILITY_DSN;
   if (!dsn) {
     console.warn("[traceability] TRACEABILITY_DSN not set; monitoring disabled");
     return;
   }
 
-  init({ dsn });
+  init({ dsn, debug: true });
   startResourceMonitor({ sampleInterval: 30_000, memoryThreshold: 0.85, cpuThreshold: 0.9 });
 }

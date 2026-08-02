@@ -1,8 +1,10 @@
-/// <reference types="electron-vite/node" />
+/// <reference types="vite/client" />
 
-declare namespace NodeJS {
-  interface ProcessEnv {
-    TRACEABILITY_SERVER_URL?: string;
-    TRACEABILITY_MANAGEMENT_TOKEN?: string;
-  }
+interface ImportMetaEnv {
+  readonly MAIN_VITE_TRACEABILITY_DSN: string;
+  // more env variables...
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
 }

@@ -8,10 +8,11 @@ import { initMonitor } from "./monitor.js";
 import { SessionPersistence } from "./sessions/index.js";
 import { applyPersistedThemeSource, ThemeController } from "./theme.js";
 
+void initMonitor();
+
 void app
   .whenReady()
   .then(() => {
-    initMonitor();
     applyPersistedThemeSource();
 
     let browserWindow: BrowserWindow | null = createWindow();
