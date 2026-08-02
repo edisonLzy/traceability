@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "traceability-diagnose-issue": {
+      "source": "/Users/evan/Desktop/coding/traceability/packages/skills",
+      "sourceType": "local",
+      "computedHash": "5edc4079026c933a3200b1d8e065b786cc99e0f9d85200be3e19347cf8c864aa"
+    },
+    "traceability-setup": {
+      "source": "/Users/evan/Desktop/coding/traceability/packages/skills",
+      "sourceType": "local",
+      "computedHash": "f72fafb52c37bed5fc041a3968bb8979eeb816f5df3a526c682a290b9072e871"
+    },
+    "traceability-trace": {
+      "source": "/Users/evan/Desktop/coding/traceability/packages/skills",
+      "sourceType": "local",
+      "computedHash": "36a03c1c510f6d1f9cf04049c31dee91e449cd80500251b37e490bdfa1a51d7a"
+    }
+  }
+}
