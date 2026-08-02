@@ -4,11 +4,14 @@ import { app, BrowserWindow } from "electron";
 
 import { AgentPool } from "./agent-pool.js";
 import { AuthSession } from "./auth/auth-session.js";
+import { initMonitor } from "./monitor.js";
 import { SessionPersistence } from "./sessions/index.js";
 
 void app
   .whenReady()
   .then(() => {
+    initMonitor();
+
     let browserWindow: BrowserWindow | null = createWindow();
 
     const agentPool = new AgentPool(browserWindow);

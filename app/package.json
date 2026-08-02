@@ -28,6 +28,7 @@
     "@tiptap/react": "^3.22.5",
     "@tiptap/starter-kit": "^3.22.5",
     "@tiptap/suggestion": "3.27.3",
+    "@traceability/monitor": "workspace:*",
     "@traceability/server": "workspace:*",
     "@trpc/client": "^11.18.0",
     "@trpc/react-query": "^11.18.0",
