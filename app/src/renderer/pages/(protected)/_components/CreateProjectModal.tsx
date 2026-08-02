@@ -8,11 +8,11 @@ import {
   DialogTitle,
 } from "@renderer/components/ui/dialog";
 import { Field } from "@renderer/components/ui/field";
-import { useCurrentProject } from "@renderer/context/current-project";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useCreateProject } from "../_hooks/useCreateProject";
+import { useCurrentProject } from "../_hooks/useCurrentProject";
 
 export function CreateProjectModal({
   open,

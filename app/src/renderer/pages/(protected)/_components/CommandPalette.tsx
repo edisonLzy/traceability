@@ -15,12 +15,13 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@renderer/components/ui/dialog";
-import { useCurrentProject } from "@renderer/context/current-project";
 import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
 import type { Session } from "@renderer/store/agent";
 import { ArrowLeft, MessageCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import { useCurrentProject } from "../_hooks/useCurrentProject";
 
 export function CommandPalette() {
   const { invoke } = useElectronIPC();

@@ -1,12 +1,12 @@
-import { useCurrentProject } from "@renderer/context/current-project";
 import { useIssues } from "@renderer/hooks/use-issues";
-import { promptAgent } from "@renderer/lib/agent-events";
 import { cn, issueSource, relativeTime, statusGroup } from "@renderer/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Search, Sparkles } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+
+import { useCurrentProject } from "../../_hooks/useCurrentProject";
 
 const STATUS_ITEMS: Array<{
   value: "all" | "unresolved" | "resolved" | "ignored";
@@ -51,14 +51,6 @@ export function IssuesPage() {
     toast("Monitoring data refreshed");
   };
 
-  const askAboutIssues = () => {
-    if (!currentProject) return;
-    promptAgent({
-      context: { projectId: currentProject.id, source: "general" },
-      prompt: "Summarize the current open issues",
-    });
-  };
-
   return (
     <div className="mx-auto block min-h-full max-w-[1260px] px-[22px] pt-[22px] pb-12">
       <header className="mb-[18px] flex items-start justify-between gap-5">
@@ -79,13 +71,6 @@ export function IssuesPage() {
             className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-hairline bg-overlay px-3 text-[12px] font-[590] text-muted transition-colors hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink"
           >
             <RefreshCw size={14} /> Refresh
-          </button>
-          <button
-            type="button"
-            onClick={askAboutIssues}
-            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-primary/40 bg-primary px-3 text-[12px] font-[590] text-primary-foreground transition-colors hover:bg-primary-hover"
-          >
-            <Sparkles size={14} /> Ask about issues
           </button>
         </div>
       </header>

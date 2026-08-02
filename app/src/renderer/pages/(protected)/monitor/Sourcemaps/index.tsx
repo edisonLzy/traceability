@@ -1,10 +1,10 @@
-import { useCurrentProject } from "@renderer/context/current-project";
 import { trpc } from "@renderer/lib/trpc";
 import { cn, relativeTime } from "@renderer/lib/utils";
 import { Copy, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
+import { useCurrentProject } from "../../_hooks/useCurrentProject";
 import { DropZone } from "./components/DropZone";
 import { readMapDebugId, uploadSourcemap } from "./utils/upload";
 

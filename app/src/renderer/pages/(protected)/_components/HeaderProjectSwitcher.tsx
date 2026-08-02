@@ -1,10 +1,10 @@
 import { useRegisterCommands } from "@renderer/commands";
 import { Popover, PopoverContent, PopoverTrigger } from "@renderer/components/ui/popover";
-import { useCurrentProject } from "@renderer/context/current-project";
 import { cn } from "@renderer/lib/utils";
 import { AppWindow, Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { useCurrentProject } from "../_hooks/useCurrentProject";
 import { CreateProjectModal } from "./CreateProjectModal";
 
 /**

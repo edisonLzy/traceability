@@ -1,4 +1,3 @@
-import { useCurrentProject } from "@renderer/context/current-project";
 import { cn } from "@renderer/lib/utils";
 import {
   AlertTriangle,
@@ -14,6 +13,7 @@ import { Fragment, useState } from "react";
 import { toast } from "sonner";
 
 import { useCreateProject } from "../_hooks/useCreateProject";
+import { useCurrentProject } from "../_hooks/useCurrentProject";
 
 const STEPS = ["Welcome", "Slug", "Name", "Review"] as const;
 

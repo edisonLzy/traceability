@@ -1,6 +1,5 @@
 import { useRegisterCommands } from "@renderer/commands";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@renderer/components/ui/tabs";
-import { useCurrentProject } from "@renderer/context/current-project";
 import { useIssue, useIssueEvents, useUpdateIssue } from "@renderer/hooks/use-issue";
 import { promptAgent } from "@renderer/lib/agent-events";
 import { cn, relativeTime, statusGroup } from "@renderer/lib/utils";
@@ -9,6 +8,7 @@ import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
+import { useCurrentProject } from "../../_hooks/useCurrentProject";
 import { Stacktrace } from "./components/Stacktrace";
 
 export function IssueDetailPage() {

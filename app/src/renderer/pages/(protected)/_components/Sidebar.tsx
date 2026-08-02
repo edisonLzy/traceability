@@ -1,4 +1,4 @@
-import { ModeToggle } from "@renderer/components/ModeToggle";
+import { ModeToggle } from "@renderer/components/Themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@renderer/components/ui/sidebar";
-import { useCurrentProject } from "@renderer/context/current-project";
 import { useIssues } from "@renderer/hooks/use-issues";
 import { cn } from "@renderer/lib/utils";
 import {
@@ -31,6 +30,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+
+import { useCurrentProject } from "../_hooks/useCurrentProject";
 
 type NavigationItem = {
   icon: LucideIcon;
@@ -74,11 +75,6 @@ export function Sidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="items-center border-t border-hairline pt-2.5">
-        <span
-          className="size-1.5 rounded-full bg-success"
-          style={{ boxShadow: "0 0 0 3px rgba(88,199,123,0.1)" }}
-          title="Connected to Traceability"
-        />
         <ModeToggle />
       </SidebarFooter>
     </SidebarRoot>

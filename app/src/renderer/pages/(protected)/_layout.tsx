@@ -1,6 +1,7 @@
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import loadingAnimation from "@renderer/assets/loading-animation.lottie";
 import { useCommandPalette, useRegisterCommands } from "@renderer/commands";
+import { useTheme } from "@renderer/components/Themes";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,8 +15,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@renderer/components/ui/resizable";
-import { useCurrentProject } from "@renderer/context/current-project";
-import { useTheme } from "@renderer/context/theme";
 import { useMinimumLoading } from "@renderer/hooks/use-minimum-loading";
 import { Bug, Command, Compass, FileCode2, Inbox, Monitor, Moon, Radio, Sun } from "lucide-react";
 import { Fragment, useMemo } from "react";
@@ -28,6 +27,7 @@ import { ProjectOnboardingGuide } from "./_components/ProjectOnboardingGuide";
 import { RefreshButton } from "./_components/RefreshButton";
 import { Sidebar } from "./_components/Sidebar";
 import { Titlebar } from "./_components/Titlebar";
+import { useCurrentProject } from "./_hooks/useCurrentProject";
 
 export function Layout() {
   const { projects, loading } = useCurrentProject();
