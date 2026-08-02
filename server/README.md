@@ -138,6 +138,52 @@ pnpm start:worker          # node dist/worker.js
 
 API、dispatcher 和 worker 应作为独立进程运行，并共享同一套 PostgreSQL、Redis 配置。
 
+### Docker Compose 生产部署
+
+使用 `server/compose.production.yml` 以容器方式运行 server 全栈（PostgreSQL、Redis、MinIO、migrate、api、dispatcher、worker）。
+
+先构建镜像（`server/Dockerfile`，build context 为仓库根目录）：
+
+```bash
+docker build -f server/Dockerfile -t traceability-server:local .
+```
+
+启动 HTTP API（会自动拉起 migrate 及依赖的基础设施）：
+
+```bash
+docker compose -f server/compose.production.yml up -d api
+```
+
+> 注意：compose 服务名是 `api`（不是 `server`）。dispatcher / worker 是独立服务，需显式启动：
+>
+> ```bash
+> docker compose -f server/compose.production.yml up -d dispatcher worker
+> ```
+
+#### 必填变量 `JWT_SECRET`
+
+`compose.production.yml` 用 `${JWT_SECRET:?JWT_SECRET must be set}` 强制要求 `JWT_SECRET`，**未设置时 compose 会直接拒绝启动**，报错：
+
+```
+error while interpolating services.migrate.environment.JWT_SECRET:
+required variable JWT_SECRET is missing a value: JWT_SECRET must be set
+```
+
+其余变量（数据库、Redis、MinIO、端口等）均有默认值。将 secret 写入 `server/.env`（compose 自动读取该文件），或启动时临时注入：
+
+```bash
+# 生成 secret
+openssl rand -base64 48
+
+# 方式一（推荐）：写入 server/.env，之后无需再传
+#   JWT_SECRET=<输出>
+
+# 方式二：临时注入
+JWT_SECRET='<输出>' docker compose -f server/compose.production.yml up -d api
+```
+
+`JWT_SECRET` 变更会使已签发的 access token 失效，用户重新登录即可；不要在不同环境共用。
+
 ## 校验与测试
 
 ```bash
