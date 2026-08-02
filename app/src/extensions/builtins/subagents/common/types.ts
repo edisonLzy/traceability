@@ -1,4 +1,4 @@
-export const SUBAGENTS_TOOL_NAME = "subagents/run";
+export const SUBAGENTS_TOOL_NAME = "subagents_run";
 export const SUBAGENTS_LIST_BLOCK_TYPE = "subagents.list";
 
 export type SubagentStatus = "aborted" | "completed" | "failed" | "queued" | "running";

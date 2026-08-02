@@ -143,7 +143,7 @@ export function evaluateReadonlyCommand(
 }
 
 export const terminalCreateTool: AppTool<typeof TerminalParams> = {
-  name: "terminal/create",
+  name: "terminal_create",
   label: "Run Terminal Command",
   description:
     "Execute a read-only shell command on the local machine to inspect the repository and environment. " +

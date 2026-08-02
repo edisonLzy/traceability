@@ -68,7 +68,7 @@ export default defineMainExtension({
               scope: "side-chat",
               systemPrompt: buildSubagentSystemPrompt(subagent),
               tools: {
-                excludeToolNames: [SUBAGENTS_TOOL_NAME, "fs/write_text_file", "terminal/create"],
+                excludeToolNames: [SUBAGENTS_TOOL_NAME, "fs_write_text_file", "terminal_create"],
                 includeBuiltins: true,
                 includeExtensions: true,
               },
@@ -136,7 +136,7 @@ function normalizeTasks(value: unknown): SubagentTaskInput[] {
   });
 
   if (normalized.length === 0 || normalized.some((task) => task.task.length === 0)) {
-    throw new Error("subagents/run requires 1-4 tasks, each with a non-empty task field");
+    throw new Error("subagents_run requires 1-4 tasks, each with a non-empty task field");
   }
 
   return normalized;
