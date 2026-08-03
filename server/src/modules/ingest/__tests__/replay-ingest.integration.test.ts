@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createApp } from "../../../app.js";
 import { loadRuntimeConfig } from "../../../config/index.js";
+import { createAccessToken } from "../../../helper/auth.js";
 import { createDatabase, type Database } from "../../../infrastructure/database/client.js";
 import { outbox } from "../../ingest/schema.js";
 import { ReplayRepository } from "../../replays/repository.js";
@@ -17,7 +18,7 @@ const describeIntegration = databaseUrl ? describe : describe.skip;
 describeIntegration("PostgreSQL replay ingest integration", () => {
   let database: Database;
   let app: Awaited<ReturnType<typeof createApp>>;
-  const managementToken = "integration-management-token";
+  let accessToken: string;
 
   beforeAll(async () => {
     database = createDatabase({ connectionString: databaseUrl!, maxConnections: 2 });
@@ -28,11 +29,14 @@ describeIntegration("PostgreSQL replay ingest integration", () => {
     const config = loadRuntimeConfig({
       NODE_ENV: "test",
       DATABASE_URL: databaseUrl!,
-      REDIS_URL: "redis://127.0.0.1:6379",
+      REDIS_URL: process.env.TEST_REDIS_URL ?? "redis://127.0.0.1:6379",
       PUBLIC_INGEST_URL: "http://127.0.0.1:3000",
-      MANAGEMENT_AUTH_TOKEN: managementToken,
       LOG_LEVEL: "fatal",
     });
+    accessToken = createAccessToken(
+      { id: "00000000-0000-4000-8000-000000000001", username: "root", email: "root@root.com" },
+      config,
+    );
     app = await createApp({ config, database });
   });
 
@@ -46,7 +50,7 @@ describeIntegration("PostgreSQL replay ingest integration", () => {
       method: "POST",
       url: "/api/trpc/projects.create",
       headers: {
-        authorization: `Bearer ${managementToken}`,
+        authorization: `Bearer ${accessToken}`,
         "content-type": "application/json",
       },
       payload: { slug: "replay-test", name: "Replay Test" },
@@ -62,7 +66,7 @@ describeIntegration("PostgreSQL replay ingest integration", () => {
       method: "POST",
       url: "/api/trpc/projects.updatePolicy",
       headers: {
-        authorization: `Bearer ${managementToken}`,
+        authorization: `Bearer ${accessToken}`,
         "content-type": "application/json",
       },
       payload: {
@@ -187,7 +191,7 @@ describeIntegration("PostgreSQL replay ingest integration", () => {
       url: `/api/trpc/replays.list?input=${encodeURIComponent(
         JSON.stringify({ projectId: created.project.id }),
       )}`,
-      headers: { authorization: `Bearer ${managementToken}` },
+      headers: { authorization: `Bearer ${accessToken}` },
     });
     expect(listResponse.statusCode).toBe(200);
 
@@ -196,7 +200,7 @@ describeIntegration("PostgreSQL replay ingest integration", () => {
       url: `/api/trpc/replays.get?input=${encodeURIComponent(
         JSON.stringify({ projectId: created.project.id, replayId }),
       )}`,
-      headers: { authorization: `Bearer ${managementToken}` },
+      headers: { authorization: `Bearer ${accessToken}` },
     });
     expect(getResponse.statusCode).toBe(200);
     const detail = getResponse.json().result.data as {

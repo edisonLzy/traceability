@@ -51,10 +51,12 @@ describe("application container plugin", () => {
       "auth",
       "ingest",
       "issues",
+      "metrics",
       "processing",
       "projects",
       "replays",
       "sourcemaps",
+      "traces",
     ]);
     expect(Object.isFrozen(app.container)).toBe(true);
     expect(app.container).toBe(app.container);

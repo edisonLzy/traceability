@@ -72,6 +72,8 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
     login: vi.fn(),
     refresh: vi.fn(),
   } as unknown as Context["container"]["auth"];
+  const metrics = {} as Context["container"]["metrics"];
+  const traces = {} as Context["container"]["traces"];
 
   return {
     config: { jwtSecret, jwtAccessTokenTtlSeconds: 900 } as unknown as RuntimeConfig,
@@ -84,6 +86,8 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
       processing,
       sourcemaps,
       replays,
+      metrics,
+      traces,
       ...overrides,
     },
     req: {

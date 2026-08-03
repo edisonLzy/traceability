@@ -9,12 +9,19 @@ export default defineConfig({
   base: "./",
   root: "./renderer",
   resolve: {
-    alias: {
-      "@traceability/monitor": resolve(
-        import.meta.dirname,
-        "../../packages/monitor/src/browser/index.ts",
-      ),
-    },
+    alias: [
+      {
+        find: "@traceability/monitor/electron-renderer",
+        replacement: resolve(
+          import.meta.dirname,
+          "../../packages/monitor/src/electron-renderer/index.ts",
+        ),
+      },
+      {
+        find: "@traceability/monitor",
+        replacement: resolve(import.meta.dirname, "../../packages/monitor/src/browser/index.ts"),
+      },
+    ],
   },
   build: {
     outDir: "../dist/renderer",

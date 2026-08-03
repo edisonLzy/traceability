@@ -56,7 +56,10 @@ export const projectPolicies = pgTable("project_policies", {
     .references(() => projects.id, { onDelete: "cascade" }),
   allowedOrigins: jsonb("allowed_origins").$type<string[]>().notNull().default([]),
   rateLimitPerSecond: integer("rate_limit_per_second").notNull().default(100),
-  enabledItemTypes: jsonb("enabled_item_types").$type<string[]>().notNull().default(["event"]),
+  enabledItemTypes: jsonb("enabled_item_types")
+    .$type<string[]>()
+    .notNull()
+    .default(["event", "transaction", "span", "trace_metric"]),
   scrubRules: jsonb("scrub_rules").$type<Record<string, unknown>>().notNull().default({}),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   version: integer("version").notNull().default(1),

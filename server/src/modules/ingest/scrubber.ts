@@ -6,7 +6,10 @@ const MAX_STRING_LENGTH = 16 * 1024;
 
 export function scrubValue(value: unknown, depth = 0, key?: string): unknown {
   if (depth > MAX_DEPTH) return "[Truncated: maximum depth]";
-  if (key && SENSITIVE_KEY.test(key)) return "[Filtered]";
+  if (key && SENSITIVE_KEY.test(key)) {
+    if (isTypedAttribute(value)) return { value: "[Filtered]", type: "string" };
+    return "[Filtered]";
+  }
 
   if (typeof value === "string") {
     return value
@@ -23,6 +26,16 @@ export function scrubValue(value: unknown, depth = 0, key?: string): unknown {
     );
   }
   return value;
+}
+
+function isTypedAttribute(value: unknown): value is { value: unknown; type: string } {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    "value" in value &&
+    "type" in value
+  );
 }
 
 export function parseAndScrubEvent(payload: Buffer): Record<string, unknown> {

@@ -5,7 +5,9 @@ export type EnvelopeItemType =
   | "session"
   | "attachment"
   | "replay_event"
-  | "replay_recording";
+  | "replay_recording"
+  | "span"
+  | "trace_metric";
 
 export interface EnvelopeHeader {
   event_id?: string;

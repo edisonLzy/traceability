@@ -11,10 +11,12 @@ import {
   ITEM_QUEUE_NAME,
   itemQueueJobOptions,
 } from "./infrastructure/queue/item-queue.js";
+import { MetricsRepository, MetricsService } from "./modules/metrics/index.js";
 import { ProcessingRepository, ProcessingService } from "./modules/processing/index.js";
 import { createItemProcessors } from "./modules/processing/registry.js";
 import { ReplayRepository, ReplayService } from "./modules/replays/index.js";
 import { SourcemapRepository, SourcemapService } from "./modules/sourcemaps/index.js";
+import { TraceRepository, TraceService } from "./modules/traces/index.js";
 
 interface ItemJob {
   itemId?: string;
@@ -39,7 +41,9 @@ export async function startWorker(): Promise<void> {
   const sourcemaps = new SourcemapService(new SourcemapRepository(database), objectStorage);
   const replays = new ReplayService(new ReplayRepository(database), objectStorage);
   const processing = new ProcessingService(new ProcessingRepository(database), sourcemaps);
-  const itemProcessors = createItemProcessors(processing, replays);
+  const traces = new TraceService(new TraceRepository(database));
+  const metrics = new MetricsService(new MetricsRepository(database));
+  const itemProcessors = createItemProcessors(processing, replays, traces, metrics);
 
   const worker = new Worker<ItemJob>(
     ITEM_QUEUE_NAME,
@@ -65,7 +69,7 @@ export async function startWorker(): Promise<void> {
     });
   });
 
-  const close = registerShutdownSignals(async () => {
+  registerShutdownSignals(async () => {
     await Promise.allSettled([
       worker.close(),
       connection.quit(),
