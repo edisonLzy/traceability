@@ -105,6 +105,8 @@ export class ProcessingRepository {
           release: fields.release,
           environment: fields.environment,
           level: fields.level,
+          traceId: fields.traceId,
+          spanId: fields.spanId,
           payload: item.payload,
         })
         .onConflictDoNothing()

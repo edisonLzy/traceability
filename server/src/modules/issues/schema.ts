@@ -1,6 +1,15 @@
 import { randomUUID } from "node:crypto";
 
-import { integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 import { ingestItems } from "../ingest/schema.js";
 import { projects } from "../projects/schema.js";
@@ -52,7 +61,12 @@ export const events = pgTable(
     release: text("release"),
     environment: text("environment"),
     level: text("level"),
+    traceId: text("trace_id"),
+    spanId: text("span_id"),
     payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
   },
-  (table) => [uniqueIndex("events_project_event_id_unique").on(table.projectId, table.eventId)],
+  (table) => [
+    uniqueIndex("events_project_event_id_unique").on(table.projectId, table.eventId),
+    index("events_project_trace_id_idx").on(table.projectId, table.traceId),
+  ],
 );

@@ -1,3 +1,4 @@
+import type { Span, StartSpanOptions } from "@sentry/core";
 import {
   init as initFromSentry,
   captureException,
@@ -8,6 +9,11 @@ import {
   addBreadcrumb,
   withScope,
   flush,
+  getActiveSpan,
+  metrics,
+  startInactiveSpan,
+  startSpan,
+  startSpanManual,
   ElectronMainOptions,
 } from "@sentry/electron/main";
 
@@ -22,7 +28,13 @@ export function init(options: ElectronMainOptions): void {
   initFromSentry(options);
 }
 
-export type { ElectronEnvironment, ElectronSystemSnapshot, ResourceMonitorOptions };
+export type {
+  ElectronEnvironment,
+  ElectronSystemSnapshot,
+  ResourceMonitorOptions,
+  Span,
+  StartSpanOptions,
+};
 
 export {
   captureException,
@@ -36,4 +48,9 @@ export {
   startResourceMonitor,
   sampleResources,
   getEnvironment,
+  getActiveSpan,
+  metrics,
+  startInactiveSpan,
+  startSpan,
+  startSpanManual,
 };

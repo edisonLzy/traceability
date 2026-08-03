@@ -3,10 +3,12 @@ import fastifyPlugin from "fastify-plugin";
 import { AuthService, AuthRepository } from "../modules/auth/index.js";
 import { IngestRepository, IngestService } from "../modules/ingest/index.js";
 import { IssueRepository, IssueService } from "../modules/issues/index.js";
+import { MetricsRepository, MetricsService } from "../modules/metrics/index.js";
 import { ProcessingRepository, ProcessingService } from "../modules/processing/index.js";
 import { ProjectRepository, ProjectService } from "../modules/projects/index.js";
 import { ReplayRepository, ReplayService } from "../modules/replays/index.js";
 import { SourcemapRepository, SourcemapService } from "../modules/sourcemaps/index.js";
+import { TraceRepository, TraceService } from "../modules/traces/index.js";
 
 export interface Container {
   auth: AuthService;
@@ -16,6 +18,8 @@ export interface Container {
   processing: ProcessingService;
   sourcemaps: SourcemapService;
   replays: ReplayService;
+  metrics: MetricsService;
+  traces: TraceService;
 }
 
 declare module "fastify" {
@@ -42,6 +46,8 @@ export const containerPlugin = fastifyPlugin(
     );
     const processing = new ProcessingService(new ProcessingRepository(app.database));
     const replays = new ReplayService(new ReplayRepository(app.database), app.objectStorage);
+    const metrics = new MetricsService(new MetricsRepository(app.database));
+    const traces = new TraceService(new TraceRepository(app.database));
     const sourcemaps = new SourcemapService(
       new SourcemapRepository(app.database),
       app.objectStorage,
@@ -52,7 +58,17 @@ export const containerPlugin = fastifyPlugin(
 
     app.decorate(
       "container",
-      Object.freeze({ auth, projects, issues, ingest, processing, sourcemaps, replays }),
+      Object.freeze({
+        auth,
+        projects,
+        issues,
+        ingest,
+        processing,
+        sourcemaps,
+        replays,
+        metrics,
+        traces,
+      }),
     );
   },
   {

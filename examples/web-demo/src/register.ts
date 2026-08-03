@@ -1,4 +1,11 @@
-import { addBreadcrumb, captureException, captureMessage, setTag } from "@traceability/monitor";
+import {
+  addBreadcrumb,
+  captureException,
+  captureMessage,
+  metrics,
+  setTag,
+  startSpan,
+} from "@traceability/monitor";
 
 /**
  * 用户注册表单控制器 -- 纯前端逻辑，不接入 Traceability SDK。
@@ -349,6 +356,23 @@ export function setupRegisterForm(): void {
     submitBtn.textContent = "注册中…";
     formMessage.hidden = true;
     formMessage.textContent = "";
+
+    startSpan(
+      {
+        name: "register.persist",
+        op: "ui.action",
+        forceTransaction: true,
+        attributes: { "register.simulated_error": simulateErrorInput.checked },
+      },
+      () => {
+        metrics.count("register.attempt", 1, { attributes: { flow: "register" } });
+        metrics.gauge("register.pending", 1, { attributes: { flow: "register" } });
+        metrics.distribution("register.validation_duration", performance.now() - t0, {
+          unit: "millisecond",
+          attributes: { flow: "register" },
+        });
+      },
+    );
 
     window.setTimeout(() => {
       submitting = false;

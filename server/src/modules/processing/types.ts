@@ -6,4 +6,6 @@ export interface EventFields {
   release?: string;
   environment?: string;
   level?: string;
+  traceId?: string;
+  spanId?: string;
 }

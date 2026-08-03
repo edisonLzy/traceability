@@ -25,7 +25,8 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": [],
-      "inputs": ["src/**", "vitest.config.ts", "tsconfig*.json", "package.json"]
+      "inputs": ["src/**", "vitest.config.ts", "tsconfig*.json", "package.json"],
+      "env": ["TEST_DATABASE_URL", "TEST_REDIS_URL"]
     },
     "dev": {
       "cache": false,

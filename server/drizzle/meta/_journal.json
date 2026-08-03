@@ -71,6 +71,13 @@
       "when": 1785470705567,
       "tag": "0009_lovely_deadpool",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785768969511,
+      "tag": "0010_cynical_network",
+      "breakpoints": true
     }
   ]
 }

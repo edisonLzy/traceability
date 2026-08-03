@@ -10,6 +10,7 @@ import {
 } from "./rate-limiter.js";
 import type { IngestRepository, PreparedItem } from "./repository.js";
 import { parseAndScrubEvent, scrubValue } from "./scrubber.js";
+import { validateTelemetryItem } from "./telemetry-validator.js";
 
 export interface IngestLimits {
   maxDecompressedBytes: number;
@@ -201,6 +202,41 @@ function prepareItem(
         eventId: null,
         status: "invalid",
         errorCode: "invalid_replay_event_json",
+      };
+    }
+  }
+
+  if (
+    (item.type === "transaction" || item.type === "span" || item.type === "trace_metric") &&
+    enabledItemTypes.includes(item.type)
+  ) {
+    try {
+      const payloadJson = parseAndScrubEvent(item.payload);
+      validateTelemetryItem(item.type, header, payloadJson);
+      const eventId =
+        item.type === "transaction" && typeof payloadJson.event_id === "string"
+          ? payloadJson.event_id
+          : null;
+      return {
+        sequence: item.sequence,
+        type: item.type,
+        header,
+        payload: Buffer.from(JSON.stringify(payloadJson)),
+        payloadJson,
+        eventId,
+        status: "pending",
+        errorCode: null,
+      };
+    } catch {
+      return {
+        sequence: item.sequence,
+        type: item.type,
+        header,
+        payload: null,
+        payloadJson: null,
+        eventId: null,
+        status: "invalid",
+        errorCode: `invalid_${item.type}_json`,
       };
     }
   }

@@ -52,6 +52,7 @@ function deriveEventFields(payload: Record<string, unknown>, receivedAt: Date): 
   const fingerprint = createHash("sha256")
     .update(`${type}\n${normalizeMessage(message)}\n${inAppFrames}`)
     .digest("hex");
+  const trace = traceContext(payload);
 
   return {
     fingerprint,
@@ -61,6 +62,22 @@ function deriveEventFields(payload: Record<string, unknown>, receivedAt: Date): 
     release: stringValue(payload.release),
     environment: stringValue(payload.environment),
     level: stringValue(payload.level),
+    traceId: trace?.traceId,
+    spanId: trace?.spanId,
+  };
+}
+
+function traceContext(
+  payload: Record<string, unknown>,
+): { traceId?: string; spanId?: string } | undefined {
+  const contexts = payload.contexts;
+  if (!contexts || typeof contexts !== "object" || Array.isArray(contexts)) return undefined;
+  const trace = (contexts as Record<string, unknown>).trace;
+  if (!trace || typeof trace !== "object" || Array.isArray(trace)) return undefined;
+  const value = trace as Record<string, unknown>;
+  return {
+    traceId: stringValue(value.trace_id),
+    spanId: stringValue(value.span_id),
   };
 }
 

@@ -21,5 +21,6 @@ export function initTraceability(): void {
     dsn,
     environment: import.meta.env.MODE,
     release: (import.meta.env.VITE_RELEASE as string | undefined) ?? undefined,
+    tracesSampleRate: 1,
   });
 }
