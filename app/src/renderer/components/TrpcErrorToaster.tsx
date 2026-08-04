@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import type { MutationCacheNotifyEvent, QueryCacheNotifyEvent } from "@tanstack/react-query";
-import type { AppRouter } from "@traceability/server/trpc";
+import type { AppRouter } from "@tracerability/server/trpc";
 import type { TRPCClientErrorLike } from "@trpc/client";
 import { useEffect } from "react";
 import { toast } from "sonner";

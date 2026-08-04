@@ -24,9 +24,9 @@ pnpm format             # oxfmt --write
 Per-package / single test:
 
 ```bash
-pnpm --filter @traceability/server test -- src/__tests__/issues.test.ts
-pnpm --filter @traceability/core exec vitest run -t "transport"
-pnpm --filter @traceability/app typecheck
+pnpm --filter @tracerability/server test -- src/__tests__/issues.test.ts
+pnpm --filter @tracerability/core exec vitest run -t "transport"
+pnpm --filter @tracerability/app typecheck
 ```
 
 Lint/format run **only on commit** via husky + lint-staged (VS Code format-on-save is intentionally off). Commits must be Conventional Commits (`feat`, `fix`, `chore`, `docs`, …); commitlint enforces this with header/body length limits disabled.
@@ -36,15 +36,15 @@ Lint/format run **only on commit** via husky + lint-staged (VS Code format-on-sa
 Traceability connects frontend error capture to an AI-assisted fix loop. End-to-end flow:
 
 ```
-SDK (@traceability/core) --Sentry envelope--> server /api/{sentryProjectId}/envelope/
+SDK (@tracerability/core) --Sentry envelope--> server /api/{sentryProjectId}/envelope/
                                                 | aggregates events into issues
                                                 v
                                   tRPC management API  <--->  Inbox (Electron app)
 ```
 
-**Monorepo** (pnpm workspace + catalog): `packages/*` (SDK + types + CLI + skills), `server`, `app`, `examples/*`. Shared versions live in the `catalog:` block of `pnpm-workspace.yaml` (typescript ^7, vitest ^4, tsx ^4) and are referenced as `"vitest": "catalog:"`. Internal deps use `"workspace:*"`; package names are `@traceability/<name>`.
+**Monorepo** (pnpm workspace + catalog): `packages/*` (SDK + types + CLI + skills), `server`, `app`, `examples/*`. Shared versions live in the `catalog:` block of `pnpm-workspace.yaml` (typescript ^7, vitest ^4, tsx ^4) and are referenced as `"vitest": "catalog:"`. Internal deps use `"workspace:*"`; package names are `@tracerability/<name>`.
 
-**`@traceability/core`** wraps `@sentry/browser` with a custom bearer-token POST transport (`transport/serverTransport.ts`) targeting the compatibility route `/api/ingest/envelope/:projectId` (the server's canonical Sentry route is `/api/:projectId/envelope/`). `beforeSend` stamps the SDK project identifier and attaches an rrweb replay id; the public surface is `init` / `captureException` / `report` / `reportPerformance` / `setApp`. Integrations: CORS diagnostic, white-screen detection, rrweb replay, browser performance metrics (FCP/LCP/CLS/INP/TTFB).
+**`@tracerability/core`** wraps `@sentry/browser` with a custom bearer-token POST transport (`transport/serverTransport.ts`) targeting the compatibility route `/api/ingest/envelope/:projectId` (the server's canonical Sentry route is `/api/:projectId/envelope/`). `beforeSend` stamps the SDK project identifier and attaches an rrweb replay id; the public surface is `init` / `captureException` / `report` / `reportPerformance` / `setApp`. Integrations: CORS diagnostic, white-screen detection, rrweb replay, browser performance metrics (FCP/LCP/CLS/INP/TTFB).
 
 **`server/`** — Fastify + PostgreSQL + Drizzle + Redis/BullMQ. The raw Sentry-compatible ingest route lives under `domains/ingest`; protected management procedures live under `src/trpc/` at `/api/trpc`. Projects and issues are the management model. Management auth is user JWT (`JWT_SECRET`, `JWT_ACCESS_TOKEN_TTL_SECONDS`) issued by `auth.login` / `auth.refresh`; config is supplied through runtime environment variables, including `DATABASE_URL` and `REDIS_URL`.
 

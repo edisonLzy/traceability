@@ -1,4 +1,4 @@
-import type { AppRouterInputs, AppRouterOutputs } from "@traceability/server/trpc";
+import type { AppRouterInputs, AppRouterOutputs } from "@tracerability/server/trpc";
 
 export type { AppRouterInputs, AppRouterOutputs };
 

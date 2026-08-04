@@ -1,4 +1,4 @@
-import { init } from "@traceability/monitor/electron-renderer";
+import { init } from "@tracerability/monitor/electron-renderer";
 
 /**
  * Initialize Traceability monitoring in the renderer.

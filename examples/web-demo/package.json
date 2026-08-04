@@ -1,5 +1,5 @@
 {
-  "name": "@traceability/example-web-demo",
+  "name": "@tracerability/example-web-demo",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -12,11 +12,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@traceability/monitor": "workspace:*"
+    "@tracerability/monitor": "workspace:*"
   },
   "devDependencies": {
     "@sentry/vite-plugin": "^5.4.0",
-    "@traceability/cli": "workspace:*",
+    "@tracerability/cli": "workspace:*",
     "vite": "^5.4.0",
     "vitest": "^2.1.9"
   }

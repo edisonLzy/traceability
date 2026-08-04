@@ -1,4 +1,4 @@
-# `@traceability/server`
+# `@tracerability/server`
 
 Traceability 的 Fastify 服务端，负责 Sentry 兼容的事件接收、PostgreSQL 持久化、tRPC 管理接口，以及基于 Redis/BullMQ 的异步事件处理。
 
@@ -187,9 +187,9 @@ JWT_SECRET='<输出>' docker compose -f server/compose.production.yml up -d api
 ## 校验与测试
 
 ```bash
-pnpm --filter @traceability/server typecheck
-pnpm --filter @traceability/server test
-pnpm --filter @traceability/server test:integration
+pnpm --filter @tracerability/server typecheck
+pnpm --filter @tracerability/server test
+pnpm --filter @tracerability/server test:integration
 ```
 
 集成测试需要设置 `TEST_DATABASE_URL`，否则 PostgreSQL 集成测试会被跳过。
@@ -199,7 +199,7 @@ pnpm --filter @traceability/server test:integration
 server 对外提供 router 类型声明，供 app 或 CLI 使用：
 
 ```ts
-import type { AppRouter, AppRouterInputs, AppRouterOutputs } from "@traceability/server/trpc";
+import type { AppRouter, AppRouterInputs, AppRouterOutputs } from "@tracerability/server/trpc";
 ```
 
 这些类型来自 server 的 `src/trpc/app-router.ts`，不会将 server runtime 打包进 renderer。

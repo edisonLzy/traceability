@@ -1,6 +1,6 @@
 {
-  "name": "@traceability/skills",
+  "name": "@tracerability/skills",
   "version": "1.0.0",
   "private": true,
-  "description": "Coding-agent skills that teach how to instrument code with @traceability/monitor"
+  "description": "Coding-agent skills that teach how to instrument code with @tracerability/monitor"
 }

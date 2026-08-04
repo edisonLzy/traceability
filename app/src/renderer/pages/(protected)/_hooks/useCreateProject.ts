@@ -1,7 +1,7 @@
 import { trpc } from "@renderer/lib/trpc";
 import type { AppRouterInputs, AppRouterOutputs } from "@renderer/lib/trpc-types";
 import type { UseMutationResult } from "@tanstack/react-query";
-import type { AppRouter } from "@traceability/server/trpc";
+import type { AppRouter } from "@tracerability/server/trpc";
 import type { TRPCClientErrorLike } from "@trpc/client";
 
 export type CreateProjectInput = AppRouterInputs["projects"]["create"];

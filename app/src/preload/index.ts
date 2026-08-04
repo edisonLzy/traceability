@@ -1,4 +1,4 @@
-import "@traceability/monitor/electron-preload";
+import "@tracerability/monitor/electron-preload";
 import { contextBridge, ipcRenderer } from "electron";
 
 import type {

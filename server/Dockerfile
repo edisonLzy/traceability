@@ -8,14 +8,14 @@ WORKDIR /workspace
 
 # ---------------------------------------------------------------------------
 # 1. Prune: use `turbo prune` to emit a minimal workspace containing only
-#    @traceability/server and its workspace dependencies (currently none).
+#    @tracerability/server and its workspace dependencies (currently none).
 #    Produces:
 #      out/json/  -> package.json files + pnpm-lock.yaml (for install)
 #      out/full/  -> pruned source tree (for build)
 # ---------------------------------------------------------------------------
 FROM base AS pruner
 COPY . .
-RUN pnpm dlx turbo@2.5.8 prune @traceability/server --docker
+RUN pnpm dlx turbo@2.5.8 prune @tracerability/server --docker
 
 # ---------------------------------------------------------------------------
 # 2. Install: install deps against the pruned manifest tree. Cached as long
@@ -26,7 +26,7 @@ COPY --from=pruner /workspace/out/json/ ./
 RUN pnpm install --frozen-lockfile
 
 # ---------------------------------------------------------------------------
-# 3. Build: run `pnpm --filter @traceability/server build` against the pruned
+# 3. Build: run `pnpm --filter @tracerability/server build` against the pruned
 #    source tree. Only server sources trigger rebuilds.
 #
 #    `turbo prune` does not carry root-level tsconfig files, but the server's
@@ -36,8 +36,8 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 COPY --from=pruner /workspace/out/full/ ./
 COPY tsconfig.base.json ./tsconfig.base.json
-RUN pnpm --filter @traceability/server build
-RUN pnpm --filter @traceability/server deploy --prod --legacy /runtime
+RUN pnpm --filter @tracerability/server build
+RUN pnpm --filter @tracerability/server deploy --prod --legacy /runtime
 
 # ---------------------------------------------------------------------------
 # 4. Runtime: minimal image with the deployed server bundle.

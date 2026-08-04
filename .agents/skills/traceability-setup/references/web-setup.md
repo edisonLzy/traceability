@@ -7,10 +7,10 @@ Target: any non-electron web project (vanilla Vite, React+Vite, Next, Nuxt, …)
 Add to the target package's `package.json` (monorepo-internal, `workspace:*`):
 
 ```jsonc
-"@traceability/monitor": "workspace:*"
+"@tracerability/monitor": "workspace:*"
 ```
 
-No separate React package — `@traceability/monitor/react` ships inside the same package. Then run `pnpm install` at the repo root.
+No separate React package — `@tracerability/monitor/react` ships inside the same package. Then run `pnpm install` at the repo root.
 
 ## Environment variables
 
@@ -28,7 +28,7 @@ VITE_RELEASE=<app>@<commit>   # optional, stamped on every event
 Create `src/traceability.ts` (dedicated module, keeps the entry clean). Modeled on `examples/web-demo/src/traceability.ts`:
 
 ```ts
-import { init } from "@traceability/monitor";
+import { init } from "@tracerability/monitor";
 
 export function initTraceability(): void {
   const dsn = import.meta.env.VITE_TRACEABILITY_DSN as string | undefined;
@@ -60,7 +60,7 @@ initTraceability();
 Use the `./react` subpath of the same package. Wrap route-level components and micro-app roots with `MonitorErrorBoundary`:
 
 ```tsx
-import { MonitorErrorBoundary } from "@traceability/monitor/react";
+import { MonitorErrorBoundary } from "@tracerability/monitor/react";
 
 <MonitorErrorBoundary appName="message-module" fallback={<ErrorUI />}>
   <MessageApp />
@@ -97,7 +97,7 @@ traceability sourcemap upload --project <slug> --dist ./dist
 Run the project and trigger one event:
 
 ```ts
-import { captureException } from "@traceability/monitor";
+import { captureException } from "@tracerability/monitor";
 captureException(new Error("traceability setup check"));
 ```
 

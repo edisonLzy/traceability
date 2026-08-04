@@ -1,5 +1,5 @@
 {
-  "name": "@traceability/app",
+  "name": "@tracerability/app",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -28,8 +28,8 @@
     "@tiptap/react": "^3.22.5",
     "@tiptap/starter-kit": "^3.22.5",
     "@tiptap/suggestion": "3.27.3",
-    "@traceability/monitor": "workspace:*",
-    "@traceability/server": "workspace:*",
+    "@tracerability/monitor": "workspace:*",
+    "@tracerability/server": "workspace:*",
     "@trpc/client": "^11.18.0",
     "@trpc/react-query": "^11.18.0",
     "axios": "^1.18.1",

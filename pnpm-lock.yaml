@@ -104,10 +104,10 @@ importers:
       '@tiptap/suggestion':
         specifier: 3.27.3
         version: 3.27.3(@floating-ui/dom@1.8.0)(@tiptap/core@3.27.3(@tiptap/pm@3.27.3))(@tiptap/pm@3.27.3)
-      '@traceability/monitor':
+      '@tracerability/monitor':
         specifier: workspace:*
         version: link:../packages/monitor
-      '@traceability/server':
+      '@tracerability/server':
         specifier: workspace:*
         version: link:../server
       '@trpc/client':
@@ -219,7 +219,7 @@ importers:
 
   examples/electron-demo:
     dependencies:
-      '@traceability/monitor':
+      '@tracerability/monitor':
         specifier: workspace:*
         version: link:../../packages/monitor
     devDependencies:
@@ -238,14 +238,14 @@ importers:
 
   examples/web-demo:
     dependencies:
-      '@traceability/monitor':
+      '@tracerability/monitor':
         specifier: workspace:*
         version: link:../../packages/monitor
     devDependencies:
       '@sentry/vite-plugin':
         specifier: ^5.4.0
         version: 5.4.0(rollup@4.62.2)(supports-color@7.2.0)
-      '@traceability/cli':
+      '@tracerability/cli':
         specifier: workspace:*
         version: link:../../packages/cli
       vite:
@@ -260,9 +260,6 @@ importers:
       '@clack/prompts':
         specifier: ^0.11.0
         version: 0.11.0
-      '@traceability/server':
-        specifier: workspace:*
-        version: link:../../server
       '@trpc/client':
         specifier: ^11.18.0
         version: 11.18.0(@trpc/server@11.18.0(typescript@7.0.2))(typescript@7.0.2)
@@ -270,6 +267,9 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0
     devDependencies:
+      '@tracerability/server':
+        specifier: workspace:*
+        version: link:../../server
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.3

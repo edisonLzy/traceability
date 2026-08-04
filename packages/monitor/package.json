@@ -1,7 +1,9 @@
 {
-  "name": "@traceability/monitor",
+  "name": "@tracerability/monitor",
   "version": "1.0.0",
-  "private": true,
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": {
@@ -25,6 +27,9 @@
       "import": "./dist/electron-preload/index.js",
       "require": "./dist/electron-preload/index.js"
     }
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tsc",

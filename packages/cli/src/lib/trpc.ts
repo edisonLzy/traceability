@@ -1,4 +1,4 @@
-import type { AppRouter } from "@traceability/server/trpc";
+import type { AppRouter } from "@tracerability/server/trpc";
 import { TRPCClientError, createTRPCClient, httpBatchLink, type TRPCClient } from "@trpc/client";
 
 import { getSession, refreshOrLogin, type AuthSession } from "./auth.js";

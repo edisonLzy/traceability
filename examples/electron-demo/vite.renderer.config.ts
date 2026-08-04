@@ -11,14 +11,14 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: "@traceability/monitor/electron-renderer",
+        find: "@tracerability/monitor/electron-renderer",
         replacement: resolve(
           import.meta.dirname,
           "../../packages/monitor/src/electron-renderer/index.ts",
         ),
       },
       {
-        find: "@traceability/monitor",
+        find: "@tracerability/monitor",
         replacement: resolve(import.meta.dirname, "../../packages/monitor/src/browser/index.ts"),
       },
     ],

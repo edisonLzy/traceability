@@ -1,4 +1,4 @@
-import { init, metrics, startSpan } from "@traceability/monitor/electron-renderer";
+import { init, metrics, startSpan } from "@tracerability/monitor/electron-renderer";
 init({});
 
 document.querySelector("#trace-metrics")?.addEventListener("click", () => {

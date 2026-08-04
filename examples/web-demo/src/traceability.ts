@@ -1,4 +1,4 @@
-import { init } from "@traceability/monitor";
+import { init } from "@tracerability/monitor";
 
 /**
  * Initialize the Traceability browser SDK with build-time env vars.

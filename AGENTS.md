@@ -23,17 +23,17 @@ traceability/
 │   │   ├── main/                 # Electron main process
 │   │   ├── renderer/             # React renderer (UI)
 │   │   └── preload/              # Preload scripts
-│   ├── package.json              # @traceability/app
+│   ├── package.json              # @tracerability/app
 │   └── electron-vite.config.ts
 ├── server/                       # Fastify-based API server
 │   ├── src/                      # Express + WebSocket, Pino logging, better-sqlite3
-│   └── package.json              # @traceability/server
+│   └── package.json              # @tracerability/server
 ├── packages/
-│   ├── core/                     # @traceability/core: rrweb recording + Sentry capture
-│   ├── electron/                 # @traceability/electron: Electron-specific Sentry integrations
-│   ├── react/                    # @traceability/react: React bindings for traceability
-│   ├── cli/                      # @traceability/cli: command-line interface
-│   └── skills/                   # @traceability/skills: reusable skill modules
+│   ├── core/                     # @tracerability/core: rrweb recording + Sentry capture
+│   ├── electron/                 # @tracerability/electron: Electron-specific Sentry integrations
+│   ├── react/                    # @tracerability/react: React bindings for traceability
+│   ├── cli/                      # @tracerability/cli: command-line interface
+│   └── skills/                   # @tracerability/skills: reusable skill modules
 ├── examples/                     # Example usage projects
 ├── docs/                         # Documentation
 ├── .husky/                       # Git hooks (pre-commit, commit-msg)
@@ -62,9 +62,9 @@ pnpm format           # Format all files (oxfmt --write)
 Each package also supports individual commands via `pnpm --filter`:
 
 ```bash
-pnpm --filter @traceability/core test
-pnpm --filter @traceability/server typecheck
-pnpm --filter @traceability/app dev
+pnpm --filter @tracerability/core test
+pnpm --filter @tracerability/server typecheck
+pnpm --filter @tracerability/app dev
 ```
 
 ## Architecture
@@ -155,7 +155,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 ### Workspace References
 
 - Internal packages are referenced via `workspace:*` protocol in `package.json`.
-- Package names follow the `@traceability/<name>` convention.
+- Package names follow the `@tracerability/<name>` convention.
 - The root `package.json` defines `onlyBuiltDependencies` for `better-sqlite3`, `electron`, and `esbuild`.
 
 ## Aligning and Implementing Plan TODOs

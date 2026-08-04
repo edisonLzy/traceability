@@ -1,4 +1,4 @@
-# @traceability/cli reference
+# @tracerability/cli reference
 
 The `traceability` CLI manages a local user session, projects, and issues. It
 stores the selected server, user, access token, and rotating refresh token in
@@ -16,12 +16,12 @@ traceability <command> ...
 Fallbacks inside this monorepo (the bin is `packages/cli/dist/index.js`):
 
 ```bash
-pnpm --filter @traceability/cli exec traceability <command> ...
+pnpm --filter @tracerability/cli exec traceability <command> ...
 # or
 node packages/cli/dist/index.js <command> ...
 ```
 
-> If `dist/` is stale, build first: `pnpm --filter @traceability/cli build`.
+> If `dist/` is stale, build first: `pnpm --filter @tracerability/cli build`.
 
 ## Authentication
 

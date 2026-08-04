@@ -1,7 +1,7 @@
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import errorAnimation from "@renderer/assets/error-warning.lottie";
 import { copyTextToClipboard } from "@renderer/lib/clipboard";
-import { captureException } from "@traceability/monitor/electron-renderer";
+import { captureException } from "@tracerability/monitor/electron-renderer";
 import { CheckIcon, CopyIcon, RefreshCwIcon } from "lucide-react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 

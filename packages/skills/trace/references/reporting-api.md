@@ -1,12 +1,12 @@
 # Reporting API reference (for flow instrumentation)
 
-How to use `@traceability/monitor`'s methods when instrumenting a **user flow / 链路**. This is the doc the `trace` skill defers to for API usage. Canonical worked example: `examples/web-demo/src/register.ts`.
+How to use `@tracerability/monitor`'s methods when instrumenting a **user flow / 链路**. This is the doc the `trace` skill defers to for API usage. Canonical worked example: `examples/web-demo/src/register.ts`.
 
 > Prerequisite: `init({ dsn })` must already be called once at app startup. If it isn't, run the `setup` skill first. This skill only adds reporting calls - it does not install or configure the SDK.
 
 ## Method quick reference
 
-The SDK is `@traceability/monitor`; every method below exists on the root (`browser`), `/electron-main`, and `/electron-renderer` subpaths unless noted.
+The SDK is `@tracerability/monitor`; every method below exists on the root (`browser`), `/electron-main`, and `/electron-renderer` subpaths unless noted.
 
 | Method | Signature | Use at which trace position |
 |---|---|---|
@@ -15,13 +15,13 @@ The SDK is `@traceability/monitor`; every method below exists on the root (`brow
 | `captureMessage` | `captureMessage(msg, opts?)` | Each step's success (`<flow>-<step>`) and failure (`<flow>-<step>-failed`), passed as the message. |
 | `captureException` | `captureException(err)` | Every real error path - reports the error with stacktrace. |
 | `setContext` | `setContext(key, obj)` | Attach structured state (e.g. the current request) to subsequent events. |
-| `MonitorErrorBoundary` | `(appName?, fallback, children, onError?)` | React only (`@traceability/monitor/react`) - wrap a flow's root to capture render errors. |
-| `useMonitorTag` | `() => (key, value) => void` | React only (`@traceability/monitor/react`) - a hook-wrapped `setTag`. |
+| `MonitorErrorBoundary` | `(appName?, fallback, children, onError?)` | React only (`@tracerability/monitor/react`) - wrap a flow's root to capture render errors. |
+| `useMonitorTag` | `() => (key, value) => void` | React only (`@tracerability/monitor/react`) - a hook-wrapped `setTag`. |
 
 Import:
 
 ```ts
-import { addBreadcrumb, captureException, captureMessage, setTag, setContext } from "@traceability/monitor";
+import { addBreadcrumb, captureException, captureMessage, setTag, setContext } from "@tracerability/monitor";
 ```
 
 > There is **no** `report` / `reportPerformance` / `setApp` / `useMonitorReport` in this SDK. Flow-step events are `captureMessage` calls; timing rides in the message's `extra`. (If the SDK later grows a `report` API, prefer it for step events — but today it does not exist.)
@@ -61,7 +61,7 @@ Avoid generic messages like `log` or `event` - they won't aggregate cleanly. For
 Flow: 表单提交 -> 校验 -> POST /login -> 存 token -> 跳转首页.
 
 ```ts
-import { addBreadcrumb, captureException, captureMessage, setTag } from "@traceability/monitor";
+import { addBreadcrumb, captureException, captureMessage, setTag } from "@tracerability/monitor";
 
 async function login(email: string, password: string) {
   setTag("flow", "login");
@@ -118,10 +118,10 @@ Each `captureMessage` is one event in the Inbox; all share `flow: login`; the `l
 
 ## React components
 
-Inside a React component, use the hooks from `@traceability/monitor/react`:
+Inside a React component, use the hooks from `@tracerability/monitor/react`:
 
 ```tsx
-import { MonitorErrorBoundary, useMonitorTag } from "@traceability/monitor/react";
+import { MonitorErrorBoundary, useMonitorTag } from "@tracerability/monitor/react";
 
 function LoginForm() {
   const setTag = useMonitorTag();
@@ -145,7 +145,7 @@ function LoginForm() {
 </MonitorErrorBoundary>
 ```
 
-There is no `useMonitorReport` — for a step event from a component, call `captureMessage` (imported from the root `@traceability/monitor`) directly.
+There is no `useMonitorReport` — for a step event from a component, call `captureMessage` (imported from the root `@tracerability/monitor`) directly.
 
 ## Choosing `captureMessage` vs `captureException` vs `addBreadcrumb`
 

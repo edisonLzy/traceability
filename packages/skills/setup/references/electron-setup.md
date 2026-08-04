@@ -2,14 +2,14 @@
 
 Target: Electron projects (electron-vite or equivalent). Golden reference: `examples/electron-demo`.
 
-The SDK has three surfaces: **main** (`@traceability/monitor/electron-main`), **renderer** (`@traceability/monitor/electron-renderer`), and **browser** (`@traceability/monitor`, if a part of the app runs in a plain browser context). All are Sentry wrappers — there is no custom IPC bridge; Sentry's own Electron integration keeps the main and renderer processes in sync.
+The SDK has three surfaces: **main** (`@tracerability/monitor/electron-main`), **renderer** (`@tracerability/monitor/electron-renderer`), and **browser** (`@tracerability/monitor`, if a part of the app runs in a plain browser context). All are Sentry wrappers — there is no custom IPC bridge; Sentry's own Electron integration keeps the main and renderer processes in sync.
 
 ## Dependencies
 
 Add to the target package's `package.json` (monorepo-internal, `workspace:*`):
 
 ```jsonc
-"@traceability/monitor": "workspace:*"
+"@tracerability/monitor": "workspace:*"
 ```
 
 Then run `pnpm install` at the repo root.
@@ -29,7 +29,7 @@ TRACEABILITY_DSN=http://<publicKey>@<server>/<sentryProjectId>
 Create `src/main/monitor.ts` (dedicated module), modeled on `examples/electron-demo/src/main.ts`:
 
 ```ts
-import { init, startResourceMonitor } from "@traceability/monitor/electron-main";
+import { init, startResourceMonitor } from "@tracerability/monitor/electron-main";
 
 export function initMonitor(): void {
   init({ dsn: process.env.TRACEABILITY_DSN! });
@@ -44,7 +44,7 @@ export function initMonitor(): void {
 Create `src/renderer/monitor.ts` (or call directly at the renderer entry):
 
 ```ts
-import { init } from "@traceability/monitor/electron-renderer";
+import { init } from "@tracerability/monitor/electron-renderer";
 
 init({});
 ```
@@ -72,7 +72,7 @@ Call the renderer `init({})` at the renderer entry (before any UI code that migh
 Run the app and trigger a renderer error:
 
 ```ts
-import { captureException } from "@traceability/monitor/electron-renderer";
+import { captureException } from "@tracerability/monitor/electron-renderer";
 captureException(new Error("traceability setup check"));
 ```
 

@@ -1,6 +1,6 @@
 ---
 name: traceability-trace
-description: Use when the user names a user flow / 链路 (登录流程, 下单流程, 发消息流程, …) and wants it instrumented end-to-end without manually tracing the code. The agent analyzes the codebase to map the flow, identifies the key positions, and auto-adds @traceability/monitor reporting calls.
+description: Use when the user names a user flow / 链路 (登录流程, 下单流程, 发消息流程, …) and wants it instrumented end-to-end without manually tracing the code. The agent analyzes the codebase to map the flow, identifies the key positions, and auto-adds @tracerability/monitor reporting calls.
 ---
 
 # Trace Skill
@@ -15,7 +15,7 @@ Restate the named flow as **entry trigger → desired outcome** (e.g. "用户登
 
 ## 1. Verify the SDK is set up
 
-Check that `init({ dsn })` is already wired at app entry (search for an `init(` import from `@traceability/monitor` — browser, `electron-main`, or `electron-renderer` subpath).
+Check that `init({ dsn })` is already wired at app entry (search for an `init(` import from `@tracerability/monitor` — browser, `electron-main`, or `electron-renderer` subpath).
 
 - **Wired** → continue.
 - **Not wired** → stop and tell the user to run the `setup` skill first. This skill only adds reporting calls; it does not install or configure the SDK.
@@ -37,7 +37,7 @@ This list is the output of this step - it replaces the user manually reading the
 
 ## 3. Choose the API per position
 
-See `references/reporting-api.md` for the full how-to. Summary (all from `@traceability/monitor`):
+See `references/reporting-api.md` for the full how-to. Summary (all from `@tracerability/monitor`):
 
 - `setTag("flow", "<flow-name>")` - group every event in this flow under one tag (call at entry).
 - `addBreadcrumb({ category, message, data })` - at entry and each step; attaches context to the next error.
@@ -51,13 +51,13 @@ Use stable, kebab-case, feature-prefixed message strings so events aggregate (se
 
 Add the calls at each key position from step 2.
 
-- Plain modules: `import { addBreadcrumb, captureException, captureMessage, setTag } from "@traceability/monitor";`
-- React components: `import { useMonitorTag } from "@traceability/monitor/react";` (or wrap the flow root with `MonitorErrorBoundary`).
+- Plain modules: `import { addBreadcrumb, captureException, captureMessage, setTag } from "@tracerability/monitor";`
+- React components: `import { useMonitorTag } from "@tracerability/monitor/react";` (or wrap the flow root with `MonitorErrorBoundary`).
 
 Minimal shape (full worked example in `references/reporting-api.md`):
 
 ```ts
-import { addBreadcrumb, captureException, captureMessage, setTag } from "@traceability/monitor";
+import { addBreadcrumb, captureException, captureMessage, setTag } from "@tracerability/monitor";
 
 async function login(email: string, password: string) {
   setTag("flow", "login");

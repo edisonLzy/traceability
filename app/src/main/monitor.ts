@@ -1,4 +1,4 @@
-import { init, startResourceMonitor } from "@traceability/monitor/electron-main";
+import { init, startResourceMonitor } from "@tracerability/monitor/electron-main";
 
 /**
  * Initialize Traceability monitoring in the Electron main process.

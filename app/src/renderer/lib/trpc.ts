@@ -1,5 +1,5 @@
 import { authStore } from "@renderer/store/auth";
-import type { AppRouter } from "@traceability/server/trpc";
+import type { AppRouter } from "@tracerability/server/trpc";
 import { createTRPCReact, httpBatchLink } from "@trpc/react-query";
 
 export const trpc: ReturnType<typeof createTRPCReact<AppRouter>> = createTRPCReact<AppRouter>();

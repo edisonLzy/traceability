@@ -7,7 +7,7 @@ Traceability connects frontend error capture to an AI-assisted fix loop. Fronten
 ### Capture
 
 **Monitor**:
-The frontend error-capture SDK (`@traceability/monitor`). The browser/Electron entry points that record events, breadcrumbs, and performance metrics.
+The frontend error-capture SDK (`@tracerability/monitor`). The browser/Electron entry points that record events, breadcrumbs, and performance metrics.
 _Avoid_: core, core SDK, client, agent
 
 **Instrument**:

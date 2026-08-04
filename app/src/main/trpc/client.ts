@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { AppRouter } from "@traceability/server/trpc";
+import type { AppRouter } from "@tracerability/server/trpc";
 import { createTRPCClient, type TRPCClient, httpBatchLink } from "@trpc/client";
 import { app, safeStorage } from "electron";
 

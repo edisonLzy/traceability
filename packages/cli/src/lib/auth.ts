@@ -1,5 +1,5 @@
 import { isCancel, password, text } from "@clack/prompts";
-import type { AppRouter } from "@traceability/server/trpc";
+import type { AppRouter } from "@tracerability/server/trpc";
 import { createTRPCUntypedClient, httpBatchLink } from "@trpc/client";
 
 import { clearSession, getConfig, saveSession } from "./config.js";

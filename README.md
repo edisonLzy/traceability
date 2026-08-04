@@ -53,7 +53,7 @@ available, start the server in development mode, then open
 [`http://localhost:3000/trpc-panel`](http://localhost:3000/trpc-panel):
 
 ```bash
-pnpm --filter @traceability/server dev
+pnpm --filter @tracerability/server dev
 ```
 
 In the panel, open **Headers** and add `Authorization: Bearer <access-token>` before
@@ -65,7 +65,7 @@ enforces the access JWT. Do not expose the development server to an untrusted ne
 ## Integrating the SDK
 
 ```ts
-import { init, report } from "@traceability/core";
+import { init, report } from "@tracerability/core";
 
 init({
   dsn: "http://localhost:3000",

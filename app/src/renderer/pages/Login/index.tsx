@@ -8,7 +8,7 @@ import {
   captureException,
   captureMessage,
   setTag,
-} from "@traceability/monitor/electron-renderer";
+} from "@tracerability/monitor/electron-renderer";
 import { KeyRound, Loader2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 

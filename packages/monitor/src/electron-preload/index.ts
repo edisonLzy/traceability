@@ -9,6 +9,6 @@
  * "URL scheme is not supported").
  *
  * Usage (app preload):
- *   import "@traceability/monitor/electron-preload";
+ *   import "@tracerability/monitor/electron-preload";
  */
 import "@sentry/electron/preload";

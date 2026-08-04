@@ -1,6 +1,6 @@
 # Traceability examples
 
-Runnable demos that integrate `@traceability/core` against a local server.
+Runnable demos that integrate `@tracerability/core` against a local server.
 
 ## web-demo
 

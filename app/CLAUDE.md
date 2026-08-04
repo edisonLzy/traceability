@@ -1,6 +1,6 @@
 # app/
 
-`@traceability/app` — the Traceability Electron desktop app. Electron 39 + electron-vite + React 19 + Tailwind 4 + react-query + react-router. Private package, `type: module`.
+`@tracerability/app` — the Traceability Electron desktop app. Electron 39 + electron-vite + React 19 + Tailwind 4 + react-query + react-router. Private package, `type: module`.
 
 This is the authoritative package-level guide. Each subdirectory under `src/` has its own `CLAUDE.md` with the conventions that apply when editing files there — read the relevant one before changing code.
 

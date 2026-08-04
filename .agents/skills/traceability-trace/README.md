@@ -16,4 +16,4 @@ Teaches a coding agent how to instrument an entire **user flow / 链路** end-to
 ## Files
 
 - `SKILL.md` - workflow the agent follows (analyze -> map key positions -> instrument -> verify -> commit)
-- `references/reporting-api.md` - how to use the `@traceability/monitor` reporting methods in a flow context
+- `references/reporting-api.md` - how to use the `@tracerability/monitor` reporting methods in a flow context

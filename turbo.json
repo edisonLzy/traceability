@@ -32,17 +32,17 @@
       "cache": false,
       "persistent": true
     },
-    "@traceability/app#build": {
-      "dependsOn": ["^build", "@traceability/server#build"]
+    "@tracerability/app#build": {
+      "dependsOn": ["^build", "@tracerability/server#build"]
     },
-    "@traceability/app#typecheck": {
-      "dependsOn": ["^build", "@traceability/server#build"]
+    "@tracerability/app#typecheck": {
+      "dependsOn": ["^build", "@tracerability/server#build"]
     },
-    "@traceability/cli#build": {
-      "dependsOn": ["^build", "@traceability/server#build"]
+    "@tracerability/cli#build": {
+      "dependsOn": ["^build", "@tracerability/server#build"]
     },
-    "@traceability/cli#typecheck": {
-      "dependsOn": ["^build", "@traceability/server#build"]
+    "@tracerability/cli#typecheck": {
+      "dependsOn": ["^build", "@tracerability/server#build"]
     }
   }
 }

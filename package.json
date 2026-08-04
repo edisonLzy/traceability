@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
-    "build:app": "turbo run build --filter=@traceability/app",
+    "build:app": "turbo run build --filter=@tracerability/app",
     "dev:app": "pnpm --filter ./app dev",
     "test": "turbo run test",
     "type-check": "turbo run typecheck",
