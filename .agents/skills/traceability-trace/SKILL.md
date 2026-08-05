@@ -45,7 +45,13 @@ See `references/reporting-api.md` for the full how-to. Summary (all from `@trace
 - `captureMessage(...)` + `captureException(err)` - on each real error path.
 - `captureMessage("<flow>-done", { level: "info", tags: { flow }, extra })` - at the exit, with timing in `extra`.
 
-Use stable, kebab-case, feature-prefixed message strings so events aggregate (see `references/reporting-api.md` § Event type naming).
+**Counting vs. observing — pick the right tool:**
+
+- Use **`metrics.count(name, 1, { attributes })`** when the goal is "how many times did this happen" (e.g. messages sent per day, login attempts). Time-series data, queryable via `metrics.series` with `resolution: "1d"`. Does NOT create Issues.
+- Use **`captureMessage`** when you want to *observe* a step happened and may need to correlate it with errors or see context in the Inbox.
+- When in doubt: if it's a counter/gauge/distribution → `metrics`; if it's an event you'd want to click into → `captureMessage`.
+
+Use stable, kebab-case, feature-prefixed message strings so events aggregate (see `references/reporting-api.md` § Event type naming). For metric names, use `dot.separated.lowercase` (e.g. `chat.message.sent`).
 
 ## 4. Instrument
 
