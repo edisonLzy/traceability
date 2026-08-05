@@ -5,6 +5,7 @@ import { loadRuntimeConfig } from "./config/index.js";
 import { isMainModule } from "./helper/isMainModule.js";
 import { registerShutdownSignals } from "./helper/shutdown.js";
 import { createDatabase } from "./infrastructure/database/client.js";
+import { createLogger } from "./infrastructure/logger.js";
 import { createObjectStorage } from "./infrastructure/object-storage/client.js";
 import {
   createQueueConnection,
@@ -24,6 +25,7 @@ interface ItemJob {
 
 export async function startWorker(): Promise<void> {
   const config = loadRuntimeConfig();
+  const logger = createLogger({ service: "worker", logLevel: config.logLevel });
 
   const database = createDatabase({
     connectionString: config.databaseUrl,
@@ -48,18 +50,36 @@ export async function startWorker(): Promise<void> {
   const worker = new Worker<ItemJob>(
     ITEM_QUEUE_NAME,
     async (job) => {
+      logger.debug({ itemId: job.data.itemId, topic: job.name }, "job picked up");
       const processor = itemProcessors[job.name];
-      if (!processor) throw new Error(`unsupported worker topic: ${job.name}`);
+      if (!processor) {
+        logger.warn({ topic: job.name }, "unsupported worker topic");
+        throw new Error(`unsupported worker topic: ${job.name}`);
+      }
       const itemId = job.data.itemId;
-      if (!itemId) throw new Error("worker job is missing itemId");
+      if (!itemId) {
+        logger.warn({ topic: job.name }, "worker job is missing itemId");
+        throw new Error("worker job is missing itemId");
+      }
       await processor(itemId);
     },
     { connection, concurrency: 20 },
   );
 
+  worker.on("completed", (job) => {
+    logger.info({ itemId: job.data.itemId, topic: job.name }, "item processed");
+  });
+
   worker.on("failed", async (job, error) => {
-    if (!job || job.attemptsMade < itemQueueJobOptions.attempts) return;
+    if (!job) return;
     const itemId = job.data.itemId;
+    if (job.attemptsMade < itemQueueJobOptions.attempts) {
+      logger.warn(
+        { itemId, topic: job.name, attemptsMade: job.attemptsMade, err: error },
+        "job attempt failed; will retry",
+      );
+      return;
+    }
     if (!itemId) return;
     await processing.recordFailure({
       itemId,
@@ -67,9 +87,18 @@ export async function startWorker(): Promise<void> {
       message: error.message,
       attempts: job.attemptsMade,
     });
+    logger.error(
+      { itemId, stage: job.name, attempts: job.attemptsMade, err: error },
+      "item failed permanently; recorded as processing failure",
+    );
+  });
+
+  worker.on("error", (error) => {
+    logger.error({ err: error }, "worker error");
   });
 
   registerShutdownSignals(async () => {
+    logger.info("worker stopping");
     await Promise.allSettled([
       worker.close(),
       connection.quit(),
@@ -79,7 +108,10 @@ export async function startWorker(): Promise<void> {
   });
 
   await new Promise<void>((resolve, reject) => {
-    worker.once("ready", () => resolve());
+    worker.once("ready", () => {
+      logger.info("worker ready");
+      resolve();
+    });
     worker.once("error", reject);
   });
 }
