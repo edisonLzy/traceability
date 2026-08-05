@@ -35,7 +35,7 @@ export async function startDispatcher(): Promise<void> {
   });
 
   while (!stopping) {
-    const records = await repository.claimPendingOutbox(BATCH_SIZE, new Date());
+    const records = await repository.claimPendingOutbox(BATCH_SIZE);
 
     for (const record of records) {
       try {
