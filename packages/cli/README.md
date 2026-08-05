@@ -54,3 +54,31 @@ The removed `traceability app` alias is not supported. Use `project` directly.
 The fix-loop commands (`issue fix-request`, `issue attach-patch`, and `issue
 mark-fixed`) remain reserved and return exit code `2` until the server
 implements them.
+
+## Metrics and traces
+
+Query metric catalog/series and trace lists/trees. All four commands default
+to JSON output (the raw tRPC response shape, for automation/agents); pass
+`--readable` for human-friendly tables and a span tree. `--from`/`--to`
+accept relative durations (`1h`, `30m`, `7d`, anchored to now) or ISO
+timestamps; the default window is the last 24h.
+
+```bash
+# Metric names in the project, with a table view
+traceability metric list --project-id <id> --prefix chat --readable
+
+# A metric's time series; type/unit are auto-resolved from the catalog
+traceability metric series --project-id <id> --name chat.message.sent
+traceability metric series --project-id <id> --name chat.latency \
+  --type distribution --unit ms --resolution 1m --from 6h --readable
+
+# Trace segments, then the full span tree for one trace
+traceability trace list --project-id <id> --status error --readable
+traceability trace show <traceId> --project-id <id> --readable
+```
+
+`metric series` supports `--trace-id`, `--span-id`, and repeatable
+`--attr "key=value"` equality filters (max 10); values are parsed as
+number/boolean/string. When `--type`/`--unit` are omitted for `metric series`,
+the CLI looks the metric up in the catalog and resolves the unique match,
+erroring with the candidates if the name is ambiguous.

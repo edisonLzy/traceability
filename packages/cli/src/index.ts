@@ -7,8 +7,10 @@ import { Command, CommanderError } from "commander";
 import { authCommand } from "./commands/auth.js";
 import { configCommand } from "./commands/config.js";
 import { issueCommand } from "./commands/issue.js";
+import { metricCommand } from "./commands/metric.js";
 import { projectCommand } from "./commands/project.js";
 import { sourcemapCommand } from "./commands/sourcemap.js";
+import { traceCommand } from "./commands/trace.js";
 import { AuthCancelledError, AuthRequiredError } from "./lib/auth.js";
 import { getConfig, setConfigOverrides } from "./lib/config.js";
 
@@ -39,6 +41,8 @@ export function createProgram(): Command {
   configCommand(program);
   projectCommand(program);
   issueCommand(program);
+  metricCommand(program);
+  traceCommand(program);
   sourcemapCommand(program);
   return program;
 }
