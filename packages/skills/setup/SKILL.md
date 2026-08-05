@@ -7,7 +7,7 @@ description: Use when the user asks to set up / install / configure traceability
 
 When the user says "在项目里接入/安装/配置 traceability 监控 / 创建 project" or "set up / install / configure traceability in this project", follow this workflow.
 
-This skill targets projects **inside this monorepo** (dependencies use `workspace:*`). It does not publish packages. The SDK is the single package `@tracerability/monitor`; subpaths select the platform (`@tracerability/monitor` = browser, `@tracerability/monitor/react`, `@tracerability/monitor/electron-main`, `@tracerability/monitor/electron-renderer`).
+This skill targets **any project** — both monorepo-internal packages and external standalone projects. The SDK is publicly published on npm as `@tracerability/monitor`; subpaths select the platform (`@tracerability/monitor` = browser, `@tracerability/monitor/react`, `@tracerability/monitor/electron-main`, `@tracerability/monitor/electron-preload`, `@tracerability/monitor/electron-renderer`).
 
 ## 0. Pre-check the CLI
 
@@ -57,9 +57,9 @@ Ask the user whether a Traceability project already exists for this codebase.
 
 Follow the chosen reference:
 
-1. Add the dependency (`workspace:*`) and run `pnpm install` at the repo root:
-   - Web: `@tracerability/monitor` (the `./react` subpath is part of the same package — no extra install).
-   - Electron: `@tracerability/monitor` (main + renderer subpaths).
+1. Install the package from npm and run `pnpm install`:
+   - Web: `pnpm add @tracerability/monitor` (the `./react` subpath is part of the same package — no extra install).
+   - Electron: `pnpm add @tracerability/monitor` (main + preload + renderer subpaths).
 2. Write the project's `.env` / `.env.local` and fill in `TRACEABILITY_DSN` / `VITE_TRACEABILITY_DSN` with the DSN from Step 2. No token entry — the DSN's public key authenticates ingest.
 3. Write the monitor module + wire the entry point (per the reference doc).
 4. Ensure `.env*` is in `.gitignore` (add it if missing) — the DSN public key must not be committed. Never clobber an existing value.

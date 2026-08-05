@@ -2,17 +2,21 @@
 
 Target: Electron projects (electron-vite or equivalent). Golden reference: `examples/electron-demo`.
 
-The SDK has three surfaces: **main** (`@tracerability/monitor/electron-main`), **renderer** (`@tracerability/monitor/electron-renderer`), and **browser** (`@tracerability/monitor`, if a part of the app runs in a plain browser context). All are Sentry wrappers — there is no custom IPC bridge; Sentry's own Electron integration keeps the main and renderer processes in sync.
+The SDK has four surfaces: **main** (`@tracerability/monitor/electron-main`), **preload** (`@tracerability/monitor/electron-preload`), **renderer** (`@tracerability/monitor/electron-renderer`), and **browser** (`@tracerability/monitor`, if a part of the app runs in a plain browser context). All are Sentry wrappers — Sentry's own Electron integration keeps the main and renderer processes in sync via IPC.
 
 ## Dependencies
 
-Add to the target package's `package.json` (monorepo-internal, `workspace:*`):
+Install from npm (the package is publicly published):
 
-```jsonc
-"@tracerability/monitor": "workspace:*"
+```bash
+pnpm add @tracerability/monitor
 ```
 
-Then run `pnpm install` at the repo root.
+Or add to `package.json` then run `pnpm install`:
+
+```jsonc
+"@tracerability/monitor": "latest"
+```
 
 ## Environment variables
 
@@ -38,6 +42,18 @@ export function initMonitor(): void {
 ```
 
 `init` accepts the full `ElectronMainOptions` from `@sentry/electron/main`. Additional exports from `electron-main` subpath: `captureException`, `captureMessage`, `setUser`, `setTag`, `setContext`, `addBreadcrumb`, `withScope`, `flush`, `sampleResources`, `getEnvironment`. `startResourceMonitor` polls CPU/memory and calls `onThreshold` when a threshold is crossed.
+
+## Preload
+
+The preload script must expose the Sentry IPC bridge so the renderer SDK can communicate with the main process over `ipcRenderer` instead of attempting a `fetch("sentry-ipc://…")` (which Chromium rejects).
+
+Add a side-effect import at the **top** of the preload entry (before any `contextBridge` calls):
+
+```ts
+import "@tracerability/monitor/electron-preload";
+```
+
+This is a one-liner that calls `contextBridge.exposeInMainWorld("__SENTRY_IPC__", …)` internally. Without it, renderer errors are silently lost.
 
 ## Renderer
 

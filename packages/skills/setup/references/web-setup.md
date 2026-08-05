@@ -4,13 +4,13 @@ Target: any non-electron web project (vanilla Vite, React+Vite, Next, Nuxt, …)
 
 ## Dependencies
 
-Add to the target package's `package.json` (monorepo-internal, `workspace:*`):
+Install from npm (the package is publicly published):
 
-```jsonc
-"@tracerability/monitor": "workspace:*"
+```bash
+pnpm add @tracerability/monitor
 ```
 
-No separate React package — `@tracerability/monitor/react` ships inside the same package. Then run `pnpm install` at the repo root.
+No separate React package — `@tracerability/monitor/react` ships inside the same package.
 
 ## Environment variables
 
