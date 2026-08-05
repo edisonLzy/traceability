@@ -17,7 +17,8 @@ import { rendererTrpcClient, trpc } from "@renderer/lib/trpc";
 import { router } from "@renderer/router";
 import { agentStore } from "@renderer/store/agent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { captureMessage } from "@tracerability/monitor/electron-renderer";
+import { useEffect, useMemo } from "react";
 import { RouterProvider } from "react-router-dom";
 
 const queryClient = new QueryClient({
@@ -42,6 +43,10 @@ export function App() {
       getActiveSessionId: () => agentStore.getState().activeSessionId ?? null,
       sharedPromptEditor: SharedPromptEditor.create(),
     };
+  }, []);
+
+  useEffect(() => {
+    captureMessage("renderer app mounted");
   }, []);
 
   return (

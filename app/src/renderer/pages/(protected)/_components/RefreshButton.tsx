@@ -1,5 +1,6 @@
 import { useRegisterCommands } from "@renderer/commands";
 import { useQueryClient } from "@tanstack/react-query";
+import { captureMessage } from "@tracerability/monitor/electron-renderer";
 import { RefreshCw } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ export function RefreshButton() {
   const refresh = useCallback(async () => {
     await queryClient.invalidateQueries();
     toast("Monitoring data refreshed");
+    captureMessage("monitoring data refreshed");
   }, [queryClient]);
 
   useRegisterCommands(

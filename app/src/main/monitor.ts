@@ -13,6 +13,6 @@ export function initMonitor(): void {
     return;
   }
 
-  init({ dsn, debug: true });
+  init({ dsn });
   startResourceMonitor({ sampleInterval: 30_000, memoryThreshold: 0.85, cpuThreshold: 0.9 });
 }
