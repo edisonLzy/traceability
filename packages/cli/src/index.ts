@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { realpathSync } from "node:fs";
+import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
 import { Command, CommanderError } from "commander";
@@ -13,6 +14,8 @@ import { sourcemapCommand } from "./commands/sourcemap.js";
 import { traceCommand } from "./commands/trace.js";
 import { AuthCancelledError, AuthRequiredError } from "./lib/auth.js";
 import { getConfig, setConfigOverrides } from "./lib/config.js";
+
+const require = createRequire(import.meta.url);
 
 /** commander 错误码 → 按 CACError 语义映射到 exit 2 */
 const PARSE_ERROR_CODES = new Set([
@@ -30,7 +33,7 @@ export function createProgram(): Command {
   program
     .name("traceability")
     .description("Traceability CLI")
-    .version("1.0.0")
+    .version(require("../package.json").version as string)
     .option("--server <url>", "server URL override")
     .exitOverride();
   program.hook("preAction", (_thisCommand, actionCommand) => {
