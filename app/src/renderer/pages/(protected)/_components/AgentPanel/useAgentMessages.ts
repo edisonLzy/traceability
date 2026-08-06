@@ -2,6 +2,7 @@ import type { AssistantMessage } from "@earendil-works/pi-ai";
 import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
 import { agentStore, EntryStatus, type SessionEntry } from "@renderer/store/agent";
 import type { AskUserQuestionRequest } from "@shared/ask-user-question-ipc";
+import { metrics } from "@tracerability/monitor/electron-renderer";
 import { useRef } from "react";
 
 import {
@@ -114,6 +115,7 @@ export function useAgentMessages(): void {
         }
 
         const status = event.messages.some(isFailedAssistantMessage) ? "failed" : "completed";
+        metrics.count("agent.end", 1, { attributes: { status } });
         store.setSessionStatus(event.sessionId, status);
         store.setStreamingEntryCompletedAt(event.sessionId, Date.now());
         store.setStreamingEntryId(event.sessionId, undefined);
@@ -147,6 +149,7 @@ export function useAgentMessages(): void {
 
       message_start: (event) => {
         if (isUserMessage(event.message)) {
+          metrics.count("agent.prompt", 1, { attributes: { kind: event.message.kind } });
           const store = agentStore.getState();
           store.removePendingMessageByTimestamp(event.sessionId, event.message.timestamp);
           if (event.message.kind === "steering") return;

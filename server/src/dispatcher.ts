@@ -39,10 +39,7 @@ export async function startDispatcher(): Promise<void> {
 
   logger.info("dispatcher started");
   while (!stopping) {
-    const records = await repository.claimPendingOutbox(BATCH_SIZE, new Date());
-    if (records.length > 0) {
-      logger.info({ count: records.length }, "claimed outbox records");
-    }
+    const records = await repository.claimPendingOutbox(BATCH_SIZE);
 
     for (const record of records) {
       try {

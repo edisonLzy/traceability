@@ -1,7 +1,15 @@
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import type { Database } from "../../infrastructure/database/client.js";
 import { ingestEnvelopes, ingestItems, outbox, outcomes } from "./schema.js";
+
+/**
+ * How long a claimed outbox record may be held before another dispatcher can
+ * re-claim it. Claimed records are normally marked published or retried within
+ * milliseconds, so this is a safety margin for a dispatcher that crashed
+ * mid-batch, not a processing throttle.
+ */
+const CLAIM_LEASE_SECONDS = 60;
 
 export interface ProjectContext {
   projectId: string;
@@ -98,22 +106,42 @@ export class IngestRepository {
   }
 
   /**
-   * Fetch pending outbox records that are due for dispatch, oldest first.
+   * Atomically claim up to `limit` due outbox records, oldest first.
+   *
+   * The claim is a single CTE UPDATE: the inner SELECT locks the next `limit`
+   * eligible rows with `FOR UPDATE SKIP LOCKED`, and the UPDATE stamps
+   * `claimed_at` on them. Multiple dispatcher instances race safely — each
+   * takes exactly the rows no other instance has locked, so no record is ever
+   * claimed twice — and because the claim is a row-state transition that the
+   * WHERE clause respects, the lock never has to span the Redis enqueue.
+   * Records left claimed by a crashed dispatcher become re-claimable once the
+   * lease expires.
    */
-  async claimPendingOutbox(limit: number, now: Date): Promise<OutboxRecord[]> {
-    const rows = await this.database.db
-      .select({
-        id: outbox.id,
-        itemId: outbox.itemId,
-        topic: outbox.topic,
-        payload: outbox.payload,
-        attempts: outbox.attempts,
-      })
-      .from(outbox)
-      .where(and(eq(outbox.status, "pending"), lte(outbox.availableAt, now)))
-      .orderBy(outbox.createdAt)
-      .limit(limit);
-    return rows;
+  async claimPendingOutbox(limit: number): Promise<OutboxRecord[]> {
+    const result = await this.database.db.execute(sql`
+      WITH claimed AS (
+        SELECT id
+        FROM outbox
+        WHERE status = 'pending'
+          AND available_at <= now()
+          AND (claimed_at IS NULL
+               OR claimed_at < now() - make_interval(secs => ${CLAIM_LEASE_SECONDS}))
+        ORDER BY created_at
+        LIMIT ${limit}
+        FOR UPDATE SKIP LOCKED
+      )
+      UPDATE outbox
+      SET claimed_at = now()
+      WHERE id IN (SELECT id FROM claimed)
+      RETURNING id, item_id, topic, payload, attempts
+    `);
+    return result.rows.map((row) => ({
+      id: row.id as string,
+      itemId: row.item_id as string,
+      topic: row.topic as string,
+      payload: row.payload as Record<string, unknown>,
+      attempts: row.attempts as number,
+    }));
   }
 
   /** Mark a pending outbox record as successfully published. */
@@ -139,6 +167,7 @@ export class IngestRepository {
       .set({
         attempts: input.attempts,
         availableAt: input.availableAt,
+        claimedAt: null,
         status: input.failed ? "failed" : "pending",
       })
       .where(eq(outbox.id, input.id));
