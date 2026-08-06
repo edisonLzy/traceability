@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { catalog, series } = vi.hoisted(() => ({
+const { catalog, series, groups } = vi.hoisted(() => ({
   catalog: vi.fn().mockResolvedValue({ data: [], nextCursor: null }),
   series: vi.fn().mockResolvedValue({
     type: "counter",
@@ -9,11 +9,21 @@ const { catalog, series } = vi.hoisted(() => ({
     points: [],
     summary: null,
   }),
+  groups: vi.fn().mockResolvedValue({
+    type: "counter",
+    unit: null,
+    groupBy: "path",
+    groups: [],
+  }),
 }));
 
 vi.mock("../lib/trpc.js", () => ({
   getTrpcClient: async () => ({
-    metrics: { catalog: { query: catalog }, series: { query: series } },
+    metrics: {
+      catalog: { query: catalog },
+      series: { query: series },
+      groups: { query: groups },
+    },
   }),
 }));
 
@@ -200,5 +210,120 @@ describe("metric commands", () => {
     await expect(
       run(["series", "--project-id", "p1", "--name", "x", "--type", "bogus"]),
     ).rejects.toThrow(/Invalid --type/);
+  });
+
+  it("series --group-by calls the groups procedure with order/limit", async () => {
+    await run([
+      "series",
+      "--project-id",
+      "p1",
+      "--name",
+      "chat.sent",
+      "--type",
+      "counter",
+      "--unit",
+      "none",
+      "--group-by",
+      "path",
+      "--order-by",
+      "p95",
+      "--order-asc",
+      "--limit",
+      "10",
+    ]);
+
+    expect(groups).toHaveBeenCalledWith({
+      projectId: "p1",
+      name: "chat.sent",
+      type: "counter",
+      unit: "none",
+      groupBy: "path",
+      orderBy: "p95",
+      orderDesc: false,
+      limit: 10,
+      attributes: {},
+    });
+    expect(series).not.toHaveBeenCalled();
+  });
+
+  it("series --group-by defaults order to count desc and limit 50", async () => {
+    await run([
+      "series",
+      "--project-id",
+      "p1",
+      "--name",
+      "chat.sent",
+      "--type",
+      "counter",
+      "--unit",
+      "none",
+      "--group-by",
+      "path",
+    ]);
+
+    expect(groups).toHaveBeenCalledWith(
+      expect.objectContaining({ groupBy: "path", orderBy: "count", orderDesc: true, limit: 50 }),
+    );
+    expect(series).not.toHaveBeenCalled();
+  });
+
+  it("series --group-by --readable prints a group summary line and table", async () => {
+    groups.mockResolvedValue({
+      type: "distribution",
+      unit: "millisecond",
+      groupBy: "path",
+      groups: [
+        {
+          value: "/a",
+          count: 5,
+          sum: 100,
+          min: 1,
+          max: 9,
+          avg: 5,
+          p50: 5,
+          p95: 8.6,
+          p99: 8.96,
+        },
+      ],
+    });
+    const output = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    await run([
+      "series",
+      "--project-id",
+      "p1",
+      "--name",
+      "latency",
+      "--type",
+      "distribution",
+      "--unit",
+      "millisecond",
+      "--group-by",
+      "path",
+      "--readable",
+    ]);
+
+    expect(output).toHaveBeenCalled();
+    expect(output.mock.calls[0]?.[0]).toContain("grouped by path");
+  });
+
+  it("series --group-by rejects an invalid --order-by", async () => {
+    await expect(
+      run([
+        "series",
+        "--project-id",
+        "p1",
+        "--name",
+        "x",
+        "--type",
+        "counter",
+        "--unit",
+        "none",
+        "--group-by",
+        "path",
+        "--order-by",
+        "bogus",
+      ]),
+    ).rejects.toThrow(/Invalid --order-by/);
   });
 });

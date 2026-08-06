@@ -151,4 +151,129 @@ describe("MetricsService", () => {
       service.catalog({ projectId, cursor: "not-base64", limit: 10 }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
+
+  it("groups by an attribute and returns type-specific columns", async () => {
+    const rows = [
+      {
+        value: "/a",
+        count: 3,
+        sum: 30,
+        min: 1,
+        max: 9,
+        avg: 5,
+        latest: 9,
+        p50: 5,
+        p95: 8.6,
+        p99: 8.96,
+      },
+      {
+        value: "/b",
+        count: 1,
+        sum: 10,
+        min: 1,
+        max: 9,
+        avg: 5,
+        latest: 9,
+        p50: 5,
+        p95: 8.6,
+        p99: 8.96,
+      },
+    ];
+    const repository = { groups: vi.fn().mockResolvedValue(rows) } as unknown as MetricsRepository;
+    const service = new MetricsService(repository);
+
+    const result = await service.groups({
+      projectId,
+      name: "latency",
+      type: "distribution",
+      unit: "millisecond",
+      ...baseRange,
+      groupBy: "path",
+      orderBy: "p95",
+      orderDesc: true,
+      limit: 10,
+      attributes: {},
+    });
+
+    expect(result).toEqual({
+      type: "distribution",
+      unit: "millisecond",
+      groupBy: "path",
+      groups: [
+        {
+          value: "/a",
+          count: 3,
+          sum: 30,
+          min: 1,
+          max: 9,
+          avg: 5,
+          p50: 5,
+          p95: 8.6,
+          p99: 8.96,
+        },
+        {
+          value: "/b",
+          count: 1,
+          sum: 10,
+          min: 1,
+          max: 9,
+          avg: 5,
+          p50: 5,
+          p95: 8.6,
+          p99: 8.96,
+        },
+      ],
+    });
+    expect(repository.groups).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId,
+        groupBy: "path",
+        orderBy: "p95",
+        orderDesc: true,
+        limit: 10,
+      }),
+    );
+  });
+
+  it("groups slices columns per metric type (counter)", async () => {
+    const repository = {
+      groups: vi
+        .fn()
+        .mockResolvedValue([
+          {
+            value: "/x",
+            count: 2,
+            sum: 7,
+            latest: 7,
+            min: 1,
+            max: 6,
+            avg: 3.5,
+            p50: 3.5,
+            p95: 6.9,
+            p99: 6.99,
+          },
+        ]),
+    } as unknown as MetricsRepository;
+    const service = new MetricsService(repository);
+
+    const result = await service.groups({
+      projectId,
+      name: "calls",
+      type: "counter",
+      unit: null,
+      ...baseRange,
+      groupBy: "path",
+      attributes: {},
+    });
+
+    expect(result).toEqual({
+      type: "counter",
+      unit: null,
+      groupBy: "path",
+      groups: [{ value: "/x", count: 2, sum: 7 }],
+    });
+    expect(repository.groups).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: "count", orderDesc: true, limit: 50 }),
+    );
+  });
 });

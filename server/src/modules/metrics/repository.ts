@@ -1,8 +1,26 @@
-import { and, asc, eq, gte, ilike, lte, max, sql } from "drizzle-orm";
+import { and, asc, eq, gte, ilike, lte, max, sql, type SQL } from "drizzle-orm";
 
 import type { Database } from "../../infrastructure/database/client.js";
 import { ingestEnvelopes, ingestItems } from "../ingest/schema.js";
 import { metricSamples } from "./schema.js";
+
+type MetricType = "counter" | "gauge" | "distribution";
+
+/** series / groups 共用的筛选条件（除分组维度与排序外完全相同） */
+interface SeriesFilter {
+  projectId: string;
+  name: string;
+  type: MetricType;
+  unit: string | null;
+  from: Date;
+  to: Date;
+  traceId?: string;
+  spanId?: string;
+  attributes: Record<string, string | number | boolean>;
+}
+
+/** groups 排序可用的聚合列，与 router schema 的 orderBy 枚举一致 */
+type OrderColumn = "count" | "sum" | "min" | "max" | "avg" | "latest" | "p50" | "p95" | "p99";
 
 export class MetricsRepository {
   public constructor(private readonly database: Database) {}
@@ -101,22 +119,70 @@ export class MetricsRepository {
     return query;
   }
 
-  async series(input: {
-    projectId: string;
-    name: string;
-    type: "counter" | "gauge" | "distribution";
-    unit: string | null;
-    from: Date;
-    to: Date;
-    resolution: "1m" | "5m" | "1h" | "1d";
-    traceId?: string;
-    spanId?: string;
-    attributes: Record<string, string | number | boolean>;
-  }) {
+  async series(input: SeriesFilter & { resolution: "1m" | "5m" | "1h" | "1d" }) {
     const interval = { "1m": "1 minute", "5m": "5 minutes", "1h": "1 hour", "1d": "1 day" }[
       input.resolution
     ];
-    const conditions = [
+    const where = and(...this.conditions(input))!;
+    const bucket = sql<Date>`date_bin(${interval}::interval, ${metricSamples.timestamp}, '1970-01-01'::timestamptz)`;
+    const aggregate = this.aggregates();
+    const points = await this.database.db
+      .select({ bucket, ...aggregate })
+      .from(metricSamples)
+      .where(where)
+      // Drizzle parameterizes each interpolation independently. Reusing the
+      // bucket expression in GROUP BY would therefore produce $1/$10/$11
+      // interval parameters that PostgreSQL cannot recognize as the same
+      // grouped expression. Ordinal references keep SELECT/GROUP/ORDER
+      // aligned without interpolating the interval a second time.
+      .groupBy(sql.raw("1"))
+      .orderBy(sql.raw("1"));
+    const [summary] = await this.database.db.select(aggregate).from(metricSamples).where(where);
+    return { points, summary: summary ?? null };
+  }
+
+  /**
+   * 按属性值分组聚合（如 path/method）。与 series 共享筛选条件，只把时间桶
+   * 维度换成属性值维度，返回每组 count/sum/min/max/avg/percentile。
+   * 用 ordinal 的 `GROUP BY 1` 引用 SELECT 首个输出列，避免 groupValue 表达式
+   * 在 SELECT/GROUP BY 各参数化出不同 $N 而无法被识别为同一分组表达式。
+   */
+  async groups(
+    input: SeriesFilter & {
+      groupBy: string;
+      orderBy: OrderColumn;
+      orderDesc: boolean;
+      limit: number;
+    },
+  ) {
+    const where = and(...this.conditions(input))!;
+    const groupValue = sql<string>`(${metricSamples.attributes}->${input.groupBy}->>'value')`;
+    const aggregate = this.aggregates();
+    const orderExpr: Record<OrderColumn, SQL> = {
+      count: aggregate.count,
+      sum: aggregate.sum,
+      min: aggregate.min,
+      max: aggregate.max,
+      avg: aggregate.avg,
+      latest: aggregate.latest,
+      p50: aggregate.p50,
+      p95: aggregate.p95,
+      p99: aggregate.p99,
+    };
+    return this.database.db
+      .select({ value: groupValue, ...aggregate })
+      .from(metricSamples)
+      .where(where)
+      .groupBy(sql.raw("1"))
+      .orderBy(
+        sql`${orderExpr[input.orderBy]} ${input.orderDesc ? sql.raw("desc") : sql.raw("asc")}`,
+      )
+      .limit(input.limit);
+  }
+
+  /** series / groups 共用的筛选条件 */
+  private conditions(input: SeriesFilter): (SQL | undefined)[] {
+    const conditions: (SQL | undefined)[] = [
       eq(metricSamples.projectId, input.projectId),
       eq(metricSamples.name, input.name),
       eq(metricSamples.type, input.type),
@@ -142,9 +208,12 @@ export class MetricsRepository {
         sql`${metricSamples.attributes} @> ${JSON.stringify({ [key]: typed })}::jsonb`,
       );
     }
-    const where = and(...conditions)!;
-    const bucket = sql<Date>`date_bin(${interval}::interval, ${metricSamples.timestamp}, '1970-01-01'::timestamptz)`;
-    const aggregate = {
+    return conditions;
+  }
+
+  /** series / groups 共用的聚合列定义 */
+  private aggregates() {
+    return {
       sum: sql<number>`coalesce(sum(${metricSamples.value}), 0)::double precision`,
       count: sql<number>`count(*)::integer`,
       min: sql<number>`min(${metricSamples.value})::double precision`,
@@ -155,18 +224,5 @@ export class MetricsRepository {
       p95: sql<number>`percentile_cont(0.95) within group (order by ${metricSamples.value})::double precision`,
       p99: sql<number>`percentile_cont(0.99) within group (order by ${metricSamples.value})::double precision`,
     };
-    const points = await this.database.db
-      .select({ bucket, ...aggregate })
-      .from(metricSamples)
-      .where(where)
-      // Drizzle parameterizes each interpolation independently. Reusing the
-      // bucket expression in GROUP BY would therefore produce $1/$10/$11
-      // interval parameters that PostgreSQL cannot recognize as the same
-      // grouped expression. Ordinal references keep SELECT/GROUP/ORDER
-      // aligned without interpolating the interval a second time.
-      .groupBy(sql.raw("1"))
-      .orderBy(sql.raw("1"));
-    const [summary] = await this.database.db.select(aggregate).from(metricSamples).where(where);
-    return { points, summary: summary ?? null };
   }
 }

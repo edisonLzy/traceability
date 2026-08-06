@@ -56,6 +56,37 @@ export class MetricsService {
       ...selectAggregates(input.type, result),
     };
   }
+
+  async groups(input: {
+    projectId: string;
+    name: string;
+    type: "counter" | "gauge" | "distribution";
+    unit: string | null;
+    from?: Date;
+    to?: Date;
+    traceId?: string;
+    spanId?: string;
+    attributes: Record<string, string | number | boolean>;
+    groupBy: string;
+    orderBy?: "count" | "sum" | "min" | "max" | "avg" | "latest" | "p50" | "p95" | "p99";
+    orderDesc?: boolean;
+    limit?: number;
+  }) {
+    const range = queryRange(input.from, input.to);
+    const groups = await this.repository.groups({
+      ...input,
+      ...range,
+      orderBy: input.orderBy ?? "count",
+      orderDesc: input.orderDesc ?? true,
+      limit: input.limit ?? 50,
+    });
+    return {
+      type: input.type,
+      unit: input.unit,
+      groupBy: input.groupBy,
+      groups: selectGroupAggregates(input.type, groups),
+    };
+  }
 }
 
 const MAX_RANGE_MS = 30 * 24 * 60 * 60 * 1_000;
@@ -128,6 +159,36 @@ function selectAggregates(
         }
       : null,
   };
+}
+
+function selectGroupAggregates(
+  type: "counter" | "gauge" | "distribution",
+  groups: Awaited<ReturnType<MetricsRepository["groups"]>>,
+) {
+  if (type === "counter") {
+    return groups.map(({ value, count, sum }) => ({ value, count, sum }));
+  }
+  if (type === "gauge") {
+    return groups.map(({ value, count, latest, min, max, avg }) => ({
+      value,
+      count,
+      latest,
+      min,
+      max,
+      avg,
+    }));
+  }
+  return groups.map(({ value, count, sum, min, max, avg, p50, p95, p99 }) => ({
+    value,
+    count,
+    sum,
+    min,
+    max,
+    avg,
+    p50,
+    p95,
+    p99,
+  }));
 }
 
 function encodeCursor(name: string, type: string, unit: string): string {

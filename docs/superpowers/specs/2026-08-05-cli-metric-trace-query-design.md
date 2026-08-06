@@ -143,3 +143,22 @@ Root `pnpm type-check`, `pnpm test`, and `pnpm build` pass.
 - Relative and ISO time flags resolve correctly and are sent as ISO strings.
 - `metric series` works with only `--name` when the catalog is unambiguous and explains itself otherwise.
 - All four commands work against a running server with seeded metric/trace data; root typecheck, tests, and build pass.
+
+## Extension: `metric series --group-by` (attribute aggregation)
+
+Landed 2026-08-06. Adds per-attribute-value aggregation so "which path is hot / which is slow" can be answered in one call instead of N `--attr path=…` queries.
+
+Server adds a sibling procedure `metrics.groups` (input = `series` filters + `groupBy` + `orderBy`/`orderDesc`/`limit`), returning `{ type, unit, groupBy, groups }` where each group is `{ value, count, sum, min, max, avg, p50, p95, p99 }` (columns pruned per metric type). `metrics.series` is unchanged.
+
+CLI: `metric series --group-by <attr>` dispatches to `metrics.groups` when set, otherwise to `metrics.series`:
+
+```text
+traceability metric series --name <s> --group-by <attr> \
+    [--order-by <count|sum|min|max|avg|latest|p50|p95|p99>] [--order-asc] [--limit <n>]
+```
+
+- `--group-by` groups by the exact stored attribute value (e.g. `path`); query-string cache busters like `?t=…` remain part of the value unless the reporting layer strips them.
+- `--order-by` defaults to `count`; direction defaults descending (`--order-asc` flips it). `--limit` defaults to 50 (server cap 100).
+- `--readable` prints `grouped by <attr>: N groups` then a `GROUP COUNT …` table; the same `--attr`/time/trace/span filters apply.
+
+Group mode does not return time buckets; it aggregates over the whole `--from`/`--to` range.

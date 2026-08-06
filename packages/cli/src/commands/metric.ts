@@ -35,6 +35,10 @@ interface MetricSeriesOptions {
   spanId?: string;
   attr?: string[];
   readable?: boolean;
+  groupBy?: string;
+  orderBy?: string;
+  orderAsc?: boolean;
+  limit?: string;
 }
 
 export function metricCommand(program: Command): void {
@@ -90,24 +94,49 @@ export function metricCommand(program: Command): void {
     .option("--trace-id <id>", "only samples under this trace id")
     .option("--span-id <id>", "only samples under this span id")
     .option("--attr <k=v>", "attribute equality filter (repeatable, max 10)", collectAttr, [])
+    .option("--group-by <attr>", "group by an attribute value (e.g. path, method)")
+    .option(
+      "--order-by <col>",
+      "order groups by aggregate column (count|sum|min|max|avg|latest|p50|p95|p99)",
+      "count",
+    )
+    .option("--order-asc", "order groups ascending (default descending)")
+    .option("--limit <n>", "max groups", "50")
     .option("--readable", "human-readable summary and table output")
     .action(async (opts: MetricSeriesOptions) => {
       const client = await getTrpcClient();
       const range = parseTimeRange(opts.from, opts.to);
       const resolution = assertResolution(opts.resolution ?? "1h");
       const { type, unit } = await resolveTypeUnit(client, opts);
-      const result = await client.metrics.series.query({
+      const common = {
         projectId: opts.projectId,
         name: opts.name,
         type,
         unit,
-        resolution,
         ...(range.from ? { from: range.from } : {}),
         ...(range.to ? { to: range.to } : {}),
         ...(opts.traceId ? { traceId: opts.traceId } : {}),
         ...(opts.spanId ? { spanId: opts.spanId } : {}),
         attributes: parseAttributes(opts.attr),
-      });
+      };
+      // 分组模式：按属性值聚合，走 metrics.groups，不返回时间桶
+      if (opts.groupBy) {
+        const result = await client.metrics.groups.query({
+          ...common,
+          groupBy: opts.groupBy,
+          orderBy: assertOrderBy(opts.orderBy ?? "count"),
+          orderDesc: !opts.orderAsc,
+          limit: Number(opts.limit ?? "50"),
+        });
+        if (opts.readable) {
+          console.log(`grouped by ${opts.groupBy}: ${result.groups.length} groups`);
+          printTable(result.groups, GROUP_COLUMNS[type]);
+        } else {
+          printJson(result);
+        }
+        return;
+      }
+      const result = await client.metrics.series.query({ ...common, resolution });
       if (opts.readable) {
         console.log(formatSummary(type, result.summary));
         printTable(result.points, SERIES_COLUMNS[type]);
@@ -131,6 +160,34 @@ const SERIES_COLUMNS: Record<MetricType, Array<{ key: string; label: string; wid
   ],
   distribution: [
     { key: "bucket", label: "BUCKET", width: 28 },
+    { key: "count", label: "COUNT", width: 8 },
+    { key: "sum", label: "SUM", width: 12 },
+    { key: "min", label: "MIN", width: 12 },
+    { key: "max", label: "MAX", width: 12 },
+    { key: "avg", label: "AVG", width: 12 },
+    { key: "p50", label: "P50", width: 12 },
+    { key: "p95", label: "P95", width: 12 },
+    { key: "p99", label: "P99", width: 12 },
+  ],
+};
+
+/** 分组模式（--group-by）的表格列：首列是属性值，其余按类型裁剪 */
+const GROUP_COLUMNS: Record<MetricType, Array<{ key: string; label: string; width?: number }>> = {
+  counter: [
+    { key: "value", label: "GROUP", width: 48 },
+    { key: "count", label: "COUNT", width: 8 },
+    { key: "sum", label: "SUM", width: 16 },
+  ],
+  gauge: [
+    { key: "value", label: "GROUP", width: 48 },
+    { key: "count", label: "COUNT", width: 8 },
+    { key: "latest", label: "LATEST", width: 12 },
+    { key: "min", label: "MIN", width: 12 },
+    { key: "max", label: "MAX", width: 12 },
+    { key: "avg", label: "AVG", width: 12 },
+  ],
+  distribution: [
+    { key: "value", label: "GROUP", width: 48 },
     { key: "count", label: "COUNT", width: 8 },
     { key: "sum", label: "SUM", width: 12 },
     { key: "min", label: "MIN", width: 12 },
@@ -166,6 +223,14 @@ function assertMetricType(type: string): MetricType {
 function assertResolution(resolution: string): Resolution {
   if ((RESOLUTIONS as readonly string[]).includes(resolution)) return resolution as Resolution;
   throw new Error(`Invalid --resolution: ${resolution} (expected 1m, 5m, 1h, or 1d)`);
+}
+
+const ORDER_COLUMNS = ["count", "sum", "min", "max", "avg", "latest", "p50", "p95", "p99"] as const;
+type OrderColumn = (typeof ORDER_COLUMNS)[number];
+
+function assertOrderBy(column: string): OrderColumn {
+  if ((ORDER_COLUMNS as readonly string[]).includes(column)) return column as OrderColumn;
+  throw new Error(`Invalid --order-by: ${column} (expected ${ORDER_COLUMNS.join("|")})`);
 }
 
 function parseAttributes(values: string[] | undefined): Record<string, string | number | boolean> {
