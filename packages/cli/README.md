@@ -15,6 +15,7 @@ printf '%s' "$TRACEABILITY_PASSWORD" \
 traceability project create --slug checkout-web --name "Checkout Web" --json
 traceability project show <project-id> --json
 traceability issue list --project-id <project-id> --json
+traceability issue events <issue-id> --limit 20 --json
 ```
 
 ## Authentication
@@ -54,6 +55,12 @@ The removed `traceability app` alias is not supported. Use `project` directly.
 The fix-loop commands (`issue fix-request`, `issue attach-patch`, and `issue
 mark-fixed`) remain reserved and return exit code `2` until the server
 implements them.
+
+`issue events <issue-id>` fetches the newest events for an issue. It defaults
+to 20 rows and accepts `--limit <n>` from 1 through 100. Human output is a
+compact table; pass `--json` to receive the complete server event rows,
+including `eventId`, `eventTimestamp`, `receivedAt`, and the unmodified
+`payload`, for automation and stability-drill matching.
 
 ## Metrics and traces
 
