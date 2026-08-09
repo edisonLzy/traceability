@@ -1,76 +1,62 @@
 # Traceability examples
 
-Runnable demos that integrate `@tracerability/core` against a local server.
+The examples use the workspace `@tracerability/monitor` package and send telemetry to a running Traceability server.
 
-## web-demo
-
-A vanilla Vite + TypeScript app that fires each reportable event type.
-
-### Prerequisites
-
-1. Start the server (from repo root):
-   ```bash
-   export TRACEABILITY_API_TOKEN=dev-token
-   cd server && pnpm dev
-   ```
-2. Start the Inbox UI and create an application, copy its `appId`:
-   ```bash
-   cd app && pnpm dev
-   ```
-   Open http://localhost:5173, log in (server=http://localhost:3000, token=dev-token), create an app, copy the App ID.
-
-### Run the demo
+Before running either example, start the server, build the CLI, log in, and create a project:
 
 ```bash
-cd examples/web-demo
-pnpm install
-pnpm dev
+pnpm --dir server db:setup
+pnpm --filter @tracerability/cli build
+pnpm --filter @tracerability/cli exec traceability auth login --server http://localhost:3000
+pnpm --filter @tracerability/cli exec traceability project create \
+  --slug demo-web --name "Web Demo" --json
 ```
 
-Open http://localhost:5174. In the browser console set the appId/token if needed:
+The project command returns a complete DSN. Project management uses the saved user access JWT; Monitor ingestion uses the project key encoded in the DSN.
 
-```js
-localStorage.setItem("demo.appId", "<paste appId>");
-localStorage.setItem("demo.token", "dev-token");
-location.reload();
-```
+## Web demo
 
-Click the buttons. Each fires an event that the server ingests and aggregates into an issue visible in the Inbox.
-
-### Verify source-map resolution with a production-like preview
-
-The preview build is minified and emits source maps. Upload those maps before you run the preview server so the Inbox can turn the minified stack frame back into the TypeScript location.
+Copy the environment template and set the returned DSN:
 
 ```bash
-cd examples/web-demo
-export TRACEABILITY_DEMO_APP_ID='<paste appId>'
-export TRACEABILITY_DEMO_TOKEN='dev-token'
-pnpm preview:prepare
-pnpm preview
+cp examples/web-demo/.env.example examples/web-demo/.env.local
+pnpm --filter @tracerability/example-web-demo dev
 ```
 
-Open http://localhost:4174, click **Throw production source-map error**, then open the resulting issue. Its Stack trace tab shows `src/previewFailure.ts` and the highlighted original line. Source maps are keyed by app, release and emitted asset path; the demo upload script is also suitable as a small CI deployment step.
+The Vite dev server prints its local URL. The page exercises browser errors and a small user flow through the Monitor SDK.
 
-## electron-demo
-
-An Electron main/renderer demo covering the Electron-specific monitor contract: main-process uncaught errors and crash reporting, CPU/memory/network samples, OS/hardware/client versions, `render-process-gone`, and monitored IPC exceptions. Renderer exceptions and rejections reuse the Web SDK.
+To verify production source-map resolution:
 
 ```bash
-cd examples/electron-demo
-export TRACEABILITY_DEMO_APP_ID='<paste appId>'
-export TRACEABILITY_DEMO_TOKEN='dev-token'
-pnpm dev
+pnpm --filter @tracerability/example-web-demo preview:prepare
+pnpm --filter @tracerability/example-web-demo preview
 ```
 
-Use the eight controls in the window and inspect the same application in the Inbox. `pnpm crash:main` invokes the startup uncaught-exception path for a non-interactive crash-flow check; the regular demo button leaves the window open while producing the same monitor event.
+`preview:prepare` creates a minified build and uploads its source maps with `traceability sourcemap upload --project demo-web --dist ./dist`. Open the preview, trigger the production source-map error, then inspect the issue's resolved stack frame in the desktop app.
 
-### Verify the loop
+## Electron demo
 
-1. Click "Throw TypeError" -> the Inbox Issues page shows a new `TypeError: demo...` issue (live via WebSocket).
-2. Open the issue -> "Start AI fix" -> the Fix Session page shows `traceability issue show <id> --json`.
-3. From a terminal:
-   ```bash
-   cd packages/cli
-   node dist/index.js config set --server http://localhost:3000 --token dev-token
-   node dist/index.js issue show <issueId> --json
-   ```
+Create a separate project if desired, then pass its DSN to the demo:
+
+```bash
+TRACEABILITY_DEMO_DSN='<dsn>' pnpm --filter @tracerability/example-electron-demo dev
+```
+
+The example initializes `@tracerability/monitor/electron-main` and starts CPU, memory, and network resource monitoring. Use this project as a starting point for the Electron main/renderer/preload integration.
+
+To exercise the non-interactive main-process uncaught-exception path:
+
+```bash
+TRACEABILITY_DEMO_DSN='<dsn>' pnpm --filter @tracerability/example-electron-demo crash:main
+```
+
+## Verify ingestion
+
+Open **Monitor → Issues** in the Electron app or use the CLI:
+
+```bash
+pnpm --filter @tracerability/cli exec traceability issue list \
+  --project-id <project-uuid> --json
+pnpm --filter @tracerability/cli exec traceability issue events \
+  <issue-id> --limit 20 --json
+```

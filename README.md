@@ -1,91 +1,110 @@
 # Traceability
 
-Sentry-based web/electron/mf monitoring + exception-to-fix loop.
+Traceability is a Sentry-compatible observability toolkit that connects browser and Electron telemetry to issue triage, replay, source-map symbolication, and an AI-assisted investigation loop.
 
-## Packages
+## Workspace
 
-| Path                | Description                                                                      |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `packages/core`     | Thin wrapper over `@sentry/browser` + self-built integrations + server transport |
-| `packages/react`    | `MonitorErrorBoundary` + hooks                                                   |
-| `packages/electron` | Electron main/renderer/preload                                                   |
-| `packages/cli`      | `traceability` CLI client for the server                                         |
-| `packages/skills`   | Coding-agent skills (instrumentation / diagnose-issue / add-boundary)            |
-| `app`               | Inbox Web UI (React + Vite)                                                      |
-| `server`            | Self-hosted Sentry-envelope ingest + PostgreSQL issue store + tRPC API           |
+| Path | Purpose |
+| --- | --- |
+| `packages/monitor` | `@tracerability/monitor`: browser, React, Electron main/renderer/preload monitoring entry points |
+| `packages/cli` | `traceability` CLI for authentication, projects, issues, metrics, traces, and source maps |
+| `packages/skills` | Reusable coding-agent skills for setup, flow instrumentation, and issue diagnosis |
+| `server` | Fastify API, PostgreSQL/Drizzle persistence, Redis/BullMQ processing, and MinIO source-map storage |
+| `app` | Electron desktop app for Monitor views and AI-assisted investigation |
+| `examples` | Browser and Electron integration examples |
 
-## Prerequisites
+## Requirements
 
-- Node.js `>=20` (see `engines.node`)
-- [Corepack](https://github.com/nodejs/corepack) — the pnpm version is pinned via the `packageManager` field (`pnpm@10.30.3`), so enable it once and `pnpm` resolves to the right version automatically:
+- Node.js `>=22 <23`
+- pnpm `11.18.0` through Corepack
+- Docker for the recommended local PostgreSQL, Redis, and MinIO stack
 
 ```bash
 corepack enable
-```
-
-## Quick start
-
-```bash
 pnpm install
-pnpm -r run build
-
-# 1. start server
-cd server && pnpm dev &          # http://localhost:3000
-
-# 2. log in and create a project
-cd ../packages/cli && node dist/index.js auth login --server http://localhost:3000
-node dist/index.js project create --slug demo --name Demo --json
-# copy the project.sentryProjectId for SDK ingest, and project.id for management commands
-
-# 3. start the desktop app (set VITE_SERVER_URL to point at the server)
-cd ../../app && echo 'VITE_SERVER_URL=http://localhost:3000' > .env && pnpm dev
 ```
 
-Management requests require a user access JWT. The CLI obtains and rotates it
-through `traceability auth login`, persisting its local session without
-displaying token values.
+## Local development
 
-### tRPC debugging panel
-
-The server includes a development-only tRPC UI for browsing and invoking the management
-procedures. After `pnpm install` and with the configured PostgreSQL and Redis services
-available, start the server in development mode, then open
-[`http://localhost:3000/trpc-panel`](http://localhost:3000/trpc-panel):
+Start the server infrastructure and apply migrations:
 
 ```bash
-pnpm --filter @tracerability/server dev
+pnpm --dir server db:setup
 ```
 
-In the panel, open **Headers** and add `Authorization: Bearer <access-token>` before
-invoking a procedure. Obtain an access token with `traceability auth login`, then read it
-from `~/.traceability/config.json` (the CLI deliberately never prints it). The panel shell
-is available only when `NODE_ENV` is not `production`; every management procedure still
-enforces the access JWT. Do not expose the development server to an untrusted network.
+Run the API, dispatcher, and worker in separate terminals:
 
-## Integrating the SDK
+```bash
+pnpm --dir server dev
+pnpm --dir server dev:dispatcher
+pnpm --dir server dev:worker
+```
+
+Start the Electron app against the local API:
+
+```bash
+VITE_SERVER_URL=http://localhost:3000 pnpm dev:app
+```
+
+The development bootstrap account is `root@root.com` / `root@root.com`. Replace it before a production deployment.
+
+## Create a project and integrate Monitor
+
+Build the CLI, log in, and create a project:
+
+```bash
+pnpm --filter @tracerability/cli build
+pnpm --filter @tracerability/cli exec traceability auth login --server http://localhost:3000
+pnpm --filter @tracerability/cli exec traceability project create \
+  --slug demo-web --name "Web Demo" --json
+```
+
+Use the returned `dsn` with the browser SDK:
 
 ```ts
-import { init, report } from "@tracerability/core";
+import { captureException, init } from "@tracerability/monitor";
 
 init({
-  dsn: "http://localhost:3000",
-  appId: "<project.sentryProjectId>",
-  token: "dev-token",
-  release: "1.0.0",
+  dsn: "http://<project-key>@localhost:3000/<sentry-project-id>",
+  environment: "development",
+  release: "demo-web@dev",
+  tracesSampleRate: 1,
 });
 
-// custom event
-report({ type: "feature-action", payload: { foo: 1 }, tags: { feature: "demo" } });
+try {
+  throw new Error("checkout failed");
+} catch (error) {
+  captureException(error);
+}
 ```
 
-## Performance, source maps and Electron
+Additional entry points are available at `@tracerability/monitor/react`, `@tracerability/monitor/electron-main`, `@tracerability/monitor/electron-renderer`, and `@tracerability/monitor/electron-preload`.
 
-- The Inbox **Performance** tab groups automatic browser metrics (FCP, LCP, CLS, INP, TTFB and DOMContentLoaded) by application. Send application-defined measurements with `reportPerformance({ name, value, unit })`.
-- Source-map upload and fix-loop APIs are not part of the current Fastify/tRPC server contract.
-- [`examples/electron-demo`](examples/electron-demo) validates main-process crash/uncaught errors, CPU/memory/network samples, OS/hardware context, renderer loss and IPC exception capture alongside the renderer SDK.
+## Common commands
 
-## The fix loop
+```bash
+pnpm build
+pnpm test
+pnpm type-check
+pnpm lint
+pnpm format
+pnpm build:app
+```
 
-1. SDK reports an exception -> server aggregates it into an issue -> Inbox shows it.
-2. Use `traceability issue show <issueId> --json` to inspect an issue.
-3. Issue fix-loop commands are reserved and currently return exit code `2`.
+See [`server/README.md`](server/README.md), [`packages/cli/README.md`](packages/cli/README.md), and [`examples/README.md`](examples/README.md) for component-specific workflows.
+
+## Desktop releases
+
+Every push to `master` runs the desktop release workflow. It validates the app, builds native macOS x64/arm64 and Windows x64 packages, uploads GitHub Actions artifacts, and publishes the same DMG, ZIP, and NSIS files to a versioned GitHub Release. The app icon source is `app/resources/icon.png` and is applied to both platforms by `app/electron-builder.yml`.
+
+See [`.github/RELEASING.md`](.github/RELEASING.md) for versioning, signing, notarization, and artifact details.
+
+## Documentation map
+
+- [`CONTEXT.md`](CONTEXT.md): canonical product terminology
+- [`AGENTS.md`](AGENTS.md): repository conventions and implementation workflow
+- [`CLAUDE.md`](CLAUDE.md): concise architecture guide for coding agents
+- [`docs/app-icon.md`](docs/app-icon.md): desktop icon concept and packaging requirements
+- [`design-qa.md`](design-qa.md): latest visual regression record
+- [`docs/adr`](docs/adr): accepted architecture decisions
+- [`docs/superpowers`](docs/superpowers): dated implementation plans and specifications; these are historical records and are not rewritten as living documentation

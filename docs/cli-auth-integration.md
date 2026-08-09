@@ -1,85 +1,45 @@
 # CLI authentication integration
 
-The server no longer accepts the legacy `MANAGEMENT_AUTH_TOKEN`. Its management tRPC procedures now require a user access JWT in `Authorization: Bearer <accessToken>`.
+The CLI and Electron app authenticate management tRPC requests with user JWTs. Legacy `MANAGEMENT_AUTH_TOKEN`, `TRACEABILITY_MANAGEMENT_TOKEN`, and `--token` inputs are not supported.
 
-This document is intentionally the only CLI deliverable in this change: no `packages/cli` source has been modified.
+## Server contract
 
-## Server contracts
+Public procedures:
 
-All calls use the existing tRPC endpoint: `POST <server>/api/trpc`.
+- `auth.login({ email, password })` returns `{ user, accessToken, refreshToken }`.
+- `auth.refresh({ refreshToken })` rotates the refresh token and returns a replacement token pair.
 
-### Login
+Protected procedures require `Authorization: Bearer <accessToken>`. The access-token lifetime defaults to the server's `JWT_ACCESS_TOKEN_TTL_SECONDS`; refresh-token lifetime is controlled separately. There is no public registration procedure.
 
-Call the public mutation `auth.login` with:
+The development bootstrap account is `root@root.com` / `root@root.com`. Replace it before production use.
 
-```ts
-{ email: string; password: string }
+## CLI behavior
+
+```bash
+traceability auth login --server http://localhost:3000
+
+printf '%s' "$TRACEABILITY_PASSWORD" \
+  | traceability auth login --server http://localhost:3000 \
+      --email engineer@example.com --password-stdin
+
+traceability auth status --json
+traceability auth logout
 ```
 
-For this release the only seeded account is:
+The CLI stores the server URL, saved user, access token, and refresh token in `~/.traceability/config.json` with mode `0600`. It never prints token values.
 
-```text
-root@root.com
-root@root.com
-```
+For a protected request, the CLI:
 
-The result is:
+1. sends the current access token;
+2. on the first 401, calls the public refresh procedure;
+3. atomically persists the rotated token pair;
+4. retries the original operation exactly once.
 
-```ts
-{
-  user: { id: string; username: string; email: string };
-  accessToken: string;   // JWT, 15 minutes by default
-  refreshToken: string;  // opaque token, 7 days by default
-}
-```
+If refresh fails, it clears the local session. Interactive terminals may log in again; non-interactive callers receive exit code `2` and an `auth login` instruction.
 
-There is no `auth.register` procedure and the CLI must not offer registration.
+## Security constraints
 
-### Refresh
-
-Call the public mutation `auth.refresh` with:
-
-```ts
-{ refreshToken: string }
-```
-
-It returns a replacement `{ accessToken, refreshToken }` pair. Refresh tokens rotate: once a refresh succeeds, the old refresh token is invalid and both returned values must be persisted atomically.
-
-## Recommended CLI implementation
-
-1. Replace the current static-token prompt with email and password fields. Keep the server URL configuration untouched.
-2. On successful `auth.login`, store `{ accessToken, refreshToken }` in the existing CLI config file with mode `0600`; do not print either token.
-3. The tRPC client adds `Authorization: Bearer ${accessToken}` to every protected request.
-4. Before a protected request whose access token is near expiry, call `auth.refresh`; alternatively, on the first 401 call `auth.refresh`, update config, and retry the original operation exactly once.
-5. If refresh fails, clear stored tokens and re-prompt for email/password in an interactive TTY. In CI/non-TTY, print a re-authentication instruction and exit with code 2.
-6. Never retry an operation more than once, and never send a refresh token as a bearer token.
-
-## tRPC client shape
-
-```ts
-let tokens = await loadAuthTokens();
-
-async function refresh() {
-  const next = await publicClient.auth.refresh.mutate({ refreshToken: tokens.refreshToken });
-  tokens = next;
-  await saveAuthTokens(tokens);
-}
-
-const client = createTRPCClient<AppRouter>({
-  links: [
-    retryOnceAfter401(refresh),
-    httpBatchLink({
-      url: `${server}/api/trpc`,
-      headers: () => ({ authorization: `Bearer ${tokens.accessToken}` }),
-    }),
-  ],
-});
-```
-
-The `auth.login` and `auth.refresh` client must be constructed without the protected retry link; otherwise an expired refresh token can recursively trigger refresh attempts.
-
-## Migration notes
-
-- Remove environment-variable and config references to `TRACEABILITY_MANAGEMENT_TOKEN` after switching to user tokens.
-- Server deployments must set `JWT_SECRET` to a random value of at least 32 characters. Changing it invalidates all access tokens; users can log in again.
-- The root credentials are a bootstrap account only. Rotate or replace them before production use.
+- Passwords for automation must arrive through `--password-stdin`, never command-line arguments.
+- Refresh tokens are never sent as bearer tokens.
+- Token values must not appear in stdout, logs, exception messages, or JSON output.
+- Server deployments require a random `JWT_SECRET` of at least 32 characters. Changing it invalidates outstanding access tokens.

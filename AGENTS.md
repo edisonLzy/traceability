@@ -11,27 +11,25 @@ This file provides guidance to AI agents (Claude Code, Copilot, etc.) when worki
 - **rrweb session recording**: Capture and replay user sessions alongside errors
 - **Sentry error integration**: Bridge between Sentry error events and replay data
 - **Exception-to-fix loop**: AI-powered analysis connecting stack traces to source code
-- **Desktop application**: Electron app for managing monitoring workflows
-- **Server backend**: Fastify-based API server with SQLite storage
+- **Desktop application**: Electron app for issue triage, source maps, replay, and AI-assisted investigation
+- **Server backend**: Fastify API with PostgreSQL/Drizzle, Redis/BullMQ, and MinIO
 
 ## Monorepo Structure
 
 ```
 traceability/
-├── app/                          # Electron desktop application
+├── app/                          # Electron desktop application and packaging config
 │   ├── src/
 │   │   ├── main/                 # Electron main process
 │   │   ├── renderer/             # React renderer (UI)
 │   │   └── preload/              # Preload scripts
 │   ├── package.json              # @tracerability/app
 │   └── electron-vite.config.ts
-├── server/                       # Fastify-based API server
-│   ├── src/                      # Express + WebSocket, Pino logging, better-sqlite3
+├── server/                       # Fastify API + background processing
+│   ├── src/                      # tRPC, ingest, PostgreSQL, BullMQ, object storage
 │   └── package.json              # @tracerability/server
 ├── packages/
-│   ├── core/                     # @tracerability/core: rrweb recording + Sentry capture
-│   ├── electron/                 # @tracerability/electron: Electron-specific Sentry integrations
-│   ├── react/                    # @tracerability/react: React bindings for traceability
+│   ├── monitor/                  # @tracerability/monitor: browser/React/Electron capture SDK
 │   ├── cli/                      # @tracerability/cli: command-line interface
 │   └── skills/                   # @tracerability/skills: reusable skill modules
 ├── examples/                     # Example usage projects
@@ -62,7 +60,7 @@ pnpm format           # Format all files (oxfmt --write)
 Each package also supports individual commands via `pnpm --filter`:
 
 ```bash
-pnpm --filter @tracerability/core test
+pnpm --filter @tracerability/monitor test
 pnpm --filter @tracerability/server typecheck
 pnpm --filter @tracerability/app dev
 ```
@@ -72,14 +70,14 @@ pnpm --filter @tracerability/app dev
 | Layer              | Tech                                                             |
 | ------------------ | ---------------------------------------------------------------- |
 | **Electron App**   | Electron 39, React 19, Vite 7 (electron-vite), Tailwind CSS 4    |
-| **Server**         | Fastify + tRPC, PostgreSQL/Drizzle, Redis/BullMQ, Pino logging  |
-| **Core Library**   | @rrweb/record + @rrweb/replay, @sentry/browser                   |
-| **React Bindings** | React 19, @sentry/react, @tanstack/react-query, @base-ui/react   |
-| **Package Mgr**    | pnpm 10 (workspace + catalog), node-linker=hoisted               |
+| **Server**         | Fastify + tRPC, PostgreSQL/Drizzle, Redis/BullMQ, MinIO, Pino    |
+| **Monitor SDK**    | Sentry browser/React/Electron integrations + replay and metrics  |
+| **Desktop UI**     | React 19, TanStack Query, Base UI, CodeMirror, TipTap             |
+| **Package Mgr**    | pnpm 11 workspace with a shared dependency catalog               |
 
 ### Key Dependencies
 
-- **Runtime**: Node.js >= 20, pnpm 10.30.3
+- **Runtime**: Node.js >=22 <23, pnpm 11.18.0
 - **Language**: TypeScript 7.x (catalog-managed)
 - **Testing**: Vitest 4.x (catalog-managed) across all packages
 - **Linting**: oxlint (not ESLint) with typescript + import plugins
@@ -92,12 +90,11 @@ pnpm --filter @tracerability/app dev
 
 - **Strictly `pnpm`**. Never use `npm` or `yarn`.
 - Use `pnpm exec <command>` instead of `npx <command>`.
-- `nodeLinker=hoisted` is configured in `.npmrc` (flat `node_modules`).
 
 ### Shared Versions
 
 - Shared dependency versions are managed via **pnpm catalog** in `pnpm-workspace.yaml`.
-- Currently cataloged: `typescript` (^7.0.2), `vitest` (^4.0.16), `tsx` (^4.21.0).
+- Catalog entries currently include TypeScript, Vitest, tsx, CodeMirror, and TipTap core.
 
 ### Code Quality
 
@@ -156,7 +153,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 
 - Internal packages are referenced via `workspace:*` protocol in `package.json`.
 - Package names follow the `@tracerability/<name>` convention.
-- The root `package.json` defines `onlyBuiltDependencies` for `better-sqlite3`, `electron`, and `esbuild`.
+- `pnpm-workspace.yaml` allowlists native/install builds such as `better-sqlite3`, `electron`, `esbuild`, `msgpackr-extract`, `protobufjs`, and `@sentry/cli`.
 
 ## Aligning and Implementing Plan TODOs
 

@@ -23,7 +23,7 @@ k6 VUs --POST /api/{sentryProjectId}/envelope/--> Fastify ingest --> Postgres
 
 Flow:
 
-1. `setup()` calls the tRPC mutation `POST /api/trpc/projects.create` with `MANAGEMENT_AUTH_TOKEN` to provision a fresh project (`slug: k6-<timestamp>`), returning `{ project, key, dsn }`.
+1. `setup()` calls the tRPC mutation `POST /api/trpc/projects.create` with a user JWT from `ACCESS_TOKEN` to provision a fresh project (`slug: k6-<timestamp>`), returning `{ project, key, dsn }`.
 2. Each iteration builds a Sentry envelope (headers line + `event` item header + error payload) with a unique 32-hex `event_id` derived from `Date.now()` + `__VU` + `__ITER`, then POSTs it as `application/x-sentry-envelope`.
 3. A `constant-arrival-rate` executor holds a steady request rate regardless of latency (open model), so the run measures **server capacity**, not client back-pressure.
 
@@ -32,7 +32,7 @@ Flow:
 | Var                      | Default                 | Meaning                                                   |
 | ------------------------ | ----------------------- | --------------------------------------------------------- |
 | `TARGET_URL`             | `http://127.0.0.1:3000` | Server base URL                                           |
-| `MANAGEMENT_AUTH_TOKEN`  | — (required)            | Bearer token for the tRPC project creation mutation       |
+| `ACCESS_TOKEN`           | — (required)            | User access JWT for the tRPC project creation mutation    |
 | `RATE`                   | `50`                    | Requests per second                                       |
 | `DURATION`               | `15m`                   | Test duration (any k6 duration string, e.g. `30s`, `1h`)  |
 
@@ -58,13 +58,13 @@ cd server && pnpm dev
 
 # 2. Run the scenario in another shell
 cd server/load/k6
-MANAGEMENT_AUTH_TOKEN=<token> k6 run envelope.js
+ACCESS_TOKEN=<access-jwt> k6 run envelope.js
 
 # Higher rate / shorter smoke run
-MANAGEMENT_AUTH_TOKEN=<token> RATE=200 DURATION=30s k6 run envelope.js
+ACCESS_TOKEN=<access-jwt> RATE=200 DURATION=30s k6 run envelope.js
 
 # Point at a deployed environment
-MANAGEMENT_AUTH_TOKEN=<token> TARGET_URL=https://traceability.example.com k6 run envelope.js
+ACCESS_TOKEN=<access-jwt> TARGET_URL=https://traceability.example.com k6 run envelope.js
 ```
 
 Do **not** run this against production Postgres — each `setup()` creates a real project row and the run writes real issues/events. Use `compose.test.yml` or a dedicated load-test environment.
@@ -81,5 +81,5 @@ Do **not** run this against production Postgres — each `setup()` creates a rea
 ## Not covered here
 
 - Server correctness / API contract → `server/src/__tests__/` (vitest).
-- SDK-side perf (browser metrics, transport back-pressure) → `packages/core`.
+- SDK-side perf (browser metrics, transport back-pressure) → `packages/monitor`.
 - Front-end / Electron perf → out of scope; measure in the app itself.
