@@ -22,6 +22,16 @@ export function useIssueEvents(
   );
 }
 
+export function useRelatedReplays(
+  projectId: string | undefined,
+  eventId: string | undefined,
+): UseQueryResult<AppRouterOutputs["replays"]["list"] | undefined, TRPCClientErrorLike<AppRouter>> {
+  return trpc.replays.list.useQuery(
+    { projectId: projectId!, errorId: eventId, limit: 10 },
+    { enabled: Boolean(projectId && eventId), staleTime: 15_000 },
+  );
+}
+
 export function useUpdateIssue(): UseMutationResult<
   AppRouterOutputs["issues"]["update"],
   TRPCClientErrorLike<AppRouter>,

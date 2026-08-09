@@ -1,26 +1,51 @@
 import { useRegisterCommands } from "@renderer/commands";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@renderer/components/ui/tabs";
-import { useIssue, useIssueEvents, useUpdateIssue } from "@renderer/hooks/use-issue";
+import {
+  useIssue,
+  useIssueEvents,
+  useRelatedReplays,
+  useUpdateIssue,
+} from "@renderer/hooks/use-issue";
 import { promptAgent } from "@renderer/lib/agent-events";
+import type { AppRouterOutputs, Event } from "@renderer/lib/trpc-types";
 import { cn, relativeTime, statusGroup } from "@renderer/lib/utils";
 import { projectStore } from "@renderer/store/project";
-import { ArrowLeft, Check, CircleOff, Sparkles } from "lucide-react";
-import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  Check,
+  ChevronRight,
+  CircleDot,
+  CircleOff,
+  Sparkles,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react";
+import { useCallback, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useStore } from "zustand";
 
-import { Stacktrace } from "./components/Stacktrace";
+import { readBreadcrumbs, readExceptionValues, shortId } from "./components/event-data";
+import { EventBreadcrumbs } from "./components/EventBreadcrumbs";
+import { EventContext } from "./components/EventContext";
+import { Stacktrace, SymbolicationBadge } from "./components/Stacktrace";
+
+type IssueStatus = "unresolved" | "resolved" | "ignored";
+type ReplaySummary = AppRouterOutputs["replays"]["list"]["data"][number];
 
 export function IssueDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const currentProject = useStore(projectStore, (s) => s.currentProject);
+  const queryClient = useQueryClient();
+  const currentProject = useStore(projectStore, (state) => state.currentProject);
   const issueQuery = useIssue(id);
   const eventsQuery = useIssueEvents(id);
   const updateIssue = useUpdateIssue();
+  const [selectedEventId, setSelectedEventId] = useState<string>();
   const issue = issueQuery.data ?? null;
   const events = eventsQuery.data ?? [];
+  const selectedEvent = events.find((event) => event.id === selectedEventId) ?? events[0];
+  const relatedReplaysQuery = useRelatedReplays(issue?.projectId, selectedEvent?.eventId);
 
   const investigate = useCallback(() => {
     if (!issue) return;
@@ -53,10 +78,14 @@ export function IssueDetailPage() {
     ];
   }, [investigate, issue, navigate]);
 
-  const changeStatus = async (status: "unresolved" | "resolved" | "ignored") => {
+  const changeStatus = async (status: IssueStatus) => {
     if (!issue) return;
     try {
       await updateIssue.mutateAsync({ issueId: issue.id, patch: { status } });
+      await Promise.all([
+        issueQuery.refetch(),
+        queryClient.invalidateQueries({ queryKey: ["issues"] }),
+      ]);
       toast("Issue status updated");
     } catch (cause) {
       toast(String(cause));
@@ -65,7 +94,7 @@ export function IssueDetailPage() {
 
   if (!issue) {
     return (
-      <div className="mx-auto block min-h-full max-w-[1260px] px-[22px] pt-[22px] pb-12">
+      <div className="mx-auto block min-h-full max-w-[1120px] px-5 pt-5 pb-12">
         <div className="px-5 py-12 text-center text-[12px] text-tertiary">
           {issueQuery.isLoading ? "Loading…" : "Issue not found."}
         </div>
@@ -74,161 +103,354 @@ export function IssueDetailPage() {
   }
 
   const group = statusGroup(issue.status);
+  const projectName = currentProject?.name ?? issue.projectId;
+  const exceptions = selectedEvent ? readExceptionValues(selectedEvent.payload) : [];
+  const breadcrumbCount = selectedEvent ? readBreadcrumbs(selectedEvent.payload).length : 0;
+  const relatedReplays = relatedReplaysQuery.data?.data ?? [];
 
   return (
-    <div className="mx-auto block min-h-full max-w-[1260px] px-[22px] pt-[22px] pb-12">
+    <div className="@container mx-auto block min-h-full max-w-[1120px] px-5 pt-5 pb-14 @max-[620px]:px-4">
       <button
         type="button"
         onClick={() => navigate(-1)}
-        className="mb-4 inline-flex items-center gap-1.5 text-[12px] text-tertiary transition-colors hover:text-ink"
+        className="mb-3 -ml-2 inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[11px] text-tertiary transition-colors hover:bg-overlay hover:text-ink"
       >
-        <ArrowLeft size={14} /> Issues
+        <ArrowLeft className="size-3.5" /> Issues
       </button>
 
-      <div className="mb-5 flex items-start gap-3">
+      <header className="mb-[18px] flex flex-wrap items-start gap-3.5">
         <span
           className={cn(
-            "mt-2.5 size-2.5 shrink-0 rounded-full",
-            issue.type === "error" ? "bg-danger" : "bg-warning",
+            "mt-2 size-2.5 shrink-0 rounded-full",
+            issue.type === "error"
+              ? "bg-danger shadow-[0_0_0_4px_rgba(207,63,63,0.09)]"
+              : "bg-warning",
           )}
         />
-        <div className="min-w-0 flex-1">
-          <h1 className="m-0 text-[24px] font-[680] leading-[1.12] tracking-[-0.04em]">
+        <div className="min-w-0 flex-1 basis-[360px]">
+          <div className="mb-1 text-[10px] font-[700] tracking-[0.08em] text-primary-hover uppercase">
+            {issue.type === "error" ? "Unhandled exception" : "Runtime issue"}
+          </div>
+          <h1
+            title={issue.title}
+            className="m-0 line-clamp-2 text-[22px] leading-[1.18] font-[680] tracking-[-0.04em]"
+          >
             {issue.title}
           </h1>
-          <div className="mt-1.5 font-mono text-[11px] text-tertiary">
-            {issue.id} · {currentProject?.name ?? issue.projectId}
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px] text-tertiary">
+            <span>{issue.id}</span>
+            <span>{projectName}</span>
+            <span>last seen {relativeTime(String(issue.lastSeen))}</span>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={investigate}
-          className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-primary/40 bg-primary px-3 text-[12px] font-[590] text-primary-foreground transition-colors hover:bg-primary-hover"
-        >
-          <Sparkles size={14} /> Investigate
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4.5 desktop:grid-cols-[minmax(0,1fr)_260px]">
-        <section className="overflow-hidden rounded-2xl border border-hairline bg-overlay">
-          <div className="border-b border-hairline px-4 py-3 text-[12px] font-[630] text-muted">
-            Event evidence · {events.length}
-          </div>
-          <div className="px-4 py-2">
-            {events.map((event) => (
-              <div className="border-b border-hairline py-3 last:border-b-0" key={event.id}>
-                <div className="mb-2 text-[11px] text-tertiary">
-                  {new Date(event.receivedAt).toLocaleString()}
-                </div>
-                <EventBody event={event} />
-              </div>
-            ))}
-            {events.length === 0 && (
-              <div className="px-5 py-12 text-center text-[12px] text-tertiary">No events.</div>
+        <div className="flex shrink-0 items-center gap-2 @max-[620px]:ml-[23px] @max-[620px]:w-full">
+          <button
+            type="button"
+            disabled={updateIssue.isPending}
+            onClick={() => void changeStatus(group === "unresolved" ? "resolved" : "unresolved")}
+            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-hairline bg-surface-1 px-3 text-[11px] font-[590] text-muted transition-colors hover:border-hairline-strong hover:bg-overlay disabled:opacity-50"
+          >
+            {group === "unresolved" ? (
+              <Check className="size-3.5" />
+            ) : (
+              <CircleDot className="size-3.5" />
             )}
-          </div>
-        </section>
+            {group === "unresolved" ? "Resolve" : "Reopen"}
+          </button>
+          <button
+            type="button"
+            onClick={investigate}
+            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-primary/40 bg-primary px-3 text-[11px] font-[590] text-primary-foreground transition-colors hover:bg-primary-hover"
+          >
+            <Sparkles className="size-3.5" /> Investigate
+          </button>
+        </div>
+      </header>
 
-        <aside className="h-max overflow-hidden rounded-2xl border border-hairline bg-overlay">
-          <div className="border-b border-hairline p-4">
-            <div className="mb-1.5 text-[10px] font-[660] uppercase tracking-[0.08em] text-tertiary">
-              Status
-            </div>
-            <StatusBadge group={group} />
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              <StatusButton
-                active={group === "unresolved"}
-                label="Open"
-                icon={CircleOff}
-                onClick={() => void changeStatus("unresolved")}
-              />
-              <StatusButton
-                active={group === "resolved"}
-                label="Resolved"
-                icon={Check}
-                onClick={() => void changeStatus("resolved")}
-              />
-              <StatusButton
-                active={group === "ignored"}
-                label="Ignored"
-                icon={CircleOff}
-                onClick={() => void changeStatus("ignored")}
-              />
-            </div>
-            <SideRow label="First seen" value={relativeTime(issue.firstSeen.toString())} />
-            <SideRow label="Last seen" value={relativeTime(issue.lastSeen.toString())} />
-            <SideRow label="Total events" value={`${issue.eventCount} events`} />
+      <div className="flex flex-col gap-3.5">
+        <IssueModule
+          id="issue-overview"
+          title="Issue overview"
+          subtitle="Grouped by fingerprint and resolved source frames"
+          actions={<StatusBadge group={group} />}
+        >
+          <div className="grid grid-cols-2">
+            <OverviewCell
+              label="Events"
+              value={`${issue.eventCount.toLocaleString()} occurrences`}
+              className="border-r border-b"
+            />
+            <OverviewCell
+              label="First seen"
+              value={formatDateTime(issue.firstSeen)}
+              className="border-b"
+            />
+            <OverviewCell
+              label="Last seen"
+              value={relativeTime(String(issue.lastSeen))}
+              className="border-r"
+            />
+            <OverviewCell
+              label="Fingerprint"
+              value={shortId(issue.fingerprint)}
+              title={issue.fingerprint}
+              mono
+            />
           </div>
-          <div className="p-4">
-            <SideRow label="Project" value={currentProject?.name ?? issue.projectId} />
-            <SideRow label="Fingerprint" value={issue.fingerprint} />
-            <SideRow label="Type" value={issue.type} last />
+          <div
+            className="flex flex-wrap gap-1.5 border-t border-hairline px-3.5 py-3"
+            aria-label="Issue status"
+          >
+            <StatusButton
+              active={group === "unresolved"}
+              label="Open"
+              icon={CircleDot}
+              disabled={updateIssue.isPending}
+              onClick={() => void changeStatus("unresolved")}
+            />
+            <StatusButton
+              active={group === "resolved"}
+              label="Resolved"
+              icon={Check}
+              disabled={updateIssue.isPending}
+              onClick={() => void changeStatus("resolved")}
+            />
+            <StatusButton
+              active={group === "ignored"}
+              label="Ignored"
+              icon={CircleOff}
+              disabled={updateIssue.isPending}
+              onClick={() => void changeStatus("ignored")}
+            />
           </div>
-        </aside>
+        </IssueModule>
+
+        <IssueModule
+          id="occurrences"
+          title="Occurrences"
+          subtitle="Select an event to refresh every evidence module below"
+          actions={<NeutralBadge>Latest first</NeutralBadge>}
+        >
+          {events.length > 0 ? (
+            <>
+              <div
+                className="flex gap-1.5 overflow-x-auto border-b border-hairline px-3 py-2.5"
+                role="tablist"
+                aria-label="Event occurrences"
+              >
+                {events.map((event, index) => {
+                  const active = event.id === selectedEvent?.id;
+                  return (
+                    <button
+                      key={event.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setSelectedEventId(event.id)}
+                      className={cn(
+                        "inline-flex h-[30px] shrink-0 items-center gap-1.5 rounded-lg border border-hairline bg-surface-1 px-2.5 text-[9px] text-tertiary transition-colors",
+                        active && "border-primary/45 bg-primary/8 text-primary-hover",
+                      )}
+                    >
+                      <strong className="font-mono font-[600] text-muted">
+                        #{Math.max(issue.eventCount - index, 1)}
+                      </strong>
+                      {relativeTime(String(event.eventTimestamp))}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedEvent && <EventSummary event={selectedEvent} />}
+            </>
+          ) : (
+            <EmptyState>
+              {eventsQuery.isLoading
+                ? "Loading occurrences…"
+                : "No events were captured for this issue."}
+            </EmptyState>
+          )}
+        </IssueModule>
+
+        <IssueModule id="exception" title="Exception" subtitle="Original Sentry exception values">
+          {exceptions.length > 0 ? (
+            <div className="divide-y divide-hairline">
+              {exceptions.map((exception, index) => (
+                <div key={`${exception.type}-${index}`} className="flex items-start gap-3 p-3.5">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-[10px] border border-danger/20 bg-danger/8 text-danger">
+                    <TriangleAlert className="size-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="mb-1 break-words font-mono text-[11px] font-[630] text-ink">
+                      {exception.type}
+                    </div>
+                    <div className="break-words text-[11px] leading-6 text-muted">
+                      {exception.value}
+                    </div>
+                    {exception.mechanism && (
+                      <div className="mt-1 font-mono text-[9px] text-tertiary">
+                        {exception.mechanism}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState>No exception value was captured for this event.</EmptyState>
+          )}
+        </IssueModule>
+
+        <IssueModule
+          id="stack-trace"
+          title="Stack trace"
+          subtitle="Resolved source shown in a read-only CodeMirror surface"
+          actions={selectedEvent ? <SymbolicationBadge payload={selectedEvent.payload} /> : null}
+        >
+          {selectedEvent ? (
+            <Stacktrace key={selectedEvent.id} payload={selectedEvent.payload} />
+          ) : (
+            <EmptyState>Select an occurrence to inspect its stack.</EmptyState>
+          )}
+        </IssueModule>
+
+        <IssueModule
+          id="breadcrumbs"
+          title="Breadcrumbs"
+          subtitle="User and application actions captured before the exception"
+          actions={<NeutralBadge>{breadcrumbCount} captured</NeutralBadge>}
+        >
+          {selectedEvent ? (
+            <EventBreadcrumbs payload={selectedEvent.payload} />
+          ) : (
+            <EmptyState>Select an occurrence to inspect its breadcrumbs.</EmptyState>
+          )}
+        </IssueModule>
+
+        <IssueModule
+          id="event-context"
+          title="Event context"
+          subtitle="Request, runtime, trace, tags and additional data"
+        >
+          {selectedEvent ? (
+            <EventContext
+              payload={selectedEvent.payload}
+              traceMeta={{ traceId: selectedEvent.traceId, spanId: selectedEvent.spanId }}
+            />
+          ) : (
+            <EmptyState>Select an occurrence to inspect its context.</EmptyState>
+          )}
+        </IssueModule>
+
+        <IssueModule
+          id="related-replay"
+          title="Related session replay"
+          subtitle="Matched through the selected event ID"
+          actions={relatedReplays.length > 0 ? <SuccessBadge>Replay available</SuccessBadge> : null}
+        >
+          <RelatedReplayBody
+            eventId={selectedEvent?.eventId}
+            isLoading={relatedReplaysQuery.isLoading}
+            hasError={relatedReplaysQuery.isError}
+            replays={relatedReplays}
+          />
+        </IssueModule>
+
+        <RawPayloadModule payload={selectedEvent?.payload} />
       </div>
     </div>
   );
 }
 
-interface EventLike {
+function IssueModule({
+  id,
+  title,
+  subtitle,
+  actions,
+  children,
+}: {
   id: string;
-  payload: Record<string, unknown>;
-}
-
-/**
- * Show a stack-trace tab by default and a raw-JSON tab as escape hatch. When
- * the payload doesn't contain a stacktrace at all (message-only events),
- * we skip the tabbed layout and just show raw so the widget stays honest.
- */
-function EventBody({ event }: { event: EventLike }) {
-  const hasStack = payloadHasStacktrace(event.payload);
-  if (!hasStack) return <RawPayload payload={event.payload} />;
+  title: string;
+  subtitle?: string;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
+  const titleId = `${id}-title`;
   return (
-    <Tabs defaultValue="stack" className="rounded-lg border border-hairline bg-overlay">
-      <TabsList className="border-b-0 px-3 py-0">
-        <TabsTrigger value="stack">Stack trace</TabsTrigger>
-        <TabsTrigger value="raw">Raw payload</TabsTrigger>
-      </TabsList>
-      <TabsContent value="stack">
-        <Stacktrace payload={event.payload} />
-      </TabsContent>
-      <TabsContent value="raw" className="px-4 py-3">
-        <RawPayload payload={event.payload} />
-      </TabsContent>
-    </Tabs>
+    <section
+      aria-labelledby={titleId}
+      className="overflow-hidden rounded-[14px] border border-hairline bg-surface-glass"
+    >
+      <div className="flex min-h-11.5 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-hairline px-3.5 py-2.5">
+        <h2 id={titleId} className="m-0 text-[12px] font-[660] text-muted">
+          {title}
+        </h2>
+        {subtitle && (
+          <span className="min-w-0 flex-1 truncate text-[10px] text-tertiary">{subtitle}</span>
+        )}
+        {actions && <div className="ml-auto flex items-center gap-1.5">{actions}</div>}
+      </div>
+      {children}
+    </section>
   );
 }
 
-function RawPayload({ payload }: { payload: Record<string, unknown> }) {
+function OverviewCell({
+  label,
+  value,
+  title,
+  mono,
+  className,
+}: {
+  label: string;
+  value: string;
+  title?: string;
+  mono?: boolean;
+  className?: string;
+}) {
   return (
-    <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] leading-[1.7] text-muted">
-      {JSON.stringify(payload, null, 2)}
-    </pre>
+    <div className={cn("min-w-0 border-hairline px-3.5 py-2.5", className)}>
+      <div className="mb-1 text-[9px] font-[700] tracking-[0.07em] text-tertiary uppercase">
+        {label}
+      </div>
+      <div
+        title={title ?? value}
+        className={cn(
+          "truncate text-[11px] font-[580] text-muted",
+          mono && "font-mono text-[10px]",
+        )}
+      >
+        {value}
+      </div>
+    </div>
   );
 }
 
-function payloadHasStacktrace(payload: Record<string, unknown>): boolean {
-  const exception = payload.exception;
-  if (!exception || typeof exception !== "object" || Array.isArray(exception)) return false;
-  const values = (exception as { values?: unknown }).values;
-  if (!Array.isArray(values) || values.length === 0) return false;
-  const first = values[0];
-  if (!first || typeof first !== "object" || Array.isArray(first)) return false;
-  const stacktrace = (first as { stacktrace?: unknown }).stacktrace;
-  if (!stacktrace || typeof stacktrace !== "object" || Array.isArray(stacktrace)) return false;
-  const frames = (stacktrace as { frames?: unknown }).frames;
-  return Array.isArray(frames) && frames.length > 0;
-}
+function EventSummary({ event }: { event: Event }) {
+  const items = [
+    { label: "Event ID", value: shortId(event.eventId), title: event.eventId, mono: true },
+    { label: "Level", value: event.level ?? "Not captured" },
+    { label: "Release", value: event.release ?? "Not captured", mono: true },
+    { label: "Environment", value: event.environment ?? "Not captured" },
+    { label: "Occurred", value: formatDateTime(event.eventTimestamp) },
+    { label: "Received", value: formatDateTime(event.receivedAt) },
+  ];
 
-function StatusBadge({ group }: { group: "unresolved" | "resolved" | "ignored" }) {
-  const dot =
-    group === "unresolved" ? "bg-danger" : group === "resolved" ? "bg-success" : "bg-muted";
-  const label = group === "unresolved" ? "Open" : group === "resolved" ? "Resolved" : "Ignored";
   return (
-    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-overlay px-2 text-[10px] font-[600] text-muted">
-      <span className={cn("size-1.5 rounded-full", dot)} />
-      {label}
-    </span>
+    <div className="grid grid-cols-2 gap-x-5 gap-y-3 px-3.5 py-3 @min-[760px]:grid-cols-3">
+      {items.map((item) => (
+        <div key={item.label} className="min-w-0">
+          <div className="mb-1 text-[9px] font-[700] tracking-[0.07em] text-tertiary uppercase">
+            {item.label}
+          </div>
+          <div
+            title={item.title ?? item.value}
+            className={cn("truncate text-[10px] text-muted", item.mono && "font-mono")}
+          >
+            {item.value}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -236,34 +458,148 @@ function StatusButton({
   active,
   label,
   icon: Icon,
+  disabled,
   onClick,
 }: {
   active: boolean;
   label: string;
-  icon: typeof Check;
+  icon: LucideIcon;
+  disabled: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
+      aria-pressed={active}
+      disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-[10px] text-muted",
-        active && "border-primary/60 bg-primary/10 text-ink",
+        "inline-flex h-7 items-center gap-1.5 rounded-lg border border-hairline bg-surface-1 px-2.5 text-[10px] text-muted transition-colors hover:bg-overlay disabled:opacity-50",
+        active && "border-primary/50 bg-primary/10 text-ink",
       )}
     >
-      <Icon size={12} /> {label}
+      <Icon className="size-3.5" /> {label}
     </button>
   );
 }
 
-function SideRow({ label, value, last = false }: { label: string; value: string; last?: boolean }) {
+function StatusBadge({ group }: { group: IssueStatus }) {
+  const dot =
+    group === "unresolved" ? "bg-danger" : group === "resolved" ? "bg-success" : "bg-muted";
+  const label = group === "unresolved" ? "Open" : group === "resolved" ? "Resolved" : "Ignored";
+  return <PillBadge dot={dot}>{label}</PillBadge>;
+}
+
+function SuccessBadge({ children }: { children: ReactNode }) {
+  return <PillBadge dot="bg-success">{children}</PillBadge>;
+}
+
+function PillBadge({ children, dot }: { children: ReactNode; dot?: string }) {
   return (
-    <div className={cn("mt-3 flex items-start justify-between gap-3", !last && "")}>
-      <span className="text-[11px] text-tertiary">{label}</span>
-      <span className="max-w-[150px] break-all text-right font-mono text-[10px] text-muted">
-        {value}
-      </span>
+    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-overlay px-2 text-[9px] font-[650] whitespace-nowrap text-muted">
+      {dot && <span className={cn("size-1.5 rounded-full", dot)} />}
+      {children}
+    </span>
+  );
+}
+
+function NeutralBadge({ children }: { children: ReactNode }) {
+  return <PillBadge>{children}</PillBadge>;
+}
+
+function RelatedReplayBody({
+  eventId,
+  isLoading,
+  hasError,
+  replays,
+}: {
+  eventId: string | undefined;
+  isLoading: boolean;
+  hasError: boolean;
+  replays: ReplaySummary[];
+}) {
+  if (!eventId) return <EmptyState>Select an occurrence to check for a related replay.</EmptyState>;
+  if (isLoading) return <EmptyState>Checking replay association…</EmptyState>;
+  if (hasError)
+    return <EmptyState>The replay API could not verify this event association.</EmptyState>;
+  if (replays.length === 0) {
+    return <EmptyState>No replay reports the selected event ID ({shortId(eventId)}).</EmptyState>;
+  }
+
+  const replay = replays[0]!;
+  return (
+    <div className="grid grid-cols-1 gap-3 p-3.5 @min-[760px]:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="min-w-0 rounded-[10px] border border-hairline bg-overlay p-3">
+        <div className="mb-1 text-[9px] font-[700] tracking-[0.07em] text-tertiary uppercase">
+          Replay ID
+        </div>
+        <div title={replay.replayId} className="truncate font-mono text-[10px] text-muted">
+          {replay.replayId}
+        </div>
+        <div className="mt-3 text-[10px] leading-5 text-tertiary">
+          This desktop build has no Replay viewer route yet. The association and session metadata
+          are available, but playback is not exposed here.
+        </div>
+        {replays.length > 1 && (
+          <div className="mt-2 text-[9px] text-tertiary">
+            {replays.length} replay sessions reference this event.
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-4 rounded-[10px] border border-hairline bg-overlay p-3 @min-[760px]:grid-cols-1">
+        <ReplayMetric label="Started" value={formatDateTime(replay.startedAt)} />
+        <ReplayMetric label="Duration" value={formatDuration(replay.durationMs)} />
+        <ReplayMetric label="Segments" value={replay.segmentCount.toLocaleString()} />
+        <ReplayMetric label="Platform" value={replay.platform ?? "Not captured"} />
+        <ReplayMetric label="Environment" value={replay.environment ?? "Not captured"} />
+      </div>
     </div>
   );
+}
+
+function ReplayMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="mb-1 text-[9px] font-[700] tracking-[0.07em] text-tertiary uppercase">
+        {label}
+      </div>
+      <div title={value} className="truncate text-[10px] text-muted">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function RawPayloadModule({ payload }: { payload: Record<string, unknown> | undefined }) {
+  return (
+    <section className="overflow-hidden rounded-[14px] border border-hairline bg-surface-glass">
+      <details className="group">
+        <summary className="flex min-h-11.5 cursor-pointer list-none items-center gap-2 px-3.5 text-[11px] font-[620] text-muted">
+          <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
+          Raw event payload
+          <span className="ml-auto font-mono text-[9px] text-tertiary">JSON</span>
+        </summary>
+        <pre className="m-0 max-h-[480px] overflow-auto border-t border-hairline bg-code-bg p-4 font-mono text-[10px] leading-6 whitespace-pre text-code-text">
+          {payload ? JSON.stringify(payload, null, 2) : "No event selected."}
+        </pre>
+      </details>
+    </section>
+  );
+}
+
+function EmptyState({ children }: { children: ReactNode }) {
+  return <div className="px-5 py-10 text-center text-[11px] text-tertiary">{children}</div>;
+}
+
+function formatDateTime(value: Date | string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? String(value) : date.toLocaleString();
+}
+
+function formatDuration(durationMs: number | null): string {
+  if (durationMs === null) return "Not captured";
+  const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }

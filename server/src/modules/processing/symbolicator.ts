@@ -15,6 +15,9 @@ interface Frame extends Record<string, unknown> {
   function?: unknown;
   lineno?: unknown;
   colno?: unknown;
+  pre_context?: unknown;
+  context_line?: unknown;
+  post_context?: unknown;
   data?: Record<string, unknown>;
 }
 
@@ -189,12 +192,32 @@ function applyPositionToFrame(frame: Frame, consumer: SourceMapConsumer): boolea
   data.raw_lineno = frame.lineno;
   data.raw_colno = frame.colno;
   data.symbolicated = true;
-  frame.data = data;
 
   frame.filename = original.source;
   if (original.name != null) frame.function = original.name;
   frame.lineno = original.line;
   if (original.column != null) frame.colno = original.column;
+
+  // Context supplied by an SDK describes the generated bundle. Once the
+  // location has been rewritten it would be misleading, so replace it only
+  // when the uploaded map includes the matching original source.
+  delete frame.pre_context;
+  delete frame.context_line;
+  delete frame.post_context;
+  const sourceContent = consumer.sourceContentFor(original.source, true);
+  if (typeof sourceContent === "string") {
+    const lines = sourceContent.replaceAll("\r\n", "\n").split("\n");
+    if (lines.at(-1) === "") lines.pop();
+    const sourceIndex = original.line - 1;
+    if (sourceIndex >= 0 && sourceIndex < lines.length) {
+      const radius = 5;
+      frame.pre_context = lines.slice(Math.max(0, sourceIndex - radius), sourceIndex);
+      frame.context_line = lines[sourceIndex];
+      frame.post_context = lines.slice(sourceIndex + 1, sourceIndex + radius + 1);
+      data.source_context = "sourcemap";
+    }
+  }
+  frame.data = data;
   return true;
 }
 

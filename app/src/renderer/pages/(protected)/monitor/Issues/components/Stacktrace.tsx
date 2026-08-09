@@ -1,158 +1,92 @@
 import { cn } from "@renderer/lib/utils";
-import type { ReactElement } from "react";
+import { FileCode2 } from "lucide-react";
+import { useState } from "react";
 
-import { SourceLocation, type SourceLocationData } from "./SourceLocation";
+import { readStackFrames, readSymbolicationStatus, type SymbolicatedStatus } from "./event-data";
+import { SourceCodeViewer } from "./SourceCodeViewer";
 
-/** Values written by the worker's symbolicator (see server/src/modules/processing/symbolicator.ts). */
-type SymbolicatedStatus = "full" | "partial" | "none" | "unavailable";
+export function Stacktrace({ payload }: { payload: Record<string, unknown> }) {
+  const frames = readStackFrames(payload);
+  const [selectedId, setSelectedId] = useState<string>();
+  const selected = frames.find((frame) => frame.id === selectedId) ?? frames[0];
 
-interface Frame {
-  filename?: unknown;
-  function?: unknown;
-  lineno?: unknown;
-  colno?: unknown;
-  data?: unknown;
-}
-
-interface StacktraceProps {
-  payload: Record<string, unknown>;
-}
-
-/**
- * Renders a formatted stack trace for an event's `exception.values[0]`. Every
- * frame is displayed through `SourceLocation`, which already handles the
- * "resolved" appearance. Order is reversed so the innermost frame — where the
- * throw happened — sits at the top, matching Chrome DevTools / Sentry.
- *
- * Returns `null` when the payload doesn't carry a stack (message-only events,
- * white-screen captures, etc.) so callers can decide how to fall back.
- */
-export function Stacktrace({ payload }: StacktraceProps): ReactElement | null {
-  const exceptionValue = firstExceptionValue(payload);
-  const rawFrames = readFrames(exceptionValue);
-  if (rawFrames.length === 0) return null;
-
-  const status = readStatus(payload);
-  const exceptionType = readString(exceptionValue?.type);
-  const exceptionMessage = readString(exceptionValue?.value);
-
-  // Sentry ships frames in call order (outermost → innermost). Reverse for a
-  // DevTools-style display without mutating the original array.
-  const frames = [...rawFrames].reverse();
+  if (!selected) {
+    return (
+      <div className="px-5 py-10 text-center text-[11px] text-tertiary">
+        No stack frames were captured for this event.
+      </div>
+    );
+  }
 
   return (
-    <div className="border-b border-hairline last:border-b-0">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4.5 py-3">
-        <div className="min-w-0">
-          {exceptionType || exceptionMessage ? (
-            <div className="truncate font-mono text-xs text-ink">
-              <span className="font-[630]">{exceptionType ?? "Error"}</span>
-              {exceptionMessage ? `: ${exceptionMessage}` : null}
-            </div>
-          ) : (
-            <div className="text-[11px] uppercase tracking-[0.06em] text-tertiary">Stack trace</div>
-          )}
+    <>
+      <div
+        className="flex gap-1.5 overflow-x-auto border-b border-hairline px-3 py-2.5"
+        role="tablist"
+        aria-label="Stack frames"
+      >
+        {frames.map((frame) => (
+          <button
+            key={frame.id}
+            type="button"
+            role="tab"
+            aria-selected={frame.id === selected.id}
+            onClick={() => setSelectedId(frame.id)}
+            className={cn(
+              "inline-flex h-7 shrink-0 items-center rounded-[7px] border border-transparent px-2 font-mono text-[9px] text-tertiary transition-colors hover:bg-overlay hover:text-muted",
+              frame.id === selected.id && "border-hairline bg-surface-1 text-primary-hover",
+            )}
+          >
+            {frame.functionName} · {frame.file}:{frame.line ?? "—"}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex min-h-9.5 items-center gap-2 bg-[#111216] px-3 py-2 text-[#a4a6ae]">
+        <FileCode2 className="size-3.5 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="mb-0.5 text-[8px] font-[680] uppercase tracking-[0.08em] text-[#737680]">
+            {selected.resolved ? "Resolved location" : "Reported location"}
+          </div>
+          <div className="truncate font-mono text-[10px] text-[#e6e7eb]" title={selected.file}>
+            {selected.file}
+          </div>
         </div>
-        <SymbolicationBadge status={status} />
+        <span className="shrink-0 font-mono text-[9px]">
+          Line {selected.line ?? "—"} · Column {selected.column ?? "—"}
+        </span>
       </div>
-      <div>
-        {frames.map((frame, index) => {
-          const location = frameToLocation(frame);
-          if (!location) return null;
-          return <SourceLocation key={index} location={location} />;
-        })}
+
+      <SourceCodeViewer frame={selected} />
+
+      <div className="border-t border-white/7 bg-[#111216] px-3 py-2 font-mono text-[9px] leading-5 text-[#737680]">
+        {selected.generated ? (
+          <>
+            Generated: {selected.generated.file}:{selected.generated.line ?? "—"}:
+            {selected.generated.column ?? "—"}
+          </>
+        ) : (
+          <>Generated location unavailable — this frame was not source-map resolved.</>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 
-function SymbolicationBadge({ status }: { status: SymbolicatedStatus | undefined }) {
-  // Fixed-tone Badge palette is limited; we colour a dot + text ourselves to
-  // stay expressive without touching the shared component.
+export function SymbolicationBadge({ payload }: { payload: Record<string, unknown> }) {
+  const status = readSymbolicationStatus(payload);
   const config = {
     full: { dot: "bg-success", label: "Symbolicated" },
     partial: { dot: "bg-warning", label: "Partial source map" },
     none: { dot: "bg-subtle", label: "No source map" },
     unavailable: { dot: "bg-danger", label: "Source map unavailable" },
   } satisfies Record<SymbolicatedStatus, { dot: string; label: string }>;
-
   const entry = status ? config[status] : { dot: "bg-subtle", label: "Raw stack" };
+
   return (
-    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-overlay px-2 text-[10px] font-[600] text-muted">
+    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-overlay px-2 text-[9px] font-[650] whitespace-nowrap text-muted">
       <span className={cn("size-1.5 rounded-full", entry.dot)} />
       {entry.label}
     </span>
   );
-}
-
-function firstExceptionValue(payload: Record<string, unknown>): Record<string, unknown> | null {
-  const exception = payload.exception;
-  if (!exception || typeof exception !== "object" || Array.isArray(exception)) return null;
-  const values = (exception as { values?: unknown }).values;
-  if (!Array.isArray(values) || values.length === 0) return null;
-  const value = values[0];
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function readFrames(exception: Record<string, unknown> | null): Frame[] {
-  if (!exception) return [];
-  const stacktrace = exception.stacktrace;
-  if (!stacktrace || typeof stacktrace !== "object" || Array.isArray(stacktrace)) return [];
-  const frames = (stacktrace as { frames?: unknown }).frames;
-  if (!Array.isArray(frames)) return [];
-  return frames.filter(
-    (frame): frame is Frame => !!frame && typeof frame === "object" && !Array.isArray(frame),
-  );
-}
-
-function readStatus(payload: Record<string, unknown>): SymbolicatedStatus | undefined {
-  const raw = payload.symbolicated;
-  return raw === "full" || raw === "partial" || raw === "none" || raw === "unavailable"
-    ? raw
-    : undefined;
-}
-
-/**
- * Turn a Sentry stack frame into the shape SourceLocation renders. When the
- * frame carries the worker's `data.raw_*` fields we split the display into a
- * resolved location + a "Generated" trailer showing the minified position;
- * otherwise we just show whatever the SDK sent.
- */
-function frameToLocation(frame: Frame): SourceLocationData | null {
-  const filename = readString(frame.filename);
-  const line = readNumber(frame.lineno);
-  const column = readNumber(frame.colno);
-  if (!filename || line === undefined || column === undefined) return null;
-
-  const location: SourceLocationData = {
-    file: filename,
-    line,
-    column,
-    ...(readString(frame.function) !== undefined ? { function: readString(frame.function)! } : {}),
-  };
-
-  const data = frame.data;
-  if (data && typeof data === "object" && !Array.isArray(data)) {
-    const rec = data as Record<string, unknown>;
-    if (rec.symbolicated === true) {
-      const rawFilename = readString(rec.raw_filename);
-      const rawLine = readNumber(rec.raw_lineno);
-      const rawColumn = readNumber(rec.raw_colno);
-      if (rawFilename && rawLine !== undefined && rawColumn !== undefined) {
-        location.generated = { file: rawFilename, line: rawLine, column: rawColumn };
-      }
-    }
-  }
-
-  return location;
-}
-
-function readString(value: unknown): string | undefined {
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
-function readNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }

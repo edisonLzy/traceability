@@ -45,6 +45,9 @@ interface Frame {
   lineno: number;
   colno: number;
   debug_id?: string;
+  pre_context?: string[];
+  context_line?: string;
+  post_context?: string[];
   data?: Record<string, unknown>;
 }
 
@@ -92,7 +95,16 @@ describe("symbolicatePayload", () => {
     ).stacktrace.frames;
     expect(frames.map((f) => f.function)).toEqual(["first", "second", "third"]);
     expect(frames.map((f) => f.filename)).toEqual(["src/app.ts", "src/app.ts", "src/app.ts"]);
-    expect(frames[0]?.data).toMatchObject({ raw_filename: "app.js", symbolicated: true });
+    expect(frames[0]?.data).toMatchObject({
+      raw_filename: "app.js",
+      source_context: "sourcemap",
+      symbolicated: true,
+    });
+    expect(frames[1]).toMatchObject({
+      pre_context: ["const a = 1;"],
+      context_line: "const b = 2;",
+      post_context: ["const c = 3;"],
+    });
   });
 
   it("resolves frames via event.debug_meta.images[] (Sentry v8 shape)", async () => {
