@@ -61,7 +61,7 @@ export function AssistantMessage({
   }, [textContent.length]);
 
   return (
-    <article className="mb-5 pr-2">
+    <article className="mb-5 min-w-0 max-w-full overflow-hidden pr-2">
       <div className="mb-2 flex items-center gap-1.5 text-[10px] font-[620] text-tertiary">
         <Sparkles
           className={isStreaming ? "animate-pulse text-primary-hover" : "text-primary-hover"}
@@ -115,7 +115,7 @@ export function AssistantMessage({
         ))}
 
         {hasError && textContent.every((block) => block.text.trim().length === 0) ? (
-          <div className="border-l-2 border-danger/70 bg-danger/[0.06] px-2 py-1.5 text-[10px] leading-5 text-danger">
+          <div className="min-w-0 max-w-full overflow-hidden border-l-2 border-danger/70 bg-danger/[0.06] px-2 py-1.5 text-[10px] leading-5 whitespace-pre-wrap text-danger [overflow-wrap:anywhere]">
             {errorMessage ||
               "Agent request failed. Please check the model/API configuration and try again."}
           </div>
