@@ -43,8 +43,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Run all tests
-        run: pnpm test
+      - name: Run desktop app tests
+        run: pnpm exec turbo run test --filter=@tracerability/app
 
   build:
     name: Build ${{ matrix.name }}

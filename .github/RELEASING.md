@@ -1,9 +1,10 @@
 # Desktop release pipeline
 
-Every push to `master` runs `.github/workflows/release.yml`. The workflow runs the repository
-tests, builds the desktop application on native macOS and Windows runners, uploads the packages
-as GitHub Actions artifacts, and publishes the same files to a GitHub Release. The existing
-`.github/workflows/ci.yml` workflow continues to run the full type-check and build validation.
+Every push to `master` runs `.github/workflows/release.yml`. The workflow runs the desktop app
+tests and required workspace builds, builds the application on native macOS and Windows runners,
+uploads the packages as GitHub Actions artifacts, and publishes the same files to a GitHub
+Release. The existing `.github/workflows/ci.yml` workflow continues to run the full repository
+type-check, test, and build validation.
 
 The generated packages are:
 
