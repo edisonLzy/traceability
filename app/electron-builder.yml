@@ -1,0 +1,23 @@
+appId: com.traceability.desktop
+productName: Traceability
+directories:
+  output: dist
+files:
+  - out/**/*
+win:
+  target:
+    - nsis
+  executableName: traceability
+nsis:
+  artifactName: Traceability-${version}-${arch}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.developer-tools
+  artifactName: Traceability-${version}-${arch}.${ext}
+dmg:
+  artifactName: Traceability-${version}-${arch}.${ext}

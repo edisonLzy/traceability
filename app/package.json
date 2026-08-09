@@ -73,12 +73,5 @@
     "tailwindcss": "^4.3.2",
     "vite": "^7.2.6",
     "vitest": "^4.0.16"
-  },
-  "build": {
-    "appId": "com.traceability.desktop",
-    "productName": "Traceability",
-    "files": [
-      "out/**/*"
-    ]
   }
 }
