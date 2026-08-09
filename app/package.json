@@ -13,6 +13,10 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
+    "@codemirror/lang-javascript": "catalog:",
+    "@codemirror/language": "catalog:",
+    "@codemirror/state": "catalog:",
+    "@codemirror/view": "catalog:",
     "@earendil-works/pi-agent-core": "0.74.0",
     "@earendil-works/pi-ai": "0.74.0",
     "@lottiefiles/dotlottie-react": "^0.19.9",
