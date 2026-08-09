@@ -2,9 +2,12 @@ appId: com.traceability.desktop
 productName: Traceability
 directories:
   output: dist
+  buildResources: resources
+icon: resources/icon.png
 files:
   - out/**/*
 win:
+  icon: resources/icon.png
   target:
     - nsis
   executableName: traceability
@@ -14,6 +17,7 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  icon: resources/icon.png
   target:
     - dmg
     - zip

@@ -64,7 +64,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       RELEASE_VERSION: ${{ needs.version.outputs.version }}
-      VITE_MANAGEMENT_TOKEN: traceability-ci-token
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

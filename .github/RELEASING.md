@@ -11,11 +11,24 @@ The generated packages are:
 - macOS x64 and arm64: DMG and ZIP
 - Windows x64: NSIS installer
 
+All installers use `app/resources/icon.png`, configured through
+`app/electron-builder.yml`. Keep the source PNG square, transparent, and at least
+1024×1024; electron-builder derives the platform-specific icon resources during packaging.
+
 The release version is derived from `app/package.json`: its major and minor values are kept,
 and the GitHub Actions run number becomes the patch version. For example, base version `1.0.0`
 in workflow run 42 is released as `1.0.42` with Git tag `v1.0.42`.
 
 The workflow can also be started manually with **Run workflow** from the GitHub Actions page.
+
+For a local packaging smoke test on macOS:
+
+```bash
+pnpm build:app
+pnpm --dir app exec electron-builder --mac --arm64 --dir --publish never
+```
+
+The unpacked app should contain a generated `.icns` resource and display the Traceability icon.
 
 ## macOS signing and notarization
 
