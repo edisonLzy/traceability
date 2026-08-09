@@ -19,13 +19,16 @@ import { useMinimumLoading } from "@renderer/hooks/use-minimum-loading";
 import { authStore } from "@renderer/store/auth";
 import {
   Bug,
+  Columns2,
   Command,
   Compass,
   FileCode2,
   Inbox,
   LogOut,
+  Maximize2,
   Monitor,
   Moon,
+  PanelRightOpen,
   Radio,
   Sun,
 } from "lucide-react";
@@ -33,12 +36,14 @@ import { Fragment, useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { AgentPanel } from "./_components/AgentPanel";
+import { FloatingAgentLauncher } from "./_components/AgentPanel/FloatingAgentLauncher";
 import { CommandPalette } from "./_components/CommandPalette";
 import { HeaderProjectSwitcher } from "./_components/HeaderProjectSwitcher";
 import { ProjectOnboardingGuide } from "./_components/ProjectOnboardingGuide";
 import { RefreshButton } from "./_components/RefreshButton";
 import { Sidebar } from "./_components/Sidebar";
 import { Titlebar } from "./_components/Titlebar";
+import { useAppLayout } from "./_hooks/useAppLayout";
 import { useSetupProjects } from "./_hooks/useSetupProjects";
 
 export function Layout() {
@@ -56,6 +61,20 @@ export function Layout() {
 function AppLayout() {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
+  const {
+    getAgentPanelContainerProps,
+    getAgentPanelProps,
+    getFloatingAgentLauncherProps,
+    getMainPanelProps,
+    getMainRegionProps,
+    getResizablePanelGroupProps,
+    getResizeHandleProps,
+    handleFocusAgent,
+    handleFocusContent,
+    handleSplitView,
+    isFloatingAgentMode,
+    layoutMode,
+  } = useAppLayout();
 
   useRegisterCommands(
     () => [
@@ -100,6 +119,36 @@ function AppLayout() {
         action: () => navigate("/explorer"),
       },
       {
+        id: "layout.focus-content",
+        group: { id: "layout", label: "Layout", order: 30 },
+        title: "Focus content",
+        description: "Give the workspace the full main region",
+        icon: Maximize2,
+        keywords: ["layout", "content", "maximize", "hide agent"],
+        disabled: layoutMode === "content",
+        action: handleFocusContent,
+      },
+      {
+        id: "layout.focus-agent",
+        group: { id: "layout", label: "Layout", order: 30 },
+        title: "Focus agent",
+        description: "Give the Agent the full main region",
+        icon: PanelRightOpen,
+        keywords: ["layout", "agent", "maximize", "chat"],
+        disabled: layoutMode === "agent",
+        action: handleFocusAgent,
+      },
+      {
+        id: "layout.restore-split",
+        group: { id: "layout", label: "Layout", order: 30 },
+        title: "Restore split view",
+        description: "Restore the previous workspace and Agent ratio",
+        icon: Columns2,
+        keywords: ["layout", "split", "panels", "restore"],
+        disabled: layoutMode === "split",
+        action: handleSplitView,
+      },
+      {
         id: "theme.light",
         group: { id: "theme", label: "主题", order: 60 },
         title: "Light mode",
@@ -138,7 +187,7 @@ function AppLayout() {
         },
       },
     ],
-    [navigate, setTheme],
+    [handleFocusAgent, handleFocusContent, handleSplitView, layoutMode, navigate, setTheme],
   );
 
   return (
@@ -146,29 +195,39 @@ function AppLayout() {
       <Titlebar />
       <div className="flex h-full pt-[30px]">
         <Sidebar />
-        <ResizablePanelGroup orientation="horizontal" className="min-w-0 flex-1">
-          <ResizablePanel defaultSize="60%" minSize="45%">
-            <main className="flex h-full min-w-0 flex-col">
-              <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-surface-glass px-[22px] backdrop-blur-xl">
-                <HeaderBreadcrumb />
-                <div className="ml-auto flex items-center gap-2">
-                  <CommandKButton />
-                  <span className="inline-flex items-center gap-1.5 text-[11px] text-tertiary">
-                    <Radio size={11} className="text-success" /> Live updates
-                  </span>
-                  <RefreshButton />
+        <div {...getMainRegionProps()}>
+          <ResizablePanelGroup {...getResizablePanelGroupProps()}>
+            <ResizablePanel {...getMainPanelProps()}>
+              <main className="flex h-full min-w-0 flex-col bg-canvas">
+                <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-surface-glass px-[22px] backdrop-blur-xl">
+                  <HeaderBreadcrumb />
+                  <div className="ml-auto flex items-center gap-2">
+                    <CommandKButton />
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-tertiary">
+                      <Radio size={11} className="text-success" /> Live updates
+                    </span>
+                    <RefreshButton />
+                  </div>
+                </header>
+                <div className="min-h-0 flex-1 overflow-auto">
+                  <Outlet />
                 </div>
-              </header>
-              <div className="min-h-0 flex-1 overflow-auto">
-                <Outlet />
+              </main>
+            </ResizablePanel>
+
+            <ResizableHandle {...getResizeHandleProps()} />
+
+            <ResizablePanel {...getAgentPanelProps()}>
+              <div {...getAgentPanelContainerProps()}>
+                <AgentPanel />
               </div>
-            </main>
-          </ResizablePanel>
-          <ResizableHandle className="w-px bg-hairline transition-colors hover:bg-primary/70 focus-visible:bg-primary" />
-          <ResizablePanel defaultSize="40%" minSize="30%" maxSize="55%">
-            <AgentPanel />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+
+          {isFloatingAgentMode ? (
+            <FloatingAgentLauncher {...getFloatingAgentLauncherProps()} />
+          ) : null}
+        </div>
       </div>
       <CommandPalette />
     </div>
