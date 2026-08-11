@@ -2,6 +2,7 @@ export * from "../../modules/ingest/schema.js";
 export * from "../../modules/auth/schema.js";
 export * from "../../modules/issues/schema.js";
 export * from "../../modules/metrics/schema.js";
+export * from "../../modules/minidumps/schema.js";
 export * from "../../modules/projects/schema.js";
 export * from "../../modules/processing/schema.js";
 export * from "../../modules/replays/schema.js";

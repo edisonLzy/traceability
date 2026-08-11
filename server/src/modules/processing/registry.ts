@@ -1,4 +1,5 @@
 import type { MetricsService } from "../metrics/service.js";
+import type { MinidumpService } from "../minidumps/service.js";
 import type { ReplayService } from "../replays/service.js";
 import type { TraceService } from "../traces/service.js";
 import type { ProcessingService } from "./service.js";
@@ -10,6 +11,7 @@ export function createItemProcessors(
   replays?: ReplayService,
   traces?: TraceService,
   metrics?: MetricsService,
+  minidumps?: MinidumpService,
 ): Readonly<Record<string, ItemProcessor>> {
   return {
     "ingest.event": (itemId) => service.processEventItem(itemId),
@@ -32,6 +34,10 @@ export function createItemProcessors(
     "ingest.trace_metric": (itemId) => {
       if (!metrics) throw new Error("MetricsService not available");
       return metrics.processItem(itemId);
+    },
+    "ingest.attachment": (itemId) => {
+      if (!minidumps) throw new Error("MinidumpService not available");
+      return minidumps.processAttachmentItem(itemId);
     },
   };
 }

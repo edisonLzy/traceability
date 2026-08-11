@@ -13,10 +13,12 @@ import { parseAndScrubEvent, scrubValue } from "./scrubber.js";
 import { validateTelemetryItem } from "./telemetry-validator.js";
 
 export interface IngestLimits {
+  maxCompressedBytes: number;
   maxDecompressedBytes: number;
   maxItems: number;
   maxItemBytes: number;
   replayMaxRecordingBytes: number;
+  minidumpMaxBytes: number;
 }
 
 export interface ProjectKeyLookup {
@@ -73,15 +75,34 @@ export class IngestService {
     clientIp: string;
     publicKey?: string;
   }) {
-    const body = decompress(input.body, input.contentEncoding, this.limits.maxDecompressedBytes);
+    const maxEnvelopeBytes = Math.max(
+      this.limits.maxDecompressedBytes,
+      this.limits.minidumpMaxBytes + this.limits.maxItemBytes,
+    );
+    const body = decompress(input.body, input.contentEncoding, maxEnvelopeBytes);
     let envelope: ParsedEnvelope;
     try {
-      envelope = parseEnvelope(body, this.limits);
+      envelope = parseEnvelope(body, {
+        ...this.limits,
+        maxMinidumpBytes: this.limits.minidumpMaxBytes,
+      });
     } catch (error) {
       if (error instanceof EnvelopeParseError) {
         throw new IngestRequestError(400, "invalid_envelope", error.message);
       }
       throw error;
+    }
+    if (
+      input.body.byteLength > this.limits.maxCompressedBytes &&
+      !envelope.items.some(
+        (item) => item.type === "attachment" && item.header.attachment_type === "event.minidump",
+      )
+    ) {
+      throw new IngestRequestError(
+        413,
+        "envelope_too_large",
+        "envelope exceeds maximum compressed size",
+      );
     }
 
     const dsn = extractDsn(envelope.header);
@@ -121,7 +142,13 @@ export class IngestService {
     }
 
     const preparedItems = envelope.items.map((item) =>
-      prepareItem(item, project.enabledItemTypes, this.limits.replayMaxRecordingBytes),
+      prepareItem(
+        item,
+        project.enabledItemTypes,
+        this.limits.replayMaxRecordingBytes,
+        this.limits.minidumpMaxBytes,
+        typeof envelope.header.event_id === "string" ? envelope.header.event_id : null,
+      ),
     );
     const sanitizedEnvelope = serializeEnvelope(
       scrubValue(envelope.header) as Record<string, unknown>,
@@ -148,8 +175,32 @@ function prepareItem(
   item: ParsedEnvelopeItem,
   enabledItemTypes: string[],
   replayMaxRecordingBytes: number,
+  minidumpMaxBytes: number,
+  envelopeEventId: string | null,
 ): PreparedItem {
   const header = scrubValue(item.header) as Record<string, unknown>;
+
+  if (item.type === "attachment" && item.header.attachment_type === "event.minidump") {
+    if (!enabledItemTypes.includes("attachment")) {
+      return ignoredItem(item, header, "unsupported_item");
+    }
+    if (item.payload.byteLength > minidumpMaxBytes) {
+      return ignoredItem(item, header, "payload_too_large");
+    }
+    if (!isMinidump(item.payload)) {
+      return ignoredItem(item, header, "invalid_minidump");
+    }
+    return {
+      sequence: item.sequence,
+      type: item.type,
+      header,
+      payload: item.payload,
+      payloadJson: null,
+      eventId: envelopeEventId,
+      status: "pending",
+      errorCode: null,
+    };
+  }
 
   // replay_recording: binary payload
   if (item.type === "replay_recording" && enabledItemTypes.includes("replay_recording")) {
@@ -345,8 +396,40 @@ function parseSentAt(value: unknown): Date | null {
 function serializeEnvelope(header: Record<string, unknown>, items: PreparedItem[]): Buffer {
   const lines = [JSON.stringify(header)];
   for (const item of items) {
+    if (item.type === "attachment") {
+      lines.push(
+        JSON.stringify({
+          ...item.header,
+          length: 0,
+          traceability_payload_omitted: true,
+        }),
+      );
+      lines.push("");
+      continue;
+    }
     lines.push(JSON.stringify(item.header));
     if (item.payload) lines.push(item.payload.toString("utf8"));
   }
   return Buffer.from(`${lines.join("\n")}\n`);
+}
+
+function ignoredItem(
+  item: ParsedEnvelopeItem,
+  header: Record<string, unknown>,
+  errorCode: string,
+): PreparedItem {
+  return {
+    sequence: item.sequence,
+    type: item.type,
+    header,
+    payload: null,
+    payloadJson: null,
+    eventId: null,
+    status: "ignored",
+    errorCode,
+  };
+}
+
+function isMinidump(payload: Buffer): boolean {
+  return payload.byteLength >= 10 * 1024 && payload.subarray(0, 4).toString("ascii") === "MDMP";
 }

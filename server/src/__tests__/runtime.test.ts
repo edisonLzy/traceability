@@ -28,6 +28,7 @@ const config: RuntimeConfig = {
   objectStorageSecretKey: "traceability-development-secret",
   sourcemapMaxBytes: 20_971_520,
   replayMaxRecordingBytes: 10_485_760,
+  minidumpMaxBytes: 20_971_520,
 };
 
 describe("runtime app", () => {
@@ -113,6 +114,8 @@ describe("runtime app", () => {
     expect(document.openapi).toBe("3.0.3");
     expect(document.paths).toHaveProperty("/health/live");
     expect(document.paths).toHaveProperty("/api/ingest/envelope/{projectId}");
+    expect(document.paths).toHaveProperty("/api/{projectId}/minidump/");
+    expect(document.paths).toHaveProperty("/api/minidumps/{minidumpId}/download");
   });
 
   it("reports readiness only when PostgreSQL is reachable", async () => {

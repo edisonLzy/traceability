@@ -1,6 +1,11 @@
 import { useRegisterCommands } from "@renderer/commands";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@renderer/components/ui/tabs";
-import { useIssue, useIssueEvents, useUpdateIssue } from "@renderer/hooks/use-issue";
+import {
+  useIssue,
+  useIssueEvents,
+  useIssueMinidumps,
+  useUpdateIssue,
+} from "@renderer/hooks/use-issue";
 import { promptAgent } from "@renderer/lib/agent-events";
 import { cn, relativeTime, statusGroup } from "@renderer/lib/utils";
 import { projectStore } from "@renderer/store/project";
@@ -10,6 +15,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useStore } from "zustand";
 
+import { MinidumpAttachments } from "./components/MinidumpAttachments";
 import { Stacktrace } from "./components/Stacktrace";
 
 export function IssueDetailPage() {
@@ -18,9 +24,11 @@ export function IssueDetailPage() {
   const currentProject = useStore(projectStore, (s) => s.currentProject);
   const issueQuery = useIssue(id);
   const eventsQuery = useIssueEvents(id);
-  const updateIssue = useUpdateIssue();
   const issue = issueQuery.data ?? null;
+  const minidumpsQuery = useIssueMinidumps(id, Boolean(issue));
+  const updateIssue = useUpdateIssue();
   const events = eventsQuery.data ?? [];
+  const minidumps = minidumpsQuery.data ?? [];
 
   const investigate = useCallback(() => {
     if (!issue) return;
@@ -110,24 +118,35 @@ export function IssueDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4.5 desktop:grid-cols-[minmax(0,1fr)_260px]">
-        <section className="overflow-hidden rounded-2xl border border-hairline bg-overlay">
-          <div className="border-b border-hairline px-4 py-3 text-[12px] font-[630] text-muted">
-            Event evidence · {events.length}
-          </div>
-          <div className="px-4 py-2">
-            {events.map((event) => (
-              <div className="border-b border-hairline py-3 last:border-b-0" key={event.id}>
-                <div className="mb-2 text-[11px] text-tertiary">
-                  {new Date(event.receivedAt).toLocaleString()}
+        <div className="min-w-0 space-y-4.5">
+          {(issue.type === "native_crash" || minidumps.length > 0) && (
+            <MinidumpAttachments
+              minidumps={minidumps}
+              loading={minidumpsQuery.isLoading}
+              failed={minidumpsQuery.isError}
+              onRetry={() => void minidumpsQuery.refetch()}
+            />
+          )}
+
+          <section className="overflow-hidden rounded-2xl border border-hairline bg-overlay">
+            <div className="border-b border-hairline px-4 py-3 text-[12px] font-[630] text-muted">
+              Event evidence · {events.length}
+            </div>
+            <div className="px-4 py-2">
+              {events.map((event) => (
+                <div className="border-b border-hairline py-3 last:border-b-0" key={event.id}>
+                  <div className="mb-2 text-[11px] text-tertiary">
+                    {new Date(event.receivedAt).toLocaleString()}
+                  </div>
+                  <EventBody event={event} />
                 </div>
-                <EventBody event={event} />
-              </div>
-            ))}
-            {events.length === 0 && (
-              <div className="px-5 py-12 text-center text-[12px] text-tertiary">No events.</div>
-            )}
-          </div>
-        </section>
+              ))}
+              {events.length === 0 && (
+                <div className="px-5 py-12 text-center text-[12px] text-tertiary">No events.</div>
+              )}
+            </div>
+          </section>
+        </div>
 
         <aside className="h-max overflow-hidden rounded-2xl border border-hairline bg-overlay">
           <div className="border-b border-hairline p-4">

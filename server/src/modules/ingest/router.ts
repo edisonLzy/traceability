@@ -1,6 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 
 export const ingestRouter: FastifyPluginAsync = async (app) => {
+  const bodyLimit = Math.max(
+    app.config.ingestMaxCompressedBytes,
+    app.config.minidumpMaxBytes + app.config.ingestMaxItemBytes,
+  );
   for (const contentType of [
     "application/x-sentry-envelope",
     "application/octet-stream",
@@ -8,7 +12,7 @@ export const ingestRouter: FastifyPluginAsync = async (app) => {
   ]) {
     app.addContentTypeParser(
       contentType,
-      { parseAs: "buffer", bodyLimit: app.config.ingestMaxCompressedBytes },
+      { parseAs: "buffer", bodyLimit },
       (_request, body, done) => done(null, body),
     );
   }

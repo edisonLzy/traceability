@@ -318,6 +318,9 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1097.0
         version: 3.1097.0
+      '@fastify/busboy':
+        specifier: ^3.2.0
+        version: 3.2.0
       '@fastify/cors':
         specifier: ^11.3.0
         version: 11.3.0

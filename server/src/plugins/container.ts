@@ -4,6 +4,7 @@ import { AuthService, AuthRepository } from "../modules/auth/index.js";
 import { IngestRepository, IngestService } from "../modules/ingest/index.js";
 import { IssueRepository, IssueService } from "../modules/issues/index.js";
 import { MetricsRepository, MetricsService } from "../modules/metrics/index.js";
+import { MinidumpRepository, MinidumpService } from "../modules/minidumps/index.js";
 import { ProcessingRepository, ProcessingService } from "../modules/processing/index.js";
 import { ProjectRepository, ProjectService } from "../modules/projects/index.js";
 import { ReplayRepository, ReplayService } from "../modules/replays/index.js";
@@ -19,6 +20,7 @@ export interface Container {
   sourcemaps: SourcemapService;
   replays: ReplayService;
   metrics: MetricsService;
+  minidumps: MinidumpService;
   traces: TraceService;
 }
 
@@ -37,16 +39,19 @@ export const containerPlugin = fastifyPlugin(
       new IngestRepository(app.database),
       projects,
       {
+        maxCompressedBytes: app.config.ingestMaxCompressedBytes,
         maxDecompressedBytes: app.config.ingestMaxDecompressedBytes,
         maxItems: app.config.ingestMaxItems,
         maxItemBytes: app.config.ingestMaxItemBytes,
         replayMaxRecordingBytes: app.config.replayMaxRecordingBytes,
+        minidumpMaxBytes: app.config.minidumpMaxBytes,
       },
       app.config.redisUrl,
     );
     const processing = new ProcessingService(new ProcessingRepository(app.database));
     const replays = new ReplayService(new ReplayRepository(app.database), app.objectStorage);
     const metrics = new MetricsService(new MetricsRepository(app.database));
+    const minidumps = new MinidumpService(new MinidumpRepository(app.database), app.objectStorage);
     const traces = new TraceService(new TraceRepository(app.database));
     const sourcemaps = new SourcemapService(
       new SourcemapRepository(app.database),
@@ -67,6 +72,7 @@ export const containerPlugin = fastifyPlugin(
         sourcemaps,
         replays,
         metrics,
+        minidumps,
         traces,
       }),
     );
