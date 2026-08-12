@@ -1,6 +1,6 @@
 import { join } from "path";
 
-import { app, BrowserWindow, nativeTheme } from "electron";
+import { app, BrowserWindow, nativeImage, nativeTheme } from "electron";
 
 import { AgentPool } from "./agent-pool.js";
 import { AuthSession } from "./auth/auth-session.js";
@@ -8,12 +8,15 @@ import { initMonitor } from "./monitor.js";
 import { SessionPersistence } from "./sessions/index.js";
 import { applyPersistedThemeSource, ThemeController } from "./theme.js";
 
+const developmentIconPath = join(__dirname, "../../resources/icon.png");
+
 void initMonitor();
 
 void app
   .whenReady()
   .then(() => {
     applyPersistedThemeSource();
+    applyDevelopmentAppIcon();
 
     let browserWindow: BrowserWindow | null = createWindow();
 
@@ -61,6 +64,7 @@ nativeTheme.on("updated", () => {
 function createWindow() {
   const isMac = process.platform === "darwin";
   const mainWindow = new BrowserWindow({
+    ...(!app.isPackaged && !isMac ? { icon: developmentIconPath } : {}),
     frame: false,
     titleBarStyle: isMac ? "hiddenInset" : "hidden",
     ...(isMac
@@ -94,4 +98,17 @@ function createWindow() {
   }
 
   return mainWindow;
+}
+
+/** electron-builder applies the packaged icon; development runs from Electron.app. */
+function applyDevelopmentAppIcon() {
+  if (app.isPackaged || process.platform !== "darwin") return;
+
+  const icon = nativeImage.createFromPath(developmentIconPath);
+  if (icon.isEmpty()) {
+    console.warn(`Unable to load development app icon: ${developmentIconPath}`);
+    return;
+  }
+
+  app.dock?.setIcon(icon);
 }
