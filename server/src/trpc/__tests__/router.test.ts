@@ -73,6 +73,10 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
     refresh: vi.fn(),
   } as unknown as Context["container"]["auth"];
   const metrics = {} as Context["container"]["metrics"];
+  const minidumps = {
+    listForIssue: vi.fn().mockResolvedValue([]),
+    listForEvent: vi.fn().mockResolvedValue([]),
+  } as unknown as Context["container"]["minidumps"];
   const traces = {} as Context["container"]["traces"];
 
   return {
@@ -87,6 +91,7 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
       sourcemaps,
       replays,
       metrics,
+      minidumps,
       traces,
       ...overrides,
     },
@@ -155,6 +160,18 @@ describe("appRouter", () => {
       cursor: undefined,
       limit: 20,
     });
+  });
+
+  it("lists minidumps associated with an issue", async () => {
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
+    const issueId = "00000000-0000-4000-8000-000000000001";
+
+    await expect(caller.minidumps.listForIssue(issueId)).resolves.toEqual([]);
+    const minidumps = ctx.container.minidumps as unknown as {
+      listForIssue: ReturnType<typeof vi.fn>;
+    };
+    expect(minidumps.listForIssue).toHaveBeenCalledWith(issueId);
   });
 
   it("restricts issue updates to the supported status values", async () => {

@@ -29,4 +29,36 @@ describe("parseEnvelope", () => {
 
     expect(() => parseEnvelope(body, limits)).toThrow(EnvelopeParseError);
   });
+
+  it("allows minidump attachments to use their dedicated size limit", () => {
+    const minidump = Buffer.concat([Buffer.from("MDMP"), Buffer.alloc(1_500)]);
+    const body = Buffer.concat([
+      Buffer.from('{"event_id":"event-1"}\n'),
+      Buffer.from(
+        `${JSON.stringify({
+          type: "attachment",
+          attachment_type: "event.minidump",
+          length: minidump.byteLength,
+        })}\n`,
+      ),
+      minidump,
+    ]);
+
+    const envelope = parseEnvelope(body, { ...limits, maxMinidumpBytes: 2_000 });
+
+    expect(envelope.items[0]?.payload).toEqual(minidump);
+  });
+
+  it("keeps the normal item limit for non-minidump attachments", () => {
+    const attachment = Buffer.alloc(1_500);
+    const body = Buffer.concat([
+      Buffer.from("{}\n"),
+      Buffer.from(`${JSON.stringify({ type: "attachment", length: attachment.byteLength })}\n`),
+      attachment,
+    ]);
+
+    expect(() => parseEnvelope(body, { ...limits, maxMinidumpBytes: 2_000 })).toThrow(
+      EnvelopeParseError,
+    );
+  });
 });

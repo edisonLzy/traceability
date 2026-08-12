@@ -40,8 +40,16 @@ export class ProcessingService {
 
 function deriveEventFields(payload: Record<string, unknown>, receivedAt: Date): EventFields {
   const exception = firstException(payload);
-  const type = exception?.type ?? "Error";
-  const message = exception?.value ?? stringValue(payload.message) ?? "Unhandled event";
+  const nativeCrash = payload.platform === "native";
+  const nativeProcess = tagValue(payload, "event.process") ?? "unknown";
+  const exitReason = tagValue(payload, "exit.reason");
+  const type = exception?.type ?? (nativeCrash ? "NativeCrash" : "Error");
+  const message =
+    exception?.value ??
+    stringValue(payload.message) ??
+    (nativeCrash
+      ? `${nativeProcess} process crashed${exitReason ? ` (${exitReason})` : ""}`
+      : "Unhandled event");
   const candidateFrames = exception?.stacktrace?.frames;
   const frames = Array.isArray(candidateFrames) ? candidateFrames : [];
   const inAppFrames = frames
@@ -57,7 +65,7 @@ function deriveEventFields(payload: Record<string, unknown>, receivedAt: Date): 
   return {
     fingerprint,
     title: `${type}: ${message}`.slice(0, 500),
-    type: "error",
+    type: nativeCrash ? "native_crash" : "error",
     timestamp: eventTimestamp(payload.timestamp, receivedAt),
     release: stringValue(payload.release),
     environment: stringValue(payload.environment),
@@ -65,6 +73,12 @@ function deriveEventFields(payload: Record<string, unknown>, receivedAt: Date): 
     traceId: trace?.traceId,
     spanId: trace?.spanId,
   };
+}
+
+function tagValue(payload: Record<string, unknown>, key: string): string | undefined {
+  const tags = payload.tags;
+  if (!tags || typeof tags !== "object" || Array.isArray(tags)) return undefined;
+  return stringValue((tags as Record<string, unknown>)[key]);
 }
 
 function traceContext(

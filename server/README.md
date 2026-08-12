@@ -11,7 +11,7 @@ Traceability 的 Fastify 服务端，负责 Sentry 兼容的事件接收、Postg
 - Docker（可选，用于 `pnpm db:up` 一键启动基础设施）
 - PostgreSQL
 - Redis
-- MinIO（可选，仅在需要 sourcemap 处理时必需）
+- MinIO（需要保存 sourcemap、replay 或 native crash minidump 时必需）
 
 ## 启动流程
 
@@ -27,9 +27,9 @@ pnpm db:up
 | ------------- | --------------- | ------------------------------------------------ |
 | PostgreSQL 15 | `5432`          | 主数据库（DB: traceability, 用户: traceability） |
 | Redis         | `6379`          | BullMQ 队列                                      |
-| MinIO         | `9000` / `9001` | 对象存储（sourcemap 文件）                       |
+| MinIO         | `9000` / `9001` | 对象存储（sourcemap、replay、minidump）          |
 
-如果本地已有独立运行的 PostgreSQL/Redis，也可以直接跳过此步。MinIO 仅在需要 sourcemap 处理时必需。
+如果本地已有独立运行的 PostgreSQL/Redis，也可以直接跳过此步。MinIO 在需要保存 sourcemap、replay 或 minidump 时必需。
 
 对应关闭命令：
 
@@ -96,6 +96,8 @@ API 运行后可访问：
 - `GET /health/ready`：PostgreSQL 和 Redis 就绪检查
 - `GET /metrics`：Prometheus 指标（公开）
 - `POST /api/{projectId}/envelope/`：Sentry envelope 接收入口
+- `POST /api/{projectId}/minidump/`：Electron `crashReporter` 兼容的 native crash 上传入口
+- `GET /api/minidumps/{minidumpId}/download`：Bearer JWT 保护的原始 dump 下载
 - `/trpc-panel`：非 production 环境下的 tRPC 调试面板
 
 ## 配置
@@ -114,7 +116,9 @@ JWT_SECRET=replace-with-a-random-secret-at-least-32-characters-long
 ```
 
 可选配置包括 `CORS_ORIGINS`、`TRUST_PROXY`、`LOG_LEVEL`，以及 ingest 的大小和数量限制：
-`INGEST_MAX_COMPRESSED_BYTES`、`INGEST_MAX_DECOMPRESSED_BYTES`、`INGEST_MAX_ITEMS`、`INGEST_MAX_ITEM_BYTES`。
+`INGEST_MAX_COMPRESSED_BYTES`、`INGEST_MAX_DECOMPRESSED_BYTES`、`INGEST_MAX_ITEMS`、`INGEST_MAX_ITEM_BYTES`。Electron native crash 的 `event.minidump` attachment 使用独立的 `MINIDUMP_MAX_BYTES`（默认 20 MiB）上限。
+
+默认的 `@sentry/electron` `SentryMinidump` integration 会发送同一 envelope 内的 fatal event 与 `event.minidump` attachment；服务端会先把二者持久化到 ingest/outbox，再由 worker 将 `.dmp` 写入对象存储并清除数据库中的临时二进制 payload。`ElectronMinidump` integration 使用的 multipart 端点也会被转换为相同管线。原始 dump 可能包含进程内存片段，仅能通过管理 JWT 下载；当前版本不执行原生符号化。
 
 生产环境必须设置至少 32 字符的 `JWT_SECRET`。可使用以下命令生成并写入 `.env`：
 

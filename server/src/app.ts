@@ -6,6 +6,7 @@ import { loadRuntimeConfig } from "./config/index.js";
 import { isMainModule } from "./helper/isMainModule.js";
 import type { Database } from "./infrastructure/database/client.js";
 import { ingestRouter } from "./modules/ingest/router.js";
+import { minidumpDownloadRoute, minidumpUploadRoute } from "./modules/minidumps/index.js";
 import { sourcemapsUploadRoute } from "./modules/sourcemaps/route.js";
 import { configPlugin } from "./plugins/config.js";
 import { containerPlugin } from "./plugins/container.js";
@@ -55,6 +56,8 @@ export async function createApp(deps: AppDependencies): Promise<FastifyInstance>
   });
   await app.register(healthPlugin);
   await app.register(ingestRouter);
+  await app.register(minidumpUploadRoute);
+  await app.register(minidumpDownloadRoute);
   await app.register(sourcemapsUploadRoute);
   await app.register(trpcPlugin);
 

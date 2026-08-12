@@ -59,7 +59,7 @@ export const projectPolicies = pgTable("project_policies", {
   enabledItemTypes: jsonb("enabled_item_types")
     .$type<string[]>()
     .notNull()
-    .default(["event", "transaction", "span", "trace_metric"]),
+    .default(["event", "attachment", "transaction", "span", "trace_metric"]),
   scrubRules: jsonb("scrub_rules").$type<Record<string, unknown>>().notNull().default({}),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   version: integer("version").notNull().default(1),

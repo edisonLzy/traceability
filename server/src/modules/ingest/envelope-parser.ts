@@ -19,7 +19,7 @@ export class EnvelopeParseError extends Error {
 
 export function parseEnvelope(
   body: Buffer,
-  options: { maxItems: number; maxItemBytes: number },
+  options: { maxItems: number; maxItemBytes: number; maxMinidumpBytes?: number },
 ): ParsedEnvelope {
   if (body.length === 0) throw new EnvelopeParseError("empty envelope");
 
@@ -45,12 +45,15 @@ export function parseEnvelope(
     }
 
     let payload: Buffer;
+    const maxItemBytes = isMinidumpAttachment(type, item)
+      ? (options.maxMinidumpBytes ?? options.maxItemBytes)
+      : options.maxItemBytes;
     const length = item.length;
     if (length !== undefined) {
       if (typeof length !== "number" || !Number.isSafeInteger(length) || length < 0) {
         throw new EnvelopeParseError("item header has invalid length");
       }
-      if (length > options.maxItemBytes) throw new EnvelopeParseError("item exceeds maximum size");
+      if (length > maxItemBytes) throw new EnvelopeParseError("item exceeds maximum size");
       if (cursor + length > body.length) throw new EnvelopeParseError("item payload is truncated");
 
       payload = body.subarray(cursor, cursor + length);
@@ -59,8 +62,7 @@ export function parseEnvelope(
     } else {
       const newline = body.indexOf(0x0a, cursor);
       const end = newline === -1 ? body.length : newline;
-      if (end - cursor > options.maxItemBytes)
-        throw new EnvelopeParseError("item exceeds maximum size");
+      if (end - cursor > maxItemBytes) throw new EnvelopeParseError("item exceeds maximum size");
 
       payload = body.subarray(cursor, end);
       cursor = newline === -1 ? body.length : newline + 1;
@@ -70,6 +72,10 @@ export function parseEnvelope(
   }
 
   return { header, items };
+}
+
+function isMinidumpAttachment(type: string, header: Record<string, unknown>): boolean {
+  return type === "attachment" && header.attachment_type === "event.minidump";
 }
 
 function readJsonLine(body: Buffer, cursor: number): { value: unknown; next: number } {

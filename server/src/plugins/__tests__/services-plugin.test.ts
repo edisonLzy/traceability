@@ -33,6 +33,7 @@ describe("application container plugin", () => {
       ingestMaxItems: 20,
       ingestMaxItemBytes: 1_048_576,
       replayMaxRecordingBytes: 10_485_760,
+      minidumpMaxBytes: 20_971_520,
       redisUrl: "redis://127.0.0.1:6379",
     } as RuntimeConfig;
     const database = {
@@ -52,6 +53,7 @@ describe("application container plugin", () => {
       "ingest",
       "issues",
       "metrics",
+      "minidumps",
       "processing",
       "projects",
       "replays",

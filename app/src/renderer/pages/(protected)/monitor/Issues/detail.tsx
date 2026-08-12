@@ -2,6 +2,7 @@ import { useRegisterCommands } from "@renderer/commands";
 import {
   useIssue,
   useIssueEvents,
+  useIssueMinidumps,
   useRelatedReplays,
   useUpdateIssue,
 } from "@renderer/hooks/use-issue";
@@ -28,6 +29,7 @@ import { useStore } from "zustand";
 import { readBreadcrumbs, readExceptionValues, shortId } from "./components/event-data";
 import { EventBreadcrumbs } from "./components/EventBreadcrumbs";
 import { EventContext } from "./components/EventContext";
+import { MinidumpAttachments } from "./components/MinidumpAttachments";
 import { Stacktrace, SymbolicationBadge } from "./components/Stacktrace";
 
 type IssueStatus = "unresolved" | "resolved" | "ignored";
@@ -43,6 +45,8 @@ export function IssueDetailPage() {
   const updateIssue = useUpdateIssue();
   const [selectedEventId, setSelectedEventId] = useState<string>();
   const issue = issueQuery.data ?? null;
+  const minidumpsQuery = useIssueMinidumps(id, Boolean(issue));
+  const minidumps = minidumpsQuery.data ?? [];
   const events = eventsQuery.data ?? [];
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? events[0];
   const relatedReplaysQuery = useRelatedReplays(issue?.projectId, selectedEvent?.eventId);
@@ -224,6 +228,15 @@ export function IssueDetailPage() {
             />
           </div>
         </IssueModule>
+
+        {(issue.type === "native_crash" || minidumps.length > 0) && (
+          <MinidumpAttachments
+            minidumps={minidumps}
+            loading={minidumpsQuery.isLoading}
+            failed={minidumpsQuery.isError}
+            onRetry={() => void minidumpsQuery.refetch()}
+          />
+        )}
 
         <IssueModule
           id="occurrences"

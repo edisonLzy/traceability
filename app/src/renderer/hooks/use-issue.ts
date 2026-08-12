@@ -22,6 +22,18 @@ export function useIssueEvents(
   );
 }
 
+export function useIssueMinidumps(
+  issueId: string | undefined,
+  enabled: boolean,
+): UseQueryResult<
+  AppRouterOutputs["minidumps"]["listForIssue"] | undefined,
+  TRPCClientErrorLike<AppRouter>
+> {
+  return trpc.minidumps.listForIssue.useQuery(issueId!, {
+    enabled: Boolean(issueId) && enabled,
+  });
+}
+
 export function useRelatedReplays(
   projectId: string | undefined,
   eventId: string | undefined,

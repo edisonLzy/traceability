@@ -32,14 +32,20 @@ export async function refreshAuthSession(): Promise<boolean> {
   }
 }
 
-async function authenticatedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const response = await fetch(input, init);
+export async function authenticatedFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const initialHeaders = new Headers(init?.headers);
+  const initialToken = authStore.getState().accessToken;
+  if (initialToken) initialHeaders.set("authorization", `Bearer ${initialToken}`);
+  const response = await fetch(input, { ...init, headers: initialHeaders });
   if (response.status !== 401 || String(input).includes("auth.refresh")) return response;
   refreshInFlight ??= refreshAuthSession().finally(() => {
     refreshInFlight = null;
   });
   if (!(await refreshInFlight)) return response;
-  const headers = new Headers(init?.headers);
+  const headers = new Headers(initialHeaders);
   const token = authStore.getState().accessToken;
   if (token) headers.set("authorization", `Bearer ${token}`);
   return fetch(input, { ...init, headers });

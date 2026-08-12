@@ -13,6 +13,7 @@ import {
   itemQueueJobOptions,
 } from "./infrastructure/queue/item-queue.js";
 import { MetricsRepository, MetricsService } from "./modules/metrics/index.js";
+import { MinidumpRepository, MinidumpService } from "./modules/minidumps/index.js";
 import { ProcessingRepository, ProcessingService } from "./modules/processing/index.js";
 import { createItemProcessors } from "./modules/processing/registry.js";
 import { ReplayRepository, ReplayService } from "./modules/replays/index.js";
@@ -45,7 +46,8 @@ export async function startWorker(): Promise<void> {
   const processing = new ProcessingService(new ProcessingRepository(database), sourcemaps);
   const traces = new TraceService(new TraceRepository(database));
   const metrics = new MetricsService(new MetricsRepository(database));
-  const itemProcessors = createItemProcessors(processing, replays, traces, metrics);
+  const minidumps = new MinidumpService(new MinidumpRepository(database), objectStorage);
+  const itemProcessors = createItemProcessors(processing, replays, traces, metrics, minidumps);
 
   const worker = new Worker<ItemJob>(
     ITEM_QUEUE_NAME,

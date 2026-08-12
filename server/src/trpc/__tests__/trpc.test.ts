@@ -32,6 +32,7 @@ function makeConfig(secret: string): RuntimeConfig {
     objectStorageSecretKey: "traceability-development-secret",
     sourcemapMaxBytes: 20_971_520,
     replayMaxRecordingBytes: 10_485_760,
+    minidumpMaxBytes: 20_971_520,
   };
 }
 

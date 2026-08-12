@@ -3,6 +3,7 @@ import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { authRouter } from "../modules/auth/router.js";
 import { issuesRouter } from "../modules/issues/router.js";
 import { metricsRouter } from "../modules/metrics/router.js";
+import { minidumpsRouter } from "../modules/minidumps/index.js";
 import { processingRouter } from "../modules/processing/index.js";
 import { projectsRouter } from "../modules/projects/router.js";
 import { replaysRouter } from "../modules/replays/router.js";
@@ -18,6 +19,7 @@ export const appRouter = t.router({
   sourcemaps: sourcemapsRouter,
   replays: replaysRouter,
   metrics: metricsRouter,
+  minidumps: minidumpsRouter,
   traces: tracesRouter,
 });
 

@@ -73,9 +73,12 @@ export function getAuthenticatedUser(
 }
 
 /** Route-level Fastify preHandler for endpoints outside the tRPC adapter. */
-export function requireFastifyAuthentication(request: FastifyRequest, reply: FastifyReply): void {
+export async function requireFastifyAuthentication(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
   const user = getAuthenticatedUser(request.headers.authorization, request.server.config);
-  if (!user) void reply.code(401).send({ code: "unauthorized" });
+  if (!user) await reply.code(401).send({ code: "unauthorized" });
 }
 
 export function trpcAuthMiddleware() {
