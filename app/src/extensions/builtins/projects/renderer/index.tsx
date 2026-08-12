@@ -9,7 +9,7 @@ function ProjectsListBlock({ props }: { props: Record<string, unknown> }) {
   if (!block) return null;
 
   return (
-    <Card className="not-prose my-2 bg-white/[0.03] text-card-foreground">
+    <Card className="not-prose my-2 bg-surface-glass text-card-foreground">
       <div className="flex min-h-8 items-center justify-between gap-2 px-2.5 py-2 text-[10px] text-muted">
         <span className="font-[620]">Projects</span>
         <span className="text-tertiary">{block.projects.length}</span>

@@ -15,6 +15,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@renderer/components/ui/resizable";
+import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
 import { useMinimumLoading } from "@renderer/hooks/use-minimum-loading";
 import { authStore } from "@renderer/store/auth";
 import {
@@ -42,7 +43,6 @@ import { HeaderProjectSwitcher } from "./_components/HeaderProjectSwitcher";
 import { ProjectOnboardingGuide } from "./_components/ProjectOnboardingGuide";
 import { RefreshButton } from "./_components/RefreshButton";
 import { Sidebar } from "./_components/Sidebar";
-import { Titlebar } from "./_components/Titlebar";
 import { useAppLayout } from "./_hooks/useAppLayout";
 import { useSetupProjects } from "./_hooks/useSetupProjects";
 
@@ -59,6 +59,7 @@ export function Layout() {
 
 /** Hooks below only apply once a project has been selected. */
 function AppLayout() {
+  const { invoke } = useElectronIPC();
   const navigate = useNavigate();
   const { setTheme } = useTheme();
   const {
@@ -117,6 +118,18 @@ function AppLayout() {
         keywords: ["browse"],
         shortcut: "G X",
         action: () => navigate("/explorer"),
+      },
+      {
+        id: "window.toggle-fullscreen",
+        group: { id: "layout", label: "Layout", order: 30 },
+        title: "Toggle full screen",
+        description: "Enter or leave native window full screen",
+        icon: Maximize2,
+        keywords: ["window", "fullscreen", "maximize", "zoom"],
+        action: async () => {
+          const state = await invoke("toggleFullScreenWindow");
+          document.documentElement.dataset.windowFullscreen = String(state.isFullScreen);
+        },
       },
       {
         id: "layout.focus-content",
@@ -187,29 +200,28 @@ function AppLayout() {
         },
       },
     ],
-    [handleFocusAgent, handleFocusContent, handleSplitView, layoutMode, navigate, setTheme],
+    [handleFocusAgent, handleFocusContent, handleSplitView, invoke, layoutMode, navigate, setTheme],
   );
 
   return (
-    <div className="h-screen overflow-hidden">
-      <Titlebar />
-      <div className="flex h-full pt-[30px]">
+    <div className="h-screen overflow-hidden bg-transparent">
+      <div className="flex h-full gap-2 px-2 pt-[calc(var(--titlebar-height)+0.5rem)] pb-2">
         <Sidebar />
         <div {...getMainRegionProps()}>
           <ResizablePanelGroup {...getResizablePanelGroupProps()}>
             <ResizablePanel {...getMainPanelProps()}>
-              <main className="flex h-full min-w-0 flex-col bg-canvas">
-                <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-surface-glass px-[22px] backdrop-blur-xl">
+              <main className="glass-panel flex h-full min-w-0 flex-col overflow-hidden rounded-[18px]">
+                <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline bg-surface-glass/75 px-[18px] backdrop-blur-2xl">
                   <HeaderBreadcrumb />
                   <div className="ml-auto flex items-center gap-2">
                     <CommandKButton />
-                    <span className="inline-flex items-center gap-1.5 text-[11px] text-tertiary">
-                      <Radio size={11} className="text-success" /> Live updates
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-success/15 bg-success/[0.07] px-2 py-1 text-[10px] text-success">
+                      <Radio size={10} /> Live updates
                     </span>
                     <RefreshButton />
                   </div>
                 </header>
-                <div className="min-h-0 flex-1 overflow-auto">
+                <div className="workspace-scroll-viewport mx-0.5 mb-0.5 min-h-0 flex-1 rounded-b-[15px] bg-surface-1/20">
                   <Outlet />
                 </div>
               </main>
@@ -316,7 +328,7 @@ function CommandKButton() {
       type="button"
       onClick={openCommands}
       title="Open command palette"
-      className="inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-hairline bg-overlay px-2 text-[10px] text-tertiary transition-colors hover:border-hairline-strong hover:bg-overlay-strong hover:text-muted"
+      className="glass-control inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-[10px] text-tertiary transition-colors hover:bg-overlay-strong hover:text-ink"
     >
       <Command size={13} /> Command <kbd className="font-mono">⌘K</kbd>
     </button>

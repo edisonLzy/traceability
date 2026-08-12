@@ -221,7 +221,7 @@ export function useAppLayout() {
   const getMainRegionProps = useCallback(
     (): ComponentPropsWithRef<"div"> => ({
       ref: setFloatingBoundaryElement,
-      className: "relative min-w-0 flex-1 overflow-hidden",
+      className: "relative min-w-0 flex-1 overflow-hidden rounded-[18px]",
     }),
     [setFloatingBoundaryElement],
   );
@@ -263,8 +263,9 @@ export function useAppLayout() {
     (): SeparatorProps => ({
       "aria-label": "Resize content and Agent panels",
       className: cn(
-        "w-px bg-hairline transition-colors hover:bg-primary/70 focus-visible:bg-primary",
-        !isSplitMode && "pointer-events-none invisible",
+        isSplitMode
+          ? "z-10 !w-2 bg-canvas/70 backdrop-blur-xl after:!bg-transparent focus-visible:outline-none"
+          : "pointer-events-none invisible !w-0 bg-transparent after:!bg-transparent",
       ),
       disabled: !isSplitMode,
       id: "workspace-panel-resize-handle",
@@ -281,7 +282,7 @@ export function useAppLayout() {
       className: cn(
         "min-w-0",
         isFloatingAgentMode
-          ? "z-50 h-[min(580px,calc(100%_-_36px))] w-[min(390px,calc(100%_-_36px))] overflow-hidden rounded-2xl border border-hairline-strong bg-surface-glass-elevated shadow-[0_20px_60px_rgba(0,0,0,0.38)] backdrop-blur-2xl transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none"
+          ? "glass-panel-raised z-50 h-[min(580px,calc(100%_-_36px))] w-[min(390px,calc(100%_-_36px))] overflow-hidden rounded-[18px] transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none"
           : "relative h-full",
         isFloatingAgentMode &&
           (isFloatingAgentVisible

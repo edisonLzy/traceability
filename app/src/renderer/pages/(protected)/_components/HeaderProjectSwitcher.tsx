@@ -81,10 +81,7 @@ export function HeaderProjectSwitcher() {
           />
         }
       >
-        <span
-          className="grid size-4 shrink-0 place-items-center rounded-[4px] text-[8px] font-bold text-white"
-          style={{ background: "linear-gradient(145deg,#9ba7ff,#626fd2)" }}
-        >
+        <span className="grid size-4 shrink-0 place-items-center rounded-[5px] bg-[linear-gradient(145deg,#9db2ff,#5d75ee)] text-[8px] font-bold text-white shadow-glow">
           {currentProject ? initials(currentProject.name) : "··"}
         </span>
         <span className="truncate">{currentProject?.name ?? "Select project"}</span>
@@ -97,7 +94,7 @@ export function HeaderProjectSwitcher() {
         initialFocus={searchRef}
         className="w-[340px] p-1.5"
       >
-        <label className="flex h-8.5 items-center gap-2 rounded-lg border border-hairline bg-black/20 px-2.5 text-tertiary">
+        <label className="glass-control flex h-8.5 items-center gap-2 rounded-[10px] px-2.5 text-tertiary focus-within:border-primary/55">
           <Search size={14} />
           <input
             ref={searchRef}
@@ -132,10 +129,7 @@ export function HeaderProjectSwitcher() {
                   selected && "bg-primary/15 text-ink",
                 )}
               >
-                <span
-                  className="grid size-7 place-items-center rounded-lg text-[10px] font-bold text-white"
-                  style={{ background: "linear-gradient(145deg,#9ba7ff,#626fd2)" }}
-                >
+                <span className="grid size-7 place-items-center rounded-lg bg-[linear-gradient(145deg,#9db2ff,#5d75ee)] text-[10px] font-bold text-white shadow-glass-sm">
                   {initials(app.name)}
                 </span>
                 <span className="min-w-0">

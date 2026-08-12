@@ -26,7 +26,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "relative flex w-full items-center justify-between gap-1.5 rounded-lg border border-hairline bg-surface-1 py-0 pr-7 pl-3 text-muted outline-none transition-colors hover:bg-surface-2 focus:border-primary disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-7.5 data-[size=sm]:text-xs data-placeholder:text-tertiary [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        "glass-control relative flex w-full items-center justify-between gap-1.5 rounded-[10px] py-0 pr-7 pl-3 text-muted outline-none transition-[background-color,border-color,box-shadow] hover:bg-surface-2 focus:border-primary/55 focus:shadow-[0_0_0_3px_var(--glow)] disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-7.5 data-[size=sm]:text-xs data-placeholder:text-tertiary [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         className,
       )}
       {...props}
@@ -59,7 +59,7 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           className={cn(
-            "max-h-(--available-height) min-w-(--anchor-width) overflow-x-hidden overflow-y-auto rounded-lg border border-hairline bg-surface-2 p-1 text-muted shadow-lg",
+            "glass-panel-raised max-h-(--available-height) min-w-(--anchor-width) overflow-x-hidden overflow-y-auto rounded-[12px] p-1 text-muted",
             className,
           )}
           {...props}
@@ -76,7 +76,7 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1.5 pr-8 pl-2.5 text-sm outline-none select-none data-highlighted:bg-surface-3 data-highlighted:text-ink data-highlighted:data-[variant=destructive]:**:*:text-ink",
+        "relative flex w-full cursor-default items-center gap-1.5 rounded-[8px] py-1.5 pr-8 pl-2.5 text-sm outline-none transition-colors select-none data-highlighted:bg-overlay-strong data-highlighted:text-ink data-highlighted:data-[variant=destructive]:**:*:text-ink",
         className,
       )}
       {...props}

@@ -140,13 +140,13 @@ export function ModeToggle() {
             type="button"
             title="Switch theme"
             aria-label="Switch theme"
-            className="grid size-8 place-items-center rounded-lg text-tertiary transition-colors hover:bg-surface-3 hover:text-ink"
+            className="grid size-8 place-items-center rounded-[10px] border border-transparent text-tertiary transition-[color,background-color,border-color] hover:border-hairline hover:bg-overlay-strong hover:text-ink"
           >
             <CurrentIcon size={15} />
           </button>
         }
       />
-      <DropdownMenuContent side="right" sideOffset={8} align="start" className="w-[168px]">
+      <DropdownMenuContent side="bottom" sideOffset={7} align="end" className="w-[168px]">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Theme</DropdownMenuLabel>
           {THEME_OPTIONS.map((option) => {

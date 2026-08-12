@@ -3,15 +3,16 @@ import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-hairline bg-surface-1 px-3 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:pointer-events-none disabled:opacity-50",
+  "glass-control inline-flex items-center justify-center gap-2 rounded-[10px] px-3 text-sm font-medium text-muted transition-[color,background-color,border-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)] hover:border-hairline-strong hover:bg-surface-2 hover:text-ink active:bg-overlay-strong disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default: "",
         primary:
-          "border-primary bg-primary text-primary-foreground hover:border-primary-hover hover:bg-primary-hover",
+          "!border-primary/70 !bg-primary !text-primary-foreground shadow-glow hover:!border-primary-hover hover:!bg-primary-hover",
         danger: "text-danger hover:text-danger",
-        ghost: "border-transparent bg-transparent hover:bg-surface-1 hover:text-ink",
+        ghost:
+          "border-transparent bg-transparent shadow-none hover:bg-overlay-strong hover:text-ink",
       },
       size: {
         default: "h-8.5 px-3",

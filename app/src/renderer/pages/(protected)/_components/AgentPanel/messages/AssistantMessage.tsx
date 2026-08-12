@@ -61,7 +61,7 @@ export function AssistantMessage({
   }, [textContent.length]);
 
   return (
-    <article className="mb-5 min-w-0 max-w-full overflow-hidden pr-2">
+    <article className="glass-control mb-5 min-w-0 max-w-full overflow-hidden rounded-[15px] p-3">
       <div className="mb-2 flex items-center gap-1.5 text-[10px] font-[620] text-tertiary">
         <Sparkles
           className={isStreaming ? "animate-pulse text-primary-hover" : "text-primary-hover"}
@@ -78,7 +78,7 @@ export function AssistantMessage({
       <div className="flex min-w-0 flex-col gap-1.5">
         {processingContent.length > 0 ? (
           <Collapsible open={isProcessingOpen} onOpenChange={(open) => setIsProcessingOpen(open)}>
-            <CollapsibleTrigger className="group/trigger flex cursor-pointer items-center gap-1.5 py-1 text-[10px] text-tertiary transition-colors hover:text-muted">
+            <CollapsibleTrigger className="group/trigger flex cursor-pointer items-center gap-1.5 rounded-lg bg-overlay px-2 py-1.5 text-[10px] text-tertiary transition-colors hover:bg-overlay-strong hover:text-muted">
               Reasoning & activity
               <ChevronRightIcon className="size-3 text-tertiary transition-transform group-data-panel-open/trigger:rotate-90" />
             </CollapsibleTrigger>

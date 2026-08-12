@@ -14,6 +14,7 @@ import { TrpcErrorToaster } from "@renderer/components/TrpcErrorToaster";
 import { Toaster } from "@renderer/components/ui/sonner";
 import { ElectronIPCProvider } from "@renderer/context/ElectronIPCProvider";
 import { rendererTrpcClient, trpc } from "@renderer/lib/trpc";
+import { Titlebar } from "@renderer/pages/(protected)/_components/Titlebar";
 import { router } from "@renderer/router";
 import { agentStore } from "@renderer/store/agent";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -57,6 +58,7 @@ export function App() {
             <CommandProvider>
               <ExtensionProvider extensions={installedRendererExtensions}>
                 <ExtensionsContextAPIProvider api={extensionsContextAPI}>
+                  <Titlebar />
                   <RouterProvider router={router} />
                   <TrpcErrorToaster />
                   <Toaster />

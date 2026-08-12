@@ -87,7 +87,7 @@ export function ModalSelector({ value, onChange }: ModalSelectorProps) {
       disabled={isLoading || models.length === 0}
     >
       <SelectTrigger
-        className="h-7 w-auto max-w-50 gap-1 rounded-[6px] border border-hairline bg-overlay px-2 !text-ink shadow-none hover:border-hairline-strong hover:bg-overlay-strong data-popup-open:border-primary/55 data-popup-open:bg-overlay focus:ring-0"
+        className="h-7 w-auto max-w-50 gap-1 rounded-[8px] border border-hairline bg-overlay px-2 !text-ink shadow-none hover:border-hairline-strong hover:bg-overlay-strong data-popup-open:border-primary/55 data-popup-open:bg-overlay focus:ring-0"
         aria-label="Select model"
       >
         <SelectValue className="pointer-events-none min-w-0">
@@ -106,7 +106,7 @@ export function ModalSelector({ value, onChange }: ModalSelectorProps) {
       <SelectContent
         align="end"
         sideOffset={8}
-        className="max-h-none w-max min-w-56 max-w-80 overflow-hidden rounded-[10px] border border-hairline-strong bg-surface-glass-elevated p-0 text-ink shadow-[0_18px_50px_rgba(0,0,0,0.38)]"
+        className="glass-panel-raised max-h-none w-max min-w-56 max-w-80 overflow-hidden rounded-[14px] p-0 text-ink"
       >
         <div className="border-b border-hairline px-2 py-2">
           <Input
@@ -117,7 +117,7 @@ export function ModalSelector({ value, onChange }: ModalSelectorProps) {
               event.stopPropagation();
             }}
             placeholder="搜索模型..."
-            className="h-8 rounded-[6px] border-hairline bg-black/15 px-3 text-[11px] text-ink placeholder:text-tertiary"
+            className="h-8 rounded-[8px] px-3 text-[11px] text-ink placeholder:text-tertiary"
           />
         </div>
 

@@ -56,7 +56,7 @@ export function ChatMessages({
     return (
       <div className="grid h-full place-items-center px-6 text-center">
         <div className="max-w-[280px]">
-          <span className="mx-auto mb-3 grid size-10 place-items-center rounded-[11px] border border-hairline bg-overlay text-primary-hover">
+          <span className="glass-control mx-auto mb-3 grid size-10 place-items-center rounded-[12px] bg-primary/10 text-primary-hover shadow-glow">
             <Sparkles size={17} />
           </span>
           <strong className="block text-[13px] font-[620] text-ink">
@@ -71,7 +71,7 @@ export function ChatMessages({
   }
 
   return (
-    <div className="relative h-full min-w-0 overflow-x-hidden bg-black/[0.04]">
+    <div className="relative h-full min-w-0 overflow-x-hidden bg-surface-1/20">
       <div
         ref={scrollRef}
         className="h-full min-w-0 overflow-x-hidden overflow-y-auto px-3 py-4"

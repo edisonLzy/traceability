@@ -56,9 +56,12 @@ export function LoginPage() {
   });
 
   return (
-    <div className="app-drag-region relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-canvas px-6">
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-[460px] w-[680px] -translate-x-1/2 rounded-full bg-primary/20 blur-[130px]" />
-      <form className="app-no-drag relative w-full max-w-[360px]" onSubmit={onSubmit}>
+    <div className="app-drag-region relative flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-transparent px-6">
+      <div className="pointer-events-none absolute -top-48 left-1/2 h-[520px] w-[760px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,var(--glow-strong),transparent)] blur-[120px]" />
+      <form
+        className="app-no-drag glass-panel relative w-full max-w-[390px] rounded-[24px] px-8 py-9"
+        onSubmit={onSubmit}
+      >
         <DotLottieReact
           src={loginAnimation}
           autoplay
@@ -72,7 +75,7 @@ export function LoginPage() {
         <p className="mt-2 text-[12px] leading-relaxed text-tertiary">
           使用系统分配的邮箱和密码继续。当前不开放注册。
         </p>
-        <label className="mt-5 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-3 text-tertiary">
+        <label className="glass-control mt-5 flex h-10 items-center gap-2 rounded-[11px] px-3 text-tertiary focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px_var(--glow)]">
           <Mail size={14} />
           <input
             type="email"
@@ -89,7 +92,7 @@ export function LoginPage() {
             {errors.email.message}
           </p>
         )}
-        <label className="mt-2 flex h-10 items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-3 text-tertiary">
+        <label className="glass-control mt-2 flex h-10 items-center gap-2 rounded-[11px] px-3 text-tertiary focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px_var(--glow)]">
           <KeyRound size={14} />
           <input
             type="password"
@@ -105,7 +108,7 @@ export function LoginPage() {
         )}
         <button
           disabled={isSubmitting || loginMutation.isPending}
-          className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[9px] bg-primary text-[12px] font-[650] text-primary-foreground disabled:opacity-60"
+          className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[11px] border border-primary/70 bg-primary text-[12px] font-[650] text-primary-foreground shadow-glow transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:bg-primary-hover active:bg-primary-hover disabled:opacity-60"
         >
           {(isSubmitting || loginMutation.isPending) && (
             <Loader2 size={14} className="animate-spin" />
