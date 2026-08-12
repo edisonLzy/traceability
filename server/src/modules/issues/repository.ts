@@ -2,7 +2,6 @@ import { and, desc, eq, lt, or } from "drizzle-orm";
 
 import type { Database } from "../../infrastructure/database/client.js";
 import { events, issues } from "./schema.js";
-import type { IssueStatus } from "./types.js";
 
 export interface IssueCursor {
   lastSeen: Date;
@@ -46,14 +45,5 @@ export class IssueRepository {
       .where(eq(events.issueId, issueId))
       .orderBy(desc(events.eventTimestamp), desc(events.id))
       .limit(limit);
-  }
-
-  async updateStatus(issueId: string, status: IssueStatus) {
-    const [issue] = await this.database.db
-      .update(issues)
-      .set({ status, updatedAt: new Date() })
-      .where(eq(issues.id, issueId))
-      .returning();
-    return issue ?? null;
   }
 }

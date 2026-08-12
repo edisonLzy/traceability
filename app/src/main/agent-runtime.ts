@@ -6,6 +6,7 @@ import type {
   ExtensionAgentModel,
   ExtensionAgentToolOptions,
 } from "../extensions/core/main/index.js";
+import type { MonitoringContext } from "../shared/agent-message.js";
 import type {
   AskUserQuestionInput,
   AskUserQuestionResult,
@@ -65,6 +66,21 @@ export type AgentRuntimeDelegate = {
 export interface AgentRuntimeOptions {
   extensionTools?: ExtensionAgentToolOptions;
   systemPrompt?: string;
+}
+
+function formatMonitoringContext(context: MonitoringContext): string {
+  const lines = [
+    "# Current Traceability monitoring context",
+    "Treat this as the object currently selected by the user. Verify it with the available monitoring tools before drawing conclusions.",
+    `Source: ${context.source}`,
+    `Project ID: ${context.projectId}`,
+  ];
+  if (context.projectName) lines.push(`Project: ${context.projectName}`);
+  if (context.issueId) lines.push(`Issue ID: ${context.issueId}`);
+  if (context.issueTitle) lines.push(`Issue title: ${context.issueTitle}`);
+  if (context.metricName) lines.push(`Metric: ${context.metricName}`);
+  if (context.hours) lines.push(`Time range: ${context.hours} hours`);
+  return lines.join("\n");
 }
 
 // ── Event type map ──────────────────────────────────────────────────────────
@@ -220,9 +236,12 @@ export class AgentRuntime extends Emittery<AgentRuntimeEvents> implements AgentR
       await this.setModel(message.metadata.model);
     }
 
-    this.agent.state.systemPrompt = this.systemPromptService.buildSystemPrompt(
+    const baseSystemPrompt = this.systemPromptService.buildSystemPrompt(
       this.options.systemPrompt ?? "",
     );
+    this.agent.state.systemPrompt = message.metadata?.monitoringContext
+      ? `${baseSystemPrompt}\n\n${formatMonitoringContext(message.metadata.monitoringContext)}`
+      : baseSystemPrompt;
 
     const content =
       typeof message.content === "string"

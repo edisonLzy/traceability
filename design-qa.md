@@ -1,47 +1,46 @@
-# Design QA: Agent long-error containment
+# Inbox alignment with master UI Design QA
 
-## Visual truth
+## Sources
 
-- Reference: `docs/design-qa/agent-error-reference.png`
-- Implementation: `docs/design-qa/agent-error-after.png`
-- Combined comparison: `docs/design-qa/agent-error-comparison.png`
+- Selected reference: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/master-ui-issues-reference.png`
+- Inbox queue capture: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/inbox-after-restyle.png`
+- Inbox detail capture: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/inbox-detail-after-restyle.png`
+- Side-by-side comparison: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/master-vs-inbox-restyle.png`
+- Compact queue capture: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/inbox-narrow-queue.png`
+- Compact detail capture: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/inbox-narrow-detail.png`
+- Implementation: `/Users/zhiyu/.codex/worktrees/4a20/Traceability/app/src/renderer/pages/(protected)/Inbox/index.tsx`
 
-## Matched state
+## Capture setup
 
-- Session title and user prompt: `11`
-- Assistant state: failed request with the same 5,602-character OpenCode 404 HTML response
-- Scroll state: user prompt is above the viewport and the `Click to jump` sticky summary is active
-- Layout state: wide Agent panel; message content uses the existing 720 CSS px maximum width
-- Theme: the reference uses light tokens and the implementation capture uses the current saved dark theme. Color differences are therefore intentional; containment, wrapping, spacing, and sticky behavior are the comparison targets.
+- Master reference and final detail capture: 1440 × 900 CSS px, light theme, same project and Agent split.
+- Compact validation: 900 × 700 CSS px, light theme.
+- Reference and implementation show different product screens, so the comparison evaluates the shared visual system rather than pixel-identical content.
 
-The reference is a 1932×1130 Retina raster supplied by the user. The implementation is a 1228×768 full-screen desktop capture produced by the local UI inspection service. Raster density differs, but both exercise the same 720 CSS px message boundary and equivalent sticky/error state.
+## Findings and fixes
 
-## Root cause
+- [P1] After the master fast-forward, the protected shell and Agent panel inherited the new style but the Inbox queue and detail remained flat, opaque, and visually disconnected.
+  - Fix: Converted the queue, detail surface, and detail modules to the master `glass-panel` primitives with matching 18/16 px radii, translucent layers, hairlines, shadows, and inset scrolling.
+- [P1] Search, status tabs, selected rows, and state actions still used the previous neutral control treatment.
+  - Fix: Adopted `glass-control`, the master blue primary/focus treatment, glow shadow, and compact control heights. Selected queue rows now use the same blue-tinted emphasis as current navigation and issue controls.
+- [P2] Inbox typography and spacing were denser than the redesigned Issues screen.
+  - Fix: Aligned title scale, module headings, metadata, action spacing, and content padding to the current Issues detail modules.
+- [P2] The Agent monitoring context card used the legacy flat border style.
+  - Fix: Restyled the card with the shared glass control, blue-tinted icon tile, current radii, and typography while preserving its existing behavior.
+- No actionable P0, P1, or P2 findings remain after the final comparison.
 
-`AssistantMessage` rendered `errorMessage` inside a danger block without a width or wrapping policy. A long HTML response with no reliable word boundaries expanded the text formatting context beyond the Agent panel. Ancestor `overflow-x-hidden` did not constrain the intrinsic width, so the error background, text, and scroll geometry escaped the intended column.
+## Scope decisions
 
-## Fix
+- `Investigate` remains excluded from the Inbox MVP as explicitly requested.
+- Open and Done, search, item selection, Resolve, Ignore, Reopen, and Agent context pinning remain unchanged functionally.
+- The master branch's current 50/50 resizable workspace-to-Agent split remains authoritative.
 
-- Constrained the assistant article with `min-w-0`, `max-w-full`, and `overflow-hidden`.
-- Constrained the error block to the available width.
-- Preserved response line breaks with `whitespace-pre-wrap`.
-- Added `overflow-wrap:anywhere` so HTML, encoded SVG data, URLs, and other unbroken diagnostics wrap without widening the panel.
-- Kept the existing typography, danger colors, message hierarchy, and sticky user summary.
+## Interaction and responsive validation
 
-## Comparison findings
-
-- Reference: error content grows far beyond its intended column, creating a large blank/overflow region and visually detaching the highlighted content from the sticky summary.
-- Implementation: every line stays inside the centered Agent message column; the danger border/background terminate at the same boundary as the input composer.
-- The `11` sticky summary remains one line with `Click to jump` anchored at the right edge.
-- The vertical scrollbar belongs to the message viewport and no horizontal overflow is visible.
-- The long response remains readable and copyable; content was not truncated or altered.
-
-## QA history
-
-1. Initial source inspection incorrectly suspected the Issue source viewer because the screenshot contained HTML-like code. Searching the exact `Click to jump` label and danger styles identified the Agent conversation instead.
-2. The first containment attempt targeted the user-message ProseMirror surface. Replaying the exact persisted session showed that the overflowing element was the assistant error fallback, so the exploratory change was removed.
-3. Loaded the real persisted session, activated the sticky summary, and reproduced the 5,602-character error in the Electron renderer.
-4. Applied the assistant error boundary fix, repeated the same wide-panel/full-screen state, and generated the combined comparison. No P0/P1/P2 visual findings remain.
+- Searched the Open queue for `OAuth`, cleared the query, and verified the filtered count and Agent context.
+- Switched between Open and Done and verified the seeded completed outcomes.
+- Resolved an Open item, verified it moved to Done, reopened it, and verified it returned to Open.
+- At 900 × 700, verified queue → detail → queue navigation, readable wrapping, reachable actions, and no horizontal overflow.
+- App type checks, 18 test files / 89 tests, and changed-file lint all passed.
 
 final result: passed
 
@@ -89,7 +88,7 @@ final result: passed
 - P1: none.
 - P2: none remaining.
 
-Final result: passed
+final result: passed
 
 ---
 
@@ -272,4 +271,4 @@ Final result: passed
 - P1: none.
 - P2: none remaining.
 
-Final result: passed
+final result: passed

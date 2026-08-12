@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference path="../preload/index.d.ts" />
 
 type AgentRuntimeIPC = import("../shared/events-ipc").AgentRuntimeIPC;
 type AllowedMainExposeEvents = import("../shared/events-ipc").AllowedMainExposeEvents;

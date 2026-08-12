@@ -1,6 +1,7 @@
 import fastifyPlugin from "fastify-plugin";
 
 import { AuthService, AuthRepository } from "../modules/auth/index.js";
+import { InboxRepository, InboxService } from "../modules/inbox/index.js";
 import { IngestRepository, IngestService } from "../modules/ingest/index.js";
 import { IssueRepository, IssueService } from "../modules/issues/index.js";
 import { MetricsRepository, MetricsService } from "../modules/metrics/index.js";
@@ -14,6 +15,7 @@ import { TraceRepository, TraceService } from "../modules/traces/index.js";
 export interface Container {
   auth: AuthService;
   projects: ProjectService;
+  inbox: InboxService;
   issues: IssueService;
   ingest: IngestService;
   processing: ProcessingService;
@@ -34,7 +36,9 @@ export const containerPlugin = fastifyPlugin(
   async (app) => {
     const auth = new AuthService(new AuthRepository(app.database), app.config, 7 * 24 * 60 * 60);
     const projects = new ProjectService(new ProjectRepository(app.database), app.config);
-    const issues = new IssueService(new IssueRepository(app.database));
+    const inboxRepository = new InboxRepository(app.database);
+    const inbox = new InboxService(inboxRepository);
+    const issues = new IssueService(new IssueRepository(app.database), inbox);
     const ingest = new IngestService(
       new IngestRepository(app.database),
       projects,
@@ -66,6 +70,7 @@ export const containerPlugin = fastifyPlugin(
       Object.freeze({
         auth,
         projects,
+        inbox,
         issues,
         ingest,
         processing,

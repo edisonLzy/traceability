@@ -35,6 +35,6 @@ export const issuesRouter = t.router({
   update: procedure
     .input(z.object({ issueId: issueIdInput, patch: UpdateIssueInputSchema }))
     .mutation(({ ctx, input }) => {
-      return ctx.container.issues.updateIssue(input.issueId, input.patch);
+      return ctx.container.issues.updateIssue(input.issueId, input.patch, ctx.user!.id);
     }),
 });

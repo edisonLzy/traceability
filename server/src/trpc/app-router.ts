@@ -1,6 +1,7 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
 import { authRouter } from "../modules/auth/router.js";
+import { inboxRouter } from "../modules/inbox/router.js";
 import { issuesRouter } from "../modules/issues/router.js";
 import { metricsRouter } from "../modules/metrics/router.js";
 import { minidumpsRouter } from "../modules/minidumps/index.js";
@@ -14,6 +15,7 @@ import { t } from "./trpc.js";
 export const appRouter = t.router({
   auth: authRouter,
   projects: projectsRouter,
+  inbox: inboxRouter,
   issues: issuesRouter,
   processing: processingRouter,
   sourcemaps: sourcemapsRouter,
