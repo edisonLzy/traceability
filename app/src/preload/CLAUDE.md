@@ -10,7 +10,7 @@ The **only** bridge between the main process and the renderer. One file: `index.
 
 The `api` exposes two typed, allowlisted entry points that mirror main's split shared contracts:
 
-- `invoke(channel, ...args)` for `AllowedRenderInvokeEvents`, including session persistence, Agent runtime, model, Skill, and window channels.
+- `invoke(channel, ...args)` for `AllowedRenderInvokeEvents`, including auth, session persistence, Agent runtime, models, Skills, themes, tRPC access, and window channels.
 - `on(event, handler)` for `AllowedMainExposeEvents`; it wraps `ipcRenderer.on` and returns an unsubscribe function.
 
 ## Rules

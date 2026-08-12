@@ -1,0 +1,2535 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Traceability · Issue workspace interaction prototype</title>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.js" defer></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --canvas: #f6f6f7;
+        --surface-1: #ffffff;
+        --surface-2: #fbfbfc;
+        --surface-3: #f1f1f3;
+        --hairline: rgba(10, 10, 12, 0.09);
+        --hairline-strong: rgba(10, 10, 12, 0.16);
+        --ink: #1a1a1f;
+        --ink-muted: #4a4b52;
+        --subtle: #66676e;
+        --tertiary: #7c7d85;
+        --primary: #5b67d4;
+        --primary-hover: #4a55bd;
+        --primary-foreground: #ffffff;
+        --info: #2f7bc9;
+        --success: #2f9e54;
+        --warning: #a97b1c;
+        --danger: #cf3f3f;
+        --surface-glass: rgba(255, 255, 255, 0.76);
+        --surface-glass-elevated: rgba(255, 255, 255, 0.96);
+        --overlay: rgba(0, 0, 0, 0.035);
+        --overlay-strong: rgba(0, 0, 0, 0.075);
+        --code-bg: #111216;
+        --code-surface: #17181d;
+        --code-text: #d8d9de;
+        --code-line: #63656e;
+        --code-active: rgba(143, 156, 255, 0.14);
+        --content-share: 50%;
+        --radius: 10px;
+        --shadow-popover: 0 18px 50px rgba(0, 0, 0, 0.18);
+        --font-sans: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        background:
+          radial-gradient(ellipse at 55% -30%, rgba(90, 101, 195, 0.1), transparent 40%),
+          var(--canvas);
+        color: var(--ink);
+        font: 13px/1.45 var(--font-sans);
+        letter-spacing: -0.01em;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      [tabindex]:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+      }
+
+      .icon {
+        width: 15px;
+        height: 15px;
+        stroke-width: 1.8;
+        pointer-events: none;
+      }
+
+      .titlebar {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 50;
+        display: flex;
+        height: 30px;
+        align-items: center;
+        gap: 7px;
+        border-bottom: 1px solid var(--hairline);
+        background: var(--surface-glass);
+        padding: 0 14px 0 86px;
+        color: var(--tertiary);
+        backdrop-filter: blur(24px);
+      }
+
+      .titlebar .brand-icon {
+        color: var(--primary-hover);
+      }
+
+      .titlebar strong {
+        font-size: 12px;
+        font-weight: 570;
+        letter-spacing: 0.01em;
+      }
+
+      .titlebar-note {
+        margin-left: auto;
+        font-size: 10px;
+      }
+
+      .app-shell {
+        display: flex;
+        height: 100%;
+        padding-top: 30px;
+      }
+
+      .sidebar {
+        position: relative;
+        z-index: 20;
+        display: flex;
+        width: 52px;
+        flex: 0 0 52px;
+        flex-direction: column;
+        align-items: center;
+        border-right: 1px solid var(--hairline);
+        background: var(--surface-glass);
+        padding: 12px 8px;
+        backdrop-filter: blur(24px);
+      }
+
+      .sidebar-brand {
+        display: grid;
+        width: 32px;
+        height: 28px;
+        place-items: center;
+        color: var(--primary-hover);
+      }
+
+      .sidebar-nav {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 9px;
+        padding-top: 20px;
+      }
+
+      .nav-icon,
+      .theme-button {
+        position: relative;
+        display: grid;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        place-items: center;
+        border: 1px solid var(--hairline);
+        border-radius: 8px;
+        background: var(--overlay);
+        color: var(--ink-muted);
+        transition: 150ms ease;
+      }
+
+      .nav-icon:hover,
+      .theme-button:hover,
+      .nav-icon.active {
+        border-color: var(--hairline-strong);
+        background: var(--overlay-strong);
+        color: var(--ink);
+      }
+
+      .nav-icon.active {
+        color: var(--primary-hover);
+      }
+
+      .nav-icon .count {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 15px;
+        height: 15px;
+        border: 2px solid var(--surface-1);
+        border-radius: 999px;
+        background: var(--danger);
+        color: white;
+        font-size: 8px;
+        font-weight: 700;
+        line-height: 11px;
+        text-align: center;
+      }
+
+      .sidebar-footer {
+        width: 100%;
+        border-top: 1px solid var(--hairline);
+        padding-top: 10px;
+      }
+
+      .main-region {
+        position: relative;
+        display: flex;
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .content-panel {
+        container: content / inline-size;
+        display: flex;
+        width: var(--content-share);
+        min-width: 0;
+        flex: 0 0 var(--content-share);
+        flex-direction: column;
+        background: rgba(246, 246, 247, 0.7);
+        transition:
+          width 230ms ease,
+          flex-basis 230ms ease;
+      }
+
+      .main-region.expanded .content-panel {
+        width: 100%;
+        flex-basis: 100%;
+      }
+
+      .workspace-header {
+        display: flex;
+        height: 48px;
+        flex: 0 0 48px;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid var(--hairline);
+        background: var(--surface-glass);
+        padding: 0 18px;
+        backdrop-filter: blur(18px);
+      }
+
+      .breadcrumbs {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 7px;
+        color: var(--tertiary);
+        font-size: 11px;
+      }
+
+      .breadcrumbs .project {
+        overflow: hidden;
+        max-width: 124px;
+        color: var(--ink-muted);
+        font-weight: 620;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .breadcrumbs .current {
+        overflow: hidden;
+        max-width: 130px;
+        color: var(--ink-muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .header-actions {
+        display: flex;
+        margin-left: auto;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .live-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--tertiary);
+        font-size: 10px;
+      }
+
+      .live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--success);
+      }
+
+      .icon-button,
+      .ghost-button,
+      .secondary-button,
+      .primary-button {
+        display: inline-flex;
+        height: 32px;
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        border-radius: 9px;
+        padding: 0 11px;
+        font-size: 11px;
+        font-weight: 600;
+        transition: 150ms ease;
+      }
+
+      .icon-button {
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--hairline);
+        background: var(--overlay);
+        padding: 0;
+        color: var(--tertiary);
+      }
+
+      .icon-button:hover,
+      .ghost-button:hover,
+      .secondary-button:hover {
+        border-color: var(--hairline-strong);
+        background: var(--overlay-strong);
+        color: var(--ink);
+      }
+
+      .ghost-button {
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--tertiary);
+      }
+
+      .secondary-button {
+        border: 1px solid var(--hairline);
+        background: var(--surface-1);
+        color: var(--ink-muted);
+      }
+
+      .primary-button {
+        border: 1px solid var(--primary);
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+
+      .primary-button:hover {
+        background: var(--primary-hover);
+      }
+
+      .content-scroll {
+        min-height: 0;
+        flex: 1;
+        overflow: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+      }
+
+      .view {
+        display: none;
+        width: 100%;
+        min-height: 100%;
+      }
+
+      .view.active {
+        display: block;
+      }
+
+      .page {
+        width: 100%;
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 20px 20px 56px;
+      }
+
+      .page-titlebar {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .issue-severity-dot {
+        width: 9px;
+        height: 9px;
+        flex: 0 0 9px;
+        margin-top: 9px;
+        border-radius: 999px;
+        background: var(--danger);
+        box-shadow: 0 0 0 4px rgba(207, 63, 63, 0.09);
+      }
+
+      .page-heading {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .eyebrow {
+        margin-bottom: 4px;
+        color: var(--primary-hover);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        display: -webkit-box;
+        overflow: hidden;
+        margin: 0;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        font-size: 22px;
+        font-weight: 680;
+        letter-spacing: -0.04em;
+        line-height: 1.18;
+      }
+
+      .heading-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        margin-top: 7px;
+        color: var(--tertiary);
+        font: 10px/1.4 var(--font-mono);
+      }
+
+      .page-actions {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .module-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .module {
+        overflow: hidden;
+        border: 1px solid var(--hairline);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .module-header {
+        display: flex;
+        min-height: 46px;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid var(--hairline);
+        padding: 10px 14px;
+      }
+
+      .module-title {
+        color: var(--ink-muted);
+        font-size: 12px;
+        font-weight: 660;
+      }
+
+      .module-subtitle {
+        overflow: hidden;
+        color: var(--tertiary);
+        font-size: 10px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .module-actions {
+        display: flex;
+        margin-left: auto;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .module-body {
+        padding: 14px;
+      }
+
+      .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0;
+      }
+
+      .data-cell {
+        min-width: 0;
+        border-bottom: 1px solid var(--hairline);
+        padding: 11px 14px;
+      }
+
+      .data-cell:nth-child(odd) {
+        border-right: 1px solid var(--hairline);
+      }
+
+      .data-cell:nth-last-child(-n + 2) {
+        border-bottom: 0;
+      }
+
+      .data-label {
+        margin-bottom: 5px;
+        color: var(--tertiary);
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .data-value {
+        overflow: hidden;
+        color: var(--ink-muted);
+        font-size: 11px;
+        font-weight: 580;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .data-value.mono {
+        font: 10px/1.5 var(--font-mono);
+      }
+
+      .badge {
+        display: inline-flex;
+        height: 22px;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--hairline);
+        border-radius: 999px;
+        background: var(--overlay);
+        padding: 0 8px;
+        color: var(--ink-muted);
+        font-size: 9px;
+        font-weight: 650;
+        white-space: nowrap;
+      }
+
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--tertiary);
+      }
+
+      .badge.open .badge-dot {
+        background: var(--danger);
+      }
+
+      .badge.success .badge-dot {
+        background: var(--success);
+      }
+
+      .badge.warning .badge-dot {
+        background: var(--warning);
+      }
+
+      .status-control {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 12px 14px;
+      }
+
+      .status-option {
+        display: inline-flex;
+        height: 28px;
+        cursor: pointer;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--hairline);
+        border-radius: 8px;
+        background: var(--surface-1);
+        padding: 0 9px;
+        color: var(--ink-muted);
+        font-size: 10px;
+      }
+
+      .status-option.active {
+        border-color: rgba(91, 103, 212, 0.5);
+        background: rgba(91, 103, 212, 0.1);
+        color: var(--ink);
+      }
+
+      .event-strip {
+        display: flex;
+        gap: 7px;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--hairline);
+        padding: 9px 12px;
+      }
+
+      .event-chip {
+        display: inline-flex;
+        height: 30px;
+        flex: 0 0 auto;
+        cursor: pointer;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid var(--hairline);
+        border-radius: 8px;
+        background: var(--surface-1);
+        padding: 0 10px;
+        color: var(--tertiary);
+        font-size: 9px;
+      }
+
+      .event-chip strong {
+        color: var(--ink-muted);
+        font: 600 9px/1 var(--font-mono);
+      }
+
+      .event-chip.active {
+        border-color: rgba(91, 103, 212, 0.45);
+        background: rgba(91, 103, 212, 0.08);
+        color: var(--primary-hover);
+      }
+
+      .event-summary {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 18px;
+        padding: 13px 14px;
+      }
+
+      .event-summary-item {
+        min-width: 0;
+      }
+
+      .event-summary-item .data-label {
+        margin-bottom: 3px;
+      }
+
+      .exception-block {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .exception-mark {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        flex: 0 0 32px;
+        place-items: center;
+        border: 1px solid rgba(207, 63, 63, 0.17);
+        border-radius: 10px;
+        background: rgba(207, 63, 63, 0.08);
+        color: var(--danger);
+      }
+
+      .exception-title {
+        margin-bottom: 4px;
+        color: var(--ink);
+        font: 630 11px/1.5 var(--font-mono);
+      }
+
+      .exception-message {
+        color: var(--ink-muted);
+        font-size: 11px;
+        line-height: 1.6;
+      }
+
+      .frame-tabs {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--hairline);
+        padding: 9px 12px;
+      }
+
+      .frame-tab {
+        display: inline-flex;
+        height: 28px;
+        flex: 0 0 auto;
+        cursor: pointer;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        background: transparent;
+        padding: 0 8px;
+        color: var(--tertiary);
+        font: 9px/1 var(--font-mono);
+      }
+
+      .frame-tab:hover {
+        background: var(--overlay);
+        color: var(--ink-muted);
+      }
+
+      .frame-tab.active {
+        border-color: var(--hairline);
+        background: var(--surface-1);
+        color: var(--primary-hover);
+      }
+
+      .code-toolbar {
+        display: flex;
+        min-height: 38px;
+        align-items: center;
+        gap: 9px;
+        background: var(--code-surface);
+        padding: 7px 12px;
+        color: #a4a6ae;
+      }
+
+      .code-file {
+        overflow: hidden;
+        color: #e6e7eb;
+        font: 10px/1.4 var(--font-mono);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .code-line-meta {
+        margin-left: auto;
+        font: 9px/1 var(--font-mono);
+        white-space: nowrap;
+      }
+
+      .codemirror-host {
+        min-height: 270px;
+        max-height: 330px;
+        overflow: auto;
+        background: var(--code-bg);
+        color: var(--code-text);
+      }
+
+      .code-fallback {
+        margin: 0;
+        padding: 11px 0 20px;
+        color: var(--code-text);
+        font: 11px/1.72 var(--font-mono);
+      }
+
+      .cm-shell {
+        display: grid;
+        min-height: 270px;
+        grid-template-columns: 46px minmax(0, 1fr);
+        background: var(--code-bg);
+      }
+
+      .cm-static-lines {
+        min-height: 100%;
+        margin: 0;
+        padding: 10px 0 18px;
+        border-right: 1px solid rgba(255, 255, 255, 0.045);
+        background: var(--code-bg);
+        color: var(--code-line);
+        font: 11px/1.72 var(--font-mono);
+        text-align: right;
+        user-select: none;
+      }
+
+      .cm-static-lines span {
+        display: block;
+        padding-right: 10px;
+      }
+
+      .cm-static-lines span.active {
+        background: var(--code-active);
+        color: #aeb7ff;
+      }
+
+      .cm-mount {
+        min-width: 0;
+        min-height: 270px;
+        overflow: hidden;
+      }
+
+      .code-row {
+        display: block;
+        min-width: max-content;
+        padding: 0 18px 0 0;
+        white-space: pre;
+      }
+
+      .code-row.active {
+        background: var(--code-active);
+      }
+
+      .line-number {
+        display: inline-block;
+        width: 46px;
+        padding-right: 12px;
+        color: var(--code-line);
+        text-align: right;
+        user-select: none;
+      }
+
+      .syntax-keyword {
+        color: #c792ea;
+      }
+
+      .syntax-call {
+        color: #82aaff;
+      }
+
+      .syntax-string {
+        color: #c3e88d;
+      }
+
+      .syntax-number {
+        color: #f78c6c;
+      }
+
+      .generated-location {
+        border-top: 1px solid rgba(255, 255, 255, 0.07);
+        background: var(--code-surface);
+        padding: 8px 12px;
+        color: #737680;
+        font: 9px/1.5 var(--font-mono);
+      }
+
+      .breadcrumb-list {
+        padding: 2px 14px 10px;
+      }
+
+      .breadcrumb-item {
+        position: relative;
+        display: grid;
+        grid-template-columns: 18px minmax(0, 1fr) auto;
+        gap: 9px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--hairline);
+      }
+
+      .breadcrumb-item:last-child {
+        border-bottom: 0;
+      }
+
+      .breadcrumb-icon {
+        display: grid;
+        width: 18px;
+        height: 18px;
+        place-items: center;
+        border-radius: 6px;
+        background: var(--overlay);
+        color: var(--tertiary);
+      }
+
+      .breadcrumb-title {
+        margin-bottom: 2px;
+        color: var(--ink-muted);
+        font-size: 10px;
+        font-weight: 620;
+      }
+
+      .breadcrumb-data {
+        overflow: hidden;
+        color: var(--tertiary);
+        font: 9px/1.5 var(--font-mono);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .breadcrumb-time {
+        color: var(--tertiary);
+        font: 9px/1.5 var(--font-mono);
+      }
+
+      .context-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .context-group {
+        min-width: 0;
+        border: 1px solid var(--hairline);
+        border-radius: 10px;
+        background: var(--overlay);
+        padding: 11px;
+      }
+
+      .context-group h3 {
+        margin: 0 0 9px;
+        color: var(--tertiary);
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .context-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        border-top: 1px solid var(--hairline);
+        padding: 7px 0;
+      }
+
+      .context-row:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+      }
+
+      .context-row:last-child {
+        padding-bottom: 0;
+      }
+
+      .context-key {
+        flex: 0 0 auto;
+        color: var(--tertiary);
+        font-size: 9px;
+      }
+
+      .context-value {
+        min-width: 0;
+        overflow: hidden;
+        color: var(--ink-muted);
+        font: 9px/1.45 var(--font-mono);
+        text-align: right;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .tag {
+        border: 1px solid var(--hairline);
+        border-radius: 6px;
+        background: var(--surface-1);
+        padding: 4px 6px;
+        color: var(--ink-muted);
+        font: 9px/1 var(--font-mono);
+      }
+
+      .replay-preview {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .replay-frame {
+        position: relative;
+        overflow: hidden;
+        min-height: 112px;
+        border: 1px solid var(--hairline);
+        border-radius: 10px;
+        background:
+          linear-gradient(90deg, rgba(91, 103, 212, 0.08), transparent 48%),
+          var(--surface-2);
+      }
+
+      .replay-browserbar {
+        display: flex;
+        height: 25px;
+        align-items: center;
+        gap: 5px;
+        border-bottom: 1px solid var(--hairline);
+        padding: 0 9px;
+      }
+
+      .replay-browserbar span {
+        width: 5px;
+        height: 5px;
+        border-radius: 999px;
+        background: var(--hairline-strong);
+      }
+
+      .replay-content {
+        display: grid;
+        height: 87px;
+        place-items: center;
+      }
+
+      .replay-play {
+        display: inline-flex;
+        height: 30px;
+        cursor: pointer;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid var(--hairline-strong);
+        border-radius: 8px;
+        background: var(--surface-glass-elevated);
+        padding: 0 10px;
+        color: var(--ink-muted);
+        font-size: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
+      }
+
+      .replay-meta {
+        display: flex;
+        min-width: 130px;
+        flex-direction: column;
+        justify-content: center;
+        gap: 9px;
+      }
+
+      .raw-details summary {
+        display: flex;
+        min-height: 44px;
+        cursor: pointer;
+        list-style: none;
+        align-items: center;
+        gap: 8px;
+        padding: 0 14px;
+        color: var(--ink-muted);
+        font-size: 11px;
+        font-weight: 630;
+      }
+
+      .raw-details summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .raw-json {
+        max-height: 310px;
+        overflow: auto;
+        margin: 0;
+        border-top: 1px solid var(--hairline);
+        background: var(--code-bg);
+        padding: 14px;
+        color: var(--code-text);
+        font: 10px/1.65 var(--font-mono);
+        white-space: pre-wrap;
+      }
+
+      .splitter {
+        position: relative;
+        z-index: 12;
+        width: 1px;
+        flex: 0 0 1px;
+        cursor: col-resize;
+        background: var(--hairline);
+        transition: background 120ms ease;
+      }
+
+      .splitter::after {
+        position: absolute;
+        inset: 0 -5px;
+        content: "";
+      }
+
+      .splitter:hover,
+      .splitter.dragging {
+        background: rgba(91, 103, 212, 0.75);
+      }
+
+      .main-region.expanded .splitter,
+      .main-region.expanded .agent-panel {
+        display: none;
+      }
+
+      .agent-panel {
+        display: flex;
+        min-width: 0;
+        flex: 1;
+        flex-direction: column;
+        background: var(--surface-glass);
+        backdrop-filter: blur(26px);
+      }
+
+      .agent-header {
+        display: flex;
+        min-height: 48px;
+        flex: 0 0 48px;
+        align-items: center;
+        gap: 9px;
+        border-bottom: 1px solid var(--hairline);
+        padding: 0 13px;
+      }
+
+      .agent-brand {
+        display: grid;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        border: 1px solid rgba(91, 103, 212, 0.24);
+        border-radius: 8px;
+        background: rgba(91, 103, 212, 0.09);
+        color: var(--primary-hover);
+      }
+
+      .agent-title {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .agent-title strong {
+        display: block;
+        overflow: hidden;
+        color: var(--ink-muted);
+        font-size: 11px;
+        font-weight: 650;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .agent-subtitle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 2px;
+        color: var(--tertiary);
+        font-size: 9px;
+      }
+
+      .agent-subtitle .running-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--primary);
+        animation: pulse 1.4s ease infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 0.45; transform: scale(0.82); }
+        50% { opacity: 1; transform: scale(1); }
+      }
+
+      .agent-messages {
+        min-height: 0;
+        flex: 1;
+        overflow: auto;
+        padding: 18px 18px 30px;
+      }
+
+      .message {
+        max-width: 690px;
+        margin: 0 auto 17px;
+      }
+
+      .message.user {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .user-bubble {
+        max-width: 82%;
+        border-radius: 12px 12px 3px 12px;
+        background: rgba(91, 103, 212, 0.11);
+        padding: 9px 11px;
+        color: var(--ink-muted);
+        font-size: 11px;
+      }
+
+      .assistant-message {
+        color: var(--ink-muted);
+        font-size: 11px;
+        line-height: 1.65;
+      }
+
+      .assistant-message p {
+        margin: 0 0 8px;
+      }
+
+      .assistant-message strong {
+        color: var(--ink);
+      }
+
+      .agent-step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-top: 1px solid var(--hairline);
+        padding: 9px 0;
+        color: var(--tertiary);
+        font-size: 9px;
+      }
+
+      .agent-step:last-child {
+        border-bottom: 1px solid var(--hairline);
+      }
+
+      .agent-composer {
+        flex: 0 0 auto;
+        border-top: 1px solid var(--hairline);
+        background: var(--surface-glass-elevated);
+        padding: 9px 11px 11px;
+      }
+
+      .composer-box {
+        max-width: 720px;
+        margin: 0 auto;
+        border: 1px solid var(--hairline-strong);
+        border-radius: 12px;
+        background: var(--surface-1);
+        padding: 10px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.045);
+      }
+
+      .composer-placeholder {
+        color: var(--tertiary);
+        font-size: 10px;
+      }
+
+      .composer-actions {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      .model-pill {
+        border: 1px solid var(--hairline);
+        border-radius: 6px;
+        background: var(--overlay);
+        padding: 4px 6px;
+        color: var(--tertiary);
+        font-size: 8px;
+      }
+
+      .send-button {
+        display: grid;
+        width: 26px;
+        height: 26px;
+        margin-left: auto;
+        cursor: pointer;
+        place-items: center;
+        border: 0;
+        border-radius: 8px;
+        background: var(--ink);
+        color: var(--surface-1);
+      }
+
+      .floating-agent {
+        position: absolute;
+        z-index: 42;
+        right: 18px;
+        bottom: 18px;
+        display: none;
+        align-items: flex-end;
+        gap: 10px;
+      }
+
+      .main-region.expanded .floating-agent {
+        display: flex;
+      }
+
+      .agent-peek {
+        width: min(328px, calc(100vw - 160px));
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        background: rgba(12, 13, 16, 0.96);
+        padding: 10px 12px;
+        color: #f2f2f3;
+        box-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
+        transition: 160ms ease;
+      }
+
+      .agent-peek:hover {
+        transform: translateY(-1px);
+        background: #08090b;
+      }
+
+      .peek-label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 5px;
+        color: #a8a9b0;
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .peek-copy {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        font-size: 10px;
+        line-height: 1.5;
+      }
+
+      .agent-fab {
+        position: relative;
+        display: grid;
+        width: 48px;
+        height: 48px;
+        flex: 0 0 48px;
+        cursor: pointer;
+        place-items: center;
+        border: 1px solid rgba(91, 103, 212, 0.34);
+        border-radius: 15px;
+        background: var(--surface-glass-elevated);
+        color: var(--primary-hover);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(18px);
+      }
+
+      .agent-fab .status-orb {
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        width: 11px;
+        height: 11px;
+        border: 2px solid var(--surface-1);
+        border-radius: 999px;
+        background: var(--primary);
+        animation: pulse 1.4s ease infinite;
+      }
+
+      .agent-float-panel {
+        position: absolute;
+        z-index: 45;
+        right: 18px;
+        bottom: 78px;
+        display: none;
+        width: min(390px, calc(100vw - 96px));
+        height: min(580px, calc(100vh - 128px));
+        overflow: hidden;
+        border: 1px solid var(--hairline-strong);
+        border-radius: 16px;
+        background: var(--surface-glass-elevated);
+        box-shadow: var(--shadow-popover);
+        backdrop-filter: blur(26px);
+      }
+
+      .agent-float-panel.open {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .agent-float-panel.open + .floating-agent .agent-peek {
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      .agent-float-panel .agent-messages {
+        padding: 16px;
+      }
+
+      .agent-float-panel .agent-composer {
+        padding: 8px;
+      }
+
+      .issues-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .issues-header p {
+        max-width: 610px;
+        margin: 5px 0 0;
+        color: var(--tertiary);
+        font-size: 11px;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        overflow: hidden;
+        margin-bottom: 14px;
+        border: 1px solid var(--hairline);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .metric {
+        min-width: 0;
+        min-height: 76px;
+        border-bottom: 1px solid var(--hairline);
+        padding: 12px 14px;
+      }
+
+      .metric:nth-child(odd) {
+        border-right: 1px solid var(--hairline);
+      }
+
+      .metric:nth-last-child(-n + 2) {
+        border-bottom: 0;
+      }
+
+      .metric-label {
+        color: var(--tertiary);
+        font-size: 9px;
+        font-weight: 620;
+      }
+
+      .metric-value {
+        margin-top: 2px;
+        color: var(--ink);
+        font-size: 20px;
+        font-weight: 680;
+        letter-spacing: -0.045em;
+      }
+
+      .metric-note {
+        color: var(--tertiary);
+        font-size: 8px;
+      }
+
+      .filterbar {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 11px;
+      }
+
+      .search-box {
+        display: flex;
+        height: 34px;
+        min-width: 0;
+        flex: 1;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--hairline);
+        border-radius: 9px;
+        background: var(--surface-1);
+        padding: 0 10px;
+        color: var(--tertiary);
+      }
+
+      .search-box:focus-within {
+        border-color: rgba(91, 103, 212, 0.55);
+        box-shadow: 0 0 0 3px rgba(91, 103, 212, 0.08);
+      }
+
+      .search-box input {
+        min-width: 0;
+        flex: 1;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--ink);
+        font-size: 10px;
+      }
+
+      .select-root {
+        position: relative;
+        flex: 0 0 142px;
+      }
+
+      .select-trigger {
+        display: flex;
+        width: 100%;
+        height: 34px;
+        cursor: pointer;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border: 1px solid var(--hairline);
+        border-radius: 9px;
+        background: var(--surface-1);
+        padding: 0 9px 0 11px;
+        color: var(--ink-muted);
+        font-size: 10px;
+        text-align: left;
+      }
+
+      .select-trigger:hover,
+      .select-trigger[aria-expanded="true"] {
+        border-color: var(--hairline-strong);
+        background: var(--surface-2);
+      }
+
+      .select-content {
+        position: absolute;
+        z-index: 30;
+        top: calc(100% + 4px);
+        right: 0;
+        display: none;
+        width: 100%;
+        overflow: hidden;
+        border: 1px solid var(--hairline);
+        border-radius: 9px;
+        background: var(--surface-2);
+        padding: 4px;
+        box-shadow: var(--shadow-popover);
+      }
+
+      .select-content.open {
+        display: block;
+      }
+
+      .select-item {
+        display: grid;
+        width: 100%;
+        height: 30px;
+        cursor: pointer;
+        grid-template-columns: minmax(0, 1fr) 14px;
+        align-items: center;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        padding: 0 8px;
+        color: var(--ink-muted);
+        font-size: 10px;
+        text-align: left;
+      }
+
+      .select-item:hover,
+      .select-item:focus {
+        background: var(--surface-3);
+        outline: 0;
+        color: var(--ink);
+      }
+
+      .select-check {
+        visibility: hidden;
+        color: var(--primary-hover);
+      }
+
+      .select-item[aria-selected="true"] .select-check {
+        visibility: visible;
+      }
+
+      .filter-count {
+        flex: 0 0 auto;
+        color: var(--tertiary);
+        font-size: 9px;
+      }
+
+      .issue-table-wrap {
+        overflow: hidden;
+        border: 1px solid var(--hairline);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.74);
+      }
+
+      .table-titlebar {
+        display: flex;
+        height: 43px;
+        align-items: center;
+        border-bottom: 1px solid var(--hairline);
+        padding: 0 13px;
+      }
+
+      .table-titlebar strong {
+        color: var(--ink-muted);
+        font-size: 10px;
+        font-weight: 650;
+      }
+
+      .table-titlebar span {
+        margin-left: auto;
+        color: var(--tertiary);
+        font-size: 8px;
+      }
+
+      .issue-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .issue-table th {
+        height: 32px;
+        border-bottom: 1px solid var(--hairline);
+        padding: 0 12px;
+        color: var(--tertiary);
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-align: left;
+        text-transform: uppercase;
+      }
+
+      .issue-table th:nth-child(1) { width: 52%; }
+      .issue-table th:nth-child(2) { width: 20%; }
+      .issue-table th:nth-child(3) { width: 12%; }
+      .issue-table th:nth-child(4) { width: 16%; }
+
+      .issue-row {
+        height: 58px;
+        cursor: pointer;
+        transition: background 120ms ease;
+      }
+
+      .issue-row:hover {
+        background: var(--overlay);
+      }
+
+      .issue-row[hidden] {
+        display: none;
+      }
+
+      .issue-row td {
+        overflow: hidden;
+        height: 58px;
+        border-bottom: 1px solid var(--hairline);
+        padding: 0 12px;
+        vertical-align: middle;
+      }
+
+      .issue-row:last-child td {
+        border-bottom: 0;
+      }
+
+      .issue-primary {
+        display: grid;
+        min-width: 0;
+        grid-template-columns: 8px minmax(0, 1fr);
+        align-items: center;
+        gap: 9px;
+      }
+
+      .row-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--danger);
+        box-shadow: 0 0 0 3px rgba(207, 63, 63, 0.08);
+      }
+
+      .row-dot.warning {
+        background: var(--warning);
+        box-shadow: 0 0 0 3px rgba(169, 123, 28, 0.08);
+      }
+
+      .row-copy {
+        min-width: 0;
+      }
+
+      .issue-title {
+        display: block;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 10px;
+        font-weight: 610;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .issue-id {
+        display: block;
+        overflow: hidden;
+        margin-top: 3px;
+        color: var(--tertiary);
+        font: 8px/1.2 var(--font-mono);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .table-number,
+      .table-time {
+        overflow: hidden;
+        color: var(--ink-muted);
+        font-size: 9px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .empty-state {
+        display: none;
+        padding: 44px 16px;
+        color: var(--tertiary);
+        font-size: 10px;
+        text-align: center;
+      }
+
+      @container content (min-width: 860px) {
+        .metric-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .metric {
+          border-right: 1px solid var(--hairline);
+          border-bottom: 0;
+        }
+
+        .metric:last-child {
+          border-right: 0;
+        }
+
+        .overview-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .data-cell,
+        .data-cell:nth-child(odd) {
+          border-right: 1px solid var(--hairline);
+          border-bottom: 0;
+        }
+
+        .data-cell:last-child {
+          border-right: 0;
+        }
+
+        .event-summary {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .context-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @container content (max-width: 620px) {
+        .page {
+          padding-inline: 16px;
+        }
+
+        .page-titlebar,
+        .issues-header {
+          flex-wrap: wrap;
+        }
+
+        .page-actions {
+          width: 100%;
+          padding-left: 23px;
+        }
+
+        .filterbar {
+          flex-wrap: wrap;
+        }
+
+        .select-root {
+          flex-basis: 132px;
+        }
+
+        .filter-count {
+          width: 100%;
+          text-align: right;
+        }
+
+        .issue-table th:nth-child(2),
+        .issue-table td:nth-child(2) {
+          display: none;
+        }
+
+        .issue-table th:nth-child(1) { width: 63%; }
+        .issue-table th:nth-child(3) { width: 14%; }
+        .issue-table th:nth-child(4) { width: 23%; }
+
+        .context-grid,
+        .replay-preview {
+          grid-template-columns: 1fr;
+        }
+
+        .replay-meta {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 940px) {
+        :root {
+          --content-share: 100%;
+        }
+
+        .splitter,
+        .agent-panel {
+          display: none;
+        }
+
+        .floating-agent {
+          display: flex;
+        }
+
+        .live-status {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="titlebar">
+      <i data-lucide="fingerprint" class="icon brand-icon"></i>
+      <strong>Traceability</strong>
+      <span class="titlebar-note">Interactive layout concept · local prototype</span>
+    </header>
+
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand" title="Traceability">
+          <i data-lucide="fingerprint" class="icon"></i>
+        </div>
+        <nav class="sidebar-nav">
+          <button class="nav-icon" type="button" title="Inbox" aria-label="Inbox">
+            <i data-lucide="inbox" class="icon"></i>
+          </button>
+          <button class="nav-icon active" type="button" title="Issues" aria-label="Issues" id="navIssues">
+            <i data-lucide="bug" class="icon"></i>
+            <span class="count">4</span>
+          </button>
+          <button class="nav-icon" type="button" title="Sourcemaps" aria-label="Sourcemaps">
+            <i data-lucide="file-code-2" class="icon"></i>
+          </button>
+          <button class="nav-icon" type="button" title="Explorer" aria-label="Explorer">
+            <i data-lucide="compass" class="icon"></i>
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <button class="theme-button" type="button" title="Appearance" aria-label="Appearance">
+            <i data-lucide="sun" class="icon"></i>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-region" id="mainRegion">
+        <section class="content-panel" id="contentPanel" aria-label="Issue content">
+          <header class="workspace-header">
+            <nav class="breadcrumbs" aria-label="Breadcrumb">
+              <span class="project">Web Demo</span>
+              <i data-lucide="chevron-right" class="icon" style="width: 11px"></i>
+              <span>Monitor</span>
+              <i data-lucide="chevron-right" class="icon" style="width: 11px"></i>
+              <span class="current" id="breadcrumbCurrent">Issue detail</span>
+            </nav>
+            <div class="header-actions">
+              <span class="live-status"><span class="live-dot"></span>Live updates</span>
+              <button class="icon-button" type="button" title="Refresh" aria-label="Refresh">
+                <i data-lucide="refresh-cw" class="icon"></i>
+              </button>
+              <button
+                class="icon-button"
+                id="expandButton"
+                type="button"
+                title="Maximize content"
+                aria-label="Maximize content"
+                aria-pressed="false"
+              >
+                <i data-lucide="maximize-2" class="icon" id="expandIcon"></i>
+              </button>
+            </div>
+          </header>
+
+          <div class="content-scroll" id="contentScroll">
+            <section class="view active" id="detailView" aria-label="Issue detail view">
+              <div class="page">
+                <button class="ghost-button" id="backToIssues" type="button" style="margin: -5px 0 10px -10px">
+                  <i data-lucide="arrow-left" class="icon"></i>
+                  Issues
+                </button>
+
+                <div class="page-titlebar">
+                  <span class="issue-severity-dot"></span>
+                  <div class="page-heading">
+                    <div class="eyebrow">Unhandled exception</div>
+                    <h1 title="TypeError: Cannot read properties of undefined (reading 'profile')">
+                      TypeError: Cannot read properties of undefined (reading 'profile')
+                    </h1>
+                    <div class="heading-meta">
+                      <span>ISSUE-9F3A2E</span>
+                      <span>Web Demo</span>
+                      <span>last seen 2m ago</span>
+                    </div>
+                  </div>
+                  <div class="page-actions">
+                    <button class="secondary-button" id="resolveIssue" type="button">
+                      <i data-lucide="check" class="icon"></i>
+                      Resolve
+                    </button>
+                    <button class="primary-button" id="investigateButton" type="button">
+                      <i data-lucide="sparkles" class="icon"></i>
+                      Investigate
+                    </button>
+                  </div>
+                </div>
+
+                <div class="module-stack">
+                  <section class="module" aria-labelledby="overviewTitle">
+                    <div class="module-header">
+                      <span class="module-title" id="overviewTitle">Issue overview</span>
+                      <span class="module-subtitle">Grouped by fingerprint and resolved source frames</span>
+                      <div class="module-actions">
+                        <span class="badge open" id="issueStatusBadge"><span class="badge-dot"></span><span id="issueStatusText">Open</span></span>
+                      </div>
+                    </div>
+                    <div class="overview-grid">
+                      <div class="data-cell">
+                        <div class="data-label">Events</div>
+                        <div class="data-value">24 occurrences</div>
+                      </div>
+                      <div class="data-cell">
+                        <div class="data-label">First seen</div>
+                        <div class="data-value">Aug 7 · 18:42</div>
+                      </div>
+                      <div class="data-cell">
+                        <div class="data-label">Last seen</div>
+                        <div class="data-value">2 minutes ago</div>
+                      </div>
+                      <div class="data-cell">
+                        <div class="data-label">Fingerprint</div>
+                        <div class="data-value mono" title="9f3a2eb9e5141a2d85d6c7a4588b7be1">9f3a2eb9…8b7be1</div>
+                      </div>
+                    </div>
+                    <div class="status-control" aria-label="Issue status">
+                      <button class="status-option active" data-status="open" type="button"><i data-lucide="circle-dot" class="icon"></i>Open</button>
+                      <button class="status-option" data-status="resolved" type="button"><i data-lucide="check" class="icon"></i>Resolved</button>
+                      <button class="status-option" data-status="ignored" type="button"><i data-lucide="circle-off" class="icon"></i>Ignored</button>
+                    </div>
+                  </section>
+
+                  <section class="module" aria-labelledby="occurrencesTitle">
+                    <div class="module-header">
+                      <span class="module-title" id="occurrencesTitle">Occurrences</span>
+                      <span class="module-subtitle">Select an event to refresh every evidence module below</span>
+                      <div class="module-actions"><span class="badge">Latest first</span></div>
+                    </div>
+                    <div class="event-strip" role="tablist" aria-label="Event occurrences">
+                      <button class="event-chip active" type="button" role="tab" data-event="0"><strong>#24</strong> 2m ago</button>
+                      <button class="event-chip" type="button" role="tab" data-event="1"><strong>#23</strong> 14m ago</button>
+                      <button class="event-chip" type="button" role="tab" data-event="2"><strong>#22</strong> 31m ago</button>
+                      <button class="event-chip" type="button" role="tab" data-event="3"><strong>#21</strong> 1h ago</button>
+                      <button class="event-chip" type="button" role="tab" data-event="4"><strong>#20</strong> 2h ago</button>
+                    </div>
+                    <div class="event-summary">
+                      <div class="event-summary-item">
+                        <div class="data-label">Event ID</div>
+                        <div class="data-value mono" id="eventIdValue">f9b1c28a…7da4</div>
+                      </div>
+                      <div class="event-summary-item">
+                        <div class="data-label">Level</div>
+                        <div class="data-value" id="eventLevelValue">error</div>
+                      </div>
+                      <div class="event-summary-item">
+                        <div class="data-label">Release</div>
+                        <div class="data-value mono" id="eventReleaseValue">web-demo@1.8.4</div>
+                      </div>
+                      <div class="event-summary-item">
+                        <div class="data-label">Environment</div>
+                        <div class="data-value" id="eventEnvironmentValue">production</div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="module" aria-labelledby="exceptionTitle">
+                    <div class="module-header">
+                      <span class="module-title" id="exceptionTitle">Exception</span>
+                      <span class="module-subtitle">Original Sentry exception value</span>
+                    </div>
+                    <div class="exception-block">
+                      <span class="exception-mark"><i data-lucide="triangle-alert" class="icon"></i></span>
+                      <div>
+                        <div class="exception-title">TypeError</div>
+                        <div class="exception-message">Cannot read properties of undefined (reading 'profile')</div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="module" aria-labelledby="stackTitle">
+                    <div class="module-header">
+                      <span class="module-title" id="stackTitle">Stack trace</span>
+                      <span class="module-subtitle">Resolved source shown in a read-only CodeMirror surface</span>
+                      <div class="module-actions">
+                        <span class="badge success"><span class="badge-dot"></span>Symbolicated</span>
+                      </div>
+                    </div>
+                    <div class="frame-tabs" role="tablist" aria-label="Stack frames">
+                      <button class="frame-tab active" data-frame="register" type="button">register · src/register.ts:378</button>
+                      <button class="frame-tab" data-frame="submit" type="button">submitForm · src/forms.ts:91</button>
+                      <button class="frame-tab" data-frame="click" type="button">onClick · src/button.ts:44</button>
+                    </div>
+                    <div class="code-toolbar">
+                      <i data-lucide="file-code-2" class="icon"></i>
+                      <span class="code-file" id="codeFile">src/register.ts</span>
+                      <span class="code-line-meta" id="codeLineMeta">Line 378 · Column 27</span>
+                    </div>
+                    <div class="codemirror-host" id="codeMirrorHost" aria-label="Restored source code">
+                      <pre class="code-fallback" id="codeFallback"><code id="codeRows"></code></pre>
+                    </div>
+                    <div class="generated-location" id="generatedLocation">Generated: assets/index-D9Z1qk7m.js:1:18492</div>
+                  </section>
+
+                  <section class="module" aria-labelledby="breadcrumbsTitle">
+                    <div class="module-header">
+                      <span class="module-title" id="breadcrumbsTitle">Breadcrumbs</span>
+                      <span class="module-subtitle">The last user and application actions before the exception</span>
+                      <div class="module-actions"><span class="badge">4 captured</span></div>
+                    </div>
+                    <div class="breadcrumb-list">
+                      <div class="breadcrumb-item">
+                        <span class="breadcrumb-icon"><i data-lucide="mouse-pointer-click" class="icon" style="width: 11px"></i></span>
+                        <div><div class="breadcrumb-title">ui.click · Save profile</div><div class="breadcrumb-data">button[data-action="save-profile"]</div></div>
+                        <span class="breadcrumb-time">-42 ms</span>
+                      </div>
+                      <div class="breadcrumb-item">
+                        <span class="breadcrumb-icon"><i data-lucide="braces" class="icon" style="width: 11px"></i></span>
+                        <div><div class="breadcrumb-title">profile · form submit start</div><div class="breadcrumb-data">{ userId: "usr_7yc9", plan: "pro" }</div></div>
+                        <span class="breadcrumb-time">-58 ms</span>
+                      </div>
+                      <div class="breadcrumb-item">
+                        <span class="breadcrumb-icon"><i data-lucide="network" class="icon" style="width: 11px"></i></span>
+                        <div><div class="breadcrumb-title">fetch · GET /api/profile</div><div class="breadcrumb-data">200 OK · 128 ms</div></div>
+                        <span class="breadcrumb-time">-192 ms</span>
+                      </div>
+                      <div class="breadcrumb-item">
+                        <span class="breadcrumb-icon"><i data-lucide="navigation" class="icon" style="width: 11px"></i></span>
+                        <div><div class="breadcrumb-title">navigation · /settings/profile</div><div class="breadcrumb-data">from /dashboard</div></div>
+                        <span class="breadcrumb-time">-3.8 s</span>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="module" aria-labelledby="contextTitle">
+                    <div class="module-header">
+                      <span class="module-title" id="contextTitle">Event context</span>
+                      <span class="module-subtitle">Request, runtime, trace, tags and additional data</span>
+                    </div>
+                    <div class="context-grid">
+                      <div class="context-group">
+                        <h3>Request</h3>
+                        <div class="context-row"><span class="context-key">URL</span><span class="context-value" title="https://demo.traceability.dev/settings/profile">/settings/profile</span></div>
+                        <div class="context-row"><span class="context-key">Method</span><span class="context-value">GET</span></div>
+                        <div class="context-row"><span class="context-key">User</span><span class="context-value">usr_7yc9</span></div>
+                      </div>
+                      <div class="context-group">
+                        <h3>Runtime</h3>
+                        <div class="context-row"><span class="context-key">Browser</span><span class="context-value">Chrome 140</span></div>
+                        <div class="context-row"><span class="context-key">OS</span><span class="context-value">macOS 15.6</span></div>
+                        <div class="context-row"><span class="context-key">Locale</span><span class="context-value">zh-CN</span></div>
+                      </div>
+                      <div class="context-group">
+                        <h3>Trace</h3>
+                        <div class="context-row"><span class="context-key">Trace ID</span><span class="context-value" title="4c79f38d77aa4b30ad79355b7ae265a4">4c79f38d…265a4</span></div>
+                        <div class="context-row"><span class="context-key">Span ID</span><span class="context-value">d8a97b2fc1e34184</span></div>
+                        <div class="context-row"><span class="context-key">Status</span><span class="context-value">internal_error</span></div>
+                      </div>
+                      <div class="context-group">
+                        <h3>Tags</h3>
+                        <div class="tag-list"><span class="tag">flow: profile</span><span class="tag">tier: pro</span><span class="tag">handled: no</span></div>
+                      </div>
+                      <div class="context-group">
+                        <h3>Additional data</h3>
+                        <div class="context-row"><span class="context-key">profileId</span><span class="context-value">null</span></div>
+                        <div class="context-row"><span class="context-key">cacheHit</span><span class="context-value">true</span></div>
+                        <div class="context-row"><span class="context-key">source</span><span class="context-value">profileStore</span></div>
+                      </div>
+                      <div class="context-group">
+                        <h3>SDK</h3>
+                        <div class="context-row"><span class="context-key">Name</span><span class="context-value">sentry.javascript.browser</span></div>
+                        <div class="context-row"><span class="context-key">Version</span><span class="context-value">9.42.0</span></div>
+                        <div class="context-row"><span class="context-key">Sampled</span><span class="context-value">true</span></div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="module" aria-labelledby="replayTitle">
+                    <div class="module-header">
+                      <span class="module-title" id="replayTitle">Related session replay</span>
+                      <span class="module-subtitle">Matched through the selected event ID</span>
+                      <div class="module-actions"><span class="badge success"><span class="badge-dot"></span>Replay available</span></div>
+                    </div>
+                    <div class="replay-preview">
+                      <div class="replay-frame">
+                        <div class="replay-browserbar"><span></span><span></span><span></span></div>
+                        <div class="replay-content">
+                          <button class="replay-play" type="button" id="playReplay"><i data-lucide="play" class="icon"></i>Open replay at 01:42</button>
+                        </div>
+                      </div>
+                      <div class="replay-meta">
+                        <div><div class="data-label">Duration</div><div class="data-value">03:18</div></div>
+                        <div><div class="data-label">Segments</div><div class="data-value">7</div></div>
+                        <div><div class="data-label">Platform</div><div class="data-value">javascript</div></div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="module">
+                    <details class="raw-details">
+                      <summary><i data-lucide="chevron-right" class="icon"></i>Raw event payload <span style="margin-left:auto;color:var(--tertiary);font:9px var(--font-mono)">JSON</span></summary>
+                      <pre class="raw-json">{
+  "event_id": "f9b1c28a4dca497394d0d44b9c2b7da4",
+  "level": "error",
+  "release": "web-demo@1.8.4",
+  "environment": "production",
+  "symbolicated": "full",
+  "exception": {
+    "values": [{
+      "type": "TypeError",
+      "value": "Cannot read properties of undefined (reading 'profile')",
+      "stacktrace": { "frames": ["…"] }
+    }]
+  },
+  "tags": { "flow": "profile", "tier": "pro" },
+  "extra": { "profileId": null, "cacheHit": true }
+}</pre>
+                    </details>
+                  </section>
+                </div>
+              </div>
+            </section>
+
+            <section class="view" id="listView" aria-label="Issue list view">
+              <div class="page">
+                <div class="issues-header">
+                  <div>
+                    <div class="eyebrow">Monitor</div>
+                    <h1>Issues</h1>
+                    <p>Triage grouped runtime problems. Long titles stay on one line so every issue row remains scannable.</p>
+                  </div>
+                  <button class="secondary-button" type="button"><i data-lucide="refresh-cw" class="icon"></i>Refresh</button>
+                </div>
+
+                <div class="metric-grid">
+                  <div class="metric"><div class="metric-label">Open issues</div><div class="metric-value">4</div><div class="metric-note" style="color:var(--warning)">Needs triage</div></div>
+                  <div class="metric"><div class="metric-label">Events · 24h</div><div class="metric-value">136</div><div class="metric-note">Aggregated by fingerprint</div></div>
+                  <div class="metric"><div class="metric-label">Ignored</div><div class="metric-value">2</div><div class="metric-note">Outside active triage</div></div>
+                  <div class="metric"><div class="metric-label">Resolved</div><div class="metric-value">18</div><div class="metric-note" style="color:var(--success)">Successfully closed</div></div>
+                </div>
+
+                <div class="filterbar">
+                  <label class="search-box">
+                    <i data-lucide="search" class="icon"></i>
+                    <input type="search" id="issueSearch" placeholder="Search issues" autocomplete="off" />
+                  </label>
+                  <div class="select-root" id="statusSelect">
+                    <button class="select-trigger" id="selectTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                      <span id="selectValue">All statuses</span>
+                      <i data-lucide="chevron-down" class="icon"></i>
+                    </button>
+                    <div class="select-content" id="selectContent" role="listbox" aria-label="Filter issue status">
+                      <button class="select-item" type="button" data-value="all" aria-selected="true"><span>All statuses</span><i data-lucide="check" class="icon select-check"></i></button>
+                      <button class="select-item" type="button" data-value="open" aria-selected="false"><span>Open</span><i data-lucide="check" class="icon select-check"></i></button>
+                      <button class="select-item" type="button" data-value="resolved" aria-selected="false"><span>Resolved</span><i data-lucide="check" class="icon select-check"></i></button>
+                      <button class="select-item" type="button" data-value="ignored" aria-selected="false"><span>Ignored</span><i data-lucide="check" class="icon select-check"></i></button>
+                    </div>
+                  </div>
+                  <span class="filter-count" id="filterCount">6 of 6 issues</span>
+                </div>
+
+                <div class="issue-table-wrap">
+                  <div class="table-titlebar"><strong>All issues</strong><span>Updated in real time</span></div>
+                  <table class="issue-table">
+                    <thead><tr><th>Issue</th><th>Status</th><th>Events</th><th>Last seen</th></tr></thead>
+                    <tbody id="issueRows">
+                      <tr class="issue-row" data-status="open" data-search="typeerror cannot read properties undefined profile issue 9f3a2e src register ts">
+                        <td><div class="issue-primary"><span class="row-dot"></span><div class="row-copy"><span class="issue-title" title="TypeError: Cannot read properties of undefined (reading 'profile')">TypeError: Cannot read properties of undefined (reading 'profile')</span><span class="issue-id">ISSUE-9F3A2E · src/register.ts</span></div></div></td>
+                        <td><span class="badge open"><span class="badge-dot"></span>Open</span></td><td class="table-number">24</td><td class="table-time">2m ago</td>
+                      </tr>
+                      <tr class="issue-row" data-status="open" data-search="rangeerror maximum call stack exceeded while synchronizing a deeply nested workspace settings payload issue 18de4a src sync workspace ts">
+                        <td><div class="issue-primary"><span class="row-dot"></span><div class="row-copy"><span class="issue-title" title="RangeError: Maximum call stack size exceeded while synchronizing a deeply nested workspace settings payload">RangeError: Maximum call stack size exceeded while synchronizing a deeply nested workspace settings payload</span><span class="issue-id">ISSUE-18DE4A · src/sync/workspace.ts</span></div></div></td>
+                        <td><span class="badge open"><span class="badge-dot"></span>Open</span></td><td class="table-number">48</td><td class="table-time">7m ago</td>
+                      </tr>
+                      <tr class="issue-row" data-status="open" data-search="networkerror failed to fetch profile preferences issue b94f52 src api client ts">
+                        <td><div class="issue-primary"><span class="row-dot warning"></span><div class="row-copy"><span class="issue-title" title="NetworkError: Failed to fetch profile preferences">NetworkError: Failed to fetch profile preferences</span><span class="issue-id">ISSUE-B94F52 · src/api/client.ts</span></div></div></td>
+                        <td><span class="badge open"><span class="badge-dot"></span>Open</span></td><td class="table-number">11</td><td class="table-time">18m ago</td>
+                      </tr>
+                      <tr class="issue-row" data-status="open" data-search="chunkloaderror loading chunk settings failed issue c063aa src routes settings tsx">
+                        <td><div class="issue-primary"><span class="row-dot"></span><div class="row-copy"><span class="issue-title" title="ChunkLoadError: Loading chunk settings failed">ChunkLoadError: Loading chunk settings failed</span><span class="issue-id">ISSUE-C063AA · src/routes/settings.tsx</span></div></div></td>
+                        <td><span class="badge open"><span class="badge-dot"></span>Open</span></td><td class="table-number">37</td><td class="table-time">1h ago</td>
+                      </tr>
+                      <tr class="issue-row" data-status="resolved" data-search="referenceerror analytics is not defined issue 7bd201 src telemetry ts">
+                        <td><div class="issue-primary"><span class="row-dot"></span><div class="row-copy"><span class="issue-title" title="ReferenceError: analytics is not defined">ReferenceError: analytics is not defined</span><span class="issue-id">ISSUE-7BD201 · src/telemetry.ts</span></div></div></td>
+                        <td><span class="badge success"><span class="badge-dot"></span>Resolved</span></td><td class="table-number">9</td><td class="table-time">4h ago</td>
+                      </tr>
+                      <tr class="issue-row" data-status="ignored" data-search="warning third party cookie blocked issue dd80a9 browser">
+                        <td><div class="issue-primary"><span class="row-dot warning"></span><div class="row-copy"><span class="issue-title" title="Warning: Third-party cookie blocked">Warning: Third-party cookie blocked</span><span class="issue-id">ISSUE-DD80A9 · browser</span></div></div></td>
+                        <td><span class="badge"><span class="badge-dot"></span>Ignored</span></td><td class="table-number">7</td><td class="table-time">1d ago</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="empty-state" id="emptyState">No issues match the selected filters.</div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <div class="splitter" id="splitter" role="separator" aria-label="Resize content and Agent panels" aria-orientation="vertical"></div>
+
+        <aside class="agent-panel" aria-label="Traceability Agent">
+          <div class="agent-header">
+            <span class="agent-brand"><i data-lucide="sparkles" class="icon"></i></span>
+            <div class="agent-title"><strong>Investigate ISSUE-9F3A2E</strong><span class="agent-subtitle"><span class="running-dot"></span><span class="agentStateLabel">Investigating</span></span></div>
+            <button class="icon-button" type="button" title="New conversation" aria-label="New conversation"><i data-lucide="square-pen" class="icon"></i></button>
+          </div>
+          <div class="agent-messages">
+            <div class="message user"><div class="user-bubble">Investigate ISSUE-9F3A2E and explain the likely root cause.</div></div>
+            <div class="message assistant-message">
+              <p><strong>I’m tracing the selected event back to the restored source.</strong></p>
+              <div class="agent-step"><i data-lucide="check" class="icon"></i>Loaded the grouped issue and latest event</div>
+              <div class="agent-step"><i data-lucide="check" class="icon"></i>Mapped the production frame to src/register.ts:378</div>
+              <div class="agent-step"><i data-lucide="loader-circle" class="icon"></i><span class="agentLiveText">Checking the profile cache path against breadcrumbs…</span></div>
+            </div>
+            <div class="message assistant-message">
+              <p><strong>Current hypothesis</strong></p>
+              <p>The API request succeeds, but the cached response is missing <code>profile</code>. The submit handler dereferences it before validating the shape.</p>
+            </div>
+          </div>
+          <div class="agent-composer">
+            <div class="composer-box">
+              <div class="composer-placeholder">Ask about this issue…</div>
+              <div class="composer-actions"><span class="model-pill">gpt-5.6</span><button class="send-button" type="button" aria-label="Send"><i data-lucide="arrow-up" class="icon"></i></button></div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="agent-float-panel" id="agentFloatPanel" aria-label="Floating Traceability Agent">
+          <div class="agent-header">
+            <span class="agent-brand"><i data-lucide="sparkles" class="icon"></i></span>
+            <div class="agent-title"><strong>Investigate ISSUE-9F3A2E</strong><span class="agent-subtitle"><span class="running-dot"></span>Investigating</span></div>
+            <button class="icon-button" type="button" id="closeFloatPanel" title="Close" aria-label="Close"><i data-lucide="x" class="icon"></i></button>
+          </div>
+          <div class="agent-messages">
+            <div class="message user"><div class="user-bubble">Investigate ISSUE-9F3A2E and explain the likely root cause.</div></div>
+            <div class="message assistant-message"><p><strong>Current hypothesis</strong></p><p>The API request succeeds, but the cached response is missing <code>profile</code>. The submit handler dereferences it before validating the shape.</p><div class="agent-step"><i data-lucide="loader-circle" class="icon"></i><span class="agentLiveText">Checking the profile cache path against breadcrumbs…</span></div></div>
+          </div>
+          <div class="agent-composer"><div class="composer-box"><div class="composer-placeholder">Continue the conversation…</div><div class="composer-actions"><span class="model-pill">gpt-5.6</span><button class="send-button" type="button" aria-label="Send"><i data-lucide="arrow-up" class="icon"></i></button></div></div></div>
+        </div>
+
+        <div class="floating-agent" id="floatingAgent">
+          <button class="agent-peek" type="button" id="agentPeek">
+            <span class="peek-label"><span class="running-dot" style="width:6px;height:6px;border-radius:999px;background:#8f9cff;animation:pulse 1.4s ease infinite"></span>Agent is investigating</span>
+            <span class="peek-copy" id="peekCopy">Checking the profile cache path against the latest event breadcrumbs…</span>
+          </button>
+          <button class="agent-fab" type="button" id="agentFab" aria-label="Open Agent panel" title="Open Agent panel">
+            <i data-lucide="sparkles" class="icon" style="width:20px;height:20px"></i>
+            <span class="status-orb"></span>
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const mainRegion = document.getElementById("mainRegion");
+      const expandButton = document.getElementById("expandButton");
+      const expandIcon = document.getElementById("expandIcon");
+      const splitter = document.getElementById("splitter");
+      const contentScroll = document.getElementById("contentScroll");
+      const detailView = document.getElementById("detailView");
+      const listView = document.getElementById("listView");
+      const breadcrumbCurrent = document.getElementById("breadcrumbCurrent");
+      const agentFloatPanel = document.getElementById("agentFloatPanel");
+      const agentFab = document.getElementById("agentFab");
+      const agentPeek = document.getElementById("agentPeek");
+      const closeFloatPanel = document.getElementById("closeFloatPanel");
+      let lastShare = 50;
+
+      function refreshIcons() {
+        if (window.lucide) window.lucide.createIcons();
+      }
+
+      window.addEventListener("load", refreshIcons);
+
+      function setExpanded(expanded) {
+        mainRegion.classList.toggle("expanded", expanded);
+        expandButton.setAttribute("aria-pressed", String(expanded));
+        expandButton.setAttribute("aria-label", expanded ? "Restore split view" : "Maximize content");
+        expandButton.setAttribute("title", expanded ? "Restore split view" : "Maximize content");
+        expandIcon.setAttribute("data-lucide", expanded ? "minimize-2" : "maximize-2");
+        if (!expanded) agentFloatPanel.classList.remove("open");
+        refreshIcons();
+      }
+
+      expandButton.addEventListener("click", () => setExpanded(!mainRegion.classList.contains("expanded")));
+
+      let dragging = false;
+      splitter.addEventListener("pointerdown", (event) => {
+        dragging = true;
+        splitter.classList.add("dragging");
+        splitter.setPointerCapture(event.pointerId);
+      });
+
+      splitter.addEventListener("pointermove", (event) => {
+        if (!dragging || mainRegion.classList.contains("expanded")) return;
+        const rect = mainRegion.getBoundingClientRect();
+        const share = Math.min(68, Math.max(38, ((event.clientX - rect.left) / rect.width) * 100));
+        lastShare = share;
+        document.documentElement.style.setProperty("--content-share", `${share}%`);
+      });
+
+      splitter.addEventListener("pointerup", () => {
+        dragging = false;
+        splitter.classList.remove("dragging");
+      });
+
+      function showView(name) {
+        const showDetail = name === "detail";
+        detailView.classList.toggle("active", showDetail);
+        listView.classList.toggle("active", !showDetail);
+        breadcrumbCurrent.textContent = showDetail ? "Issue detail" : "Issues";
+        contentScroll.scrollTop = 0;
+      }
+
+      document.getElementById("backToIssues").addEventListener("click", () => showView("list"));
+      document.getElementById("navIssues").addEventListener("click", () => showView("list"));
+      document.querySelectorAll(".issue-row").forEach((row) => row.addEventListener("click", () => showView("detail")));
+
+      function toggleFloatingPanel(force) {
+        const next = typeof force === "boolean" ? force : !agentFloatPanel.classList.contains("open");
+        agentFloatPanel.classList.toggle("open", next);
+      }
+
+      agentFab.addEventListener("click", () => toggleFloatingPanel());
+      agentPeek.addEventListener("click", () => toggleFloatingPanel(true));
+      closeFloatPanel.addEventListener("click", () => toggleFloatingPanel(false));
+
+      const agentLines = [
+        "Checking the profile cache path against the latest event breadcrumbs…",
+        "The network request returned 200; comparing the response shape with the dereference site…",
+        "The cached response is missing profile. Verifying whether the guard was removed in release 1.8.4…",
+        "Likely root cause: register.ts reads response.profile before validating the cached payload.",
+      ];
+      let agentLineIndex = 0;
+
+      function updateAgentLine() {
+        agentLineIndex = (agentLineIndex + 1) % agentLines.length;
+        document.getElementById("peekCopy").textContent = agentLines[agentLineIndex];
+        document.querySelectorAll(".agentLiveText").forEach((node) => { node.textContent = agentLines[agentLineIndex]; });
+      }
+
+      setInterval(updateAgentLine, 3200);
+      document.getElementById("investigateButton").addEventListener("click", () => {
+        agentLineIndex = -1;
+        updateAgentLine();
+        if (mainRegion.classList.contains("expanded")) toggleFloatingPanel(true);
+      });
+
+      function setIssueStatus(status) {
+        document.querySelectorAll(".status-option").forEach((button) => button.classList.toggle("active", button.dataset.status === status));
+        const badge = document.getElementById("issueStatusBadge");
+        const text = document.getElementById("issueStatusText");
+        badge.className = `badge ${status === "open" ? "open" : status === "resolved" ? "success" : ""}`;
+        text.textContent = status === "open" ? "Open" : status === "resolved" ? "Resolved" : "Ignored";
+      }
+
+      document.querySelectorAll(".status-option").forEach((button) => button.addEventListener("click", () => setIssueStatus(button.dataset.status)));
+      document.getElementById("resolveIssue").addEventListener("click", () => setIssueStatus("resolved"));
+
+      const eventData = [
+        ["f9b1c28a…7da4", "error", "web-demo@1.8.4", "production"],
+        ["a138d0c7…9e21", "error", "web-demo@1.8.4", "production"],
+        ["c49e0a72…a8f0", "error", "web-demo@1.8.4", "production"],
+        ["58fb4b10…9c12", "warning", "web-demo@1.8.3", "production"],
+        ["cd71e9a4…4b51", "error", "web-demo@1.8.3", "staging"],
+      ];
+
+      document.querySelectorAll(".event-chip").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".event-chip").forEach((item) => item.classList.toggle("active", item === button));
+          const data = eventData[Number(button.dataset.event)];
+          document.getElementById("eventIdValue").textContent = data[0];
+          document.getElementById("eventLevelValue").textContent = data[1];
+          document.getElementById("eventReleaseValue").textContent = data[2];
+          document.getElementById("eventEnvironmentValue").textContent = data[3];
+        });
+      });
+
+      const frameData = {
+        register: {
+          file: "src/register.ts",
+          line: "Line 378 · Column 27",
+          generated: "Generated: assets/index-D9Z1qk7m.js:1:18492",
+          active: 378,
+          start: 371,
+          code: [
+            "    window.setTimeout(() => {",
+            "      submitting = false;",
+            "      submitBtn.disabled = false;",
+            "",
+            "      const response = profileStore.getCached(userId);",
+            "      const source = response.fromCache ? 'cache' : 'network';",
+            "",
+            "      saveProfile(response.profile, { source });",
+            "      showSuccessToast(response.profile.displayName);",
+            "    }, 600);",
+          ],
+        },
+        submit: {
+          file: "src/forms.ts",
+          line: "Line 91 · Column 11",
+          generated: "Generated: assets/index-D9Z1qk7m.js:1:17226",
+          active: 91,
+          start: 85,
+          code: [
+            "export async function submitForm(form: ProfileForm) {",
+            "  const payload = serializeProfile(form);",
+            "  const request = createProfileRequest(payload);",
+            "",
+            "  setSubmitState('pending');",
+            "  const result = await request.send();",
+            "  return register(result.userId);",
+            "}",
+          ],
+        },
+        click: {
+          file: "src/button.ts",
+          line: "Line 44 · Column 9",
+          generated: "Generated: assets/index-D9Z1qk7m.js:1:16088",
+          active: 44,
+          start: 39,
+          code: [
+            "export function onClick(event: MouseEvent) {",
+            "  event.preventDefault();",
+            "  const form = findProfileForm(event.currentTarget);",
+            "",
+            "  if (!form) return;",
+            "  void submitForm(form);",
+            "}",
+          ],
+        },
+      };
+
+      let codeMirrorView = null;
+
+      function escapeHtml(text) {
+        return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+      }
+
+      function highlightCode(line) {
+        return escapeHtml(line)
+          .replace(/\b(const|let|return|export|async|function|if|void)\b/g, '<span class="syntax-keyword">$1</span>')
+          .replace(/\b(setTimeout|saveProfile|showSuccessToast|submitForm|serializeProfile|createProfileRequest)\b/g, '<span class="syntax-call">$1</span>')
+          .replace(/('[^']*')/g, '<span class="syntax-string">$1</span>')
+          .replace(/\b(600)\b/g, '<span class="syntax-number">$1</span>');
+      }
+
+      function renderFrame(key) {
+        const frame = frameData[key];
+        document.getElementById("codeFile").textContent = frame.file;
+        document.getElementById("codeLineMeta").textContent = frame.line;
+        document.getElementById("generatedLocation").textContent = frame.generated;
+        document.querySelectorAll(".frame-tab").forEach((button) => button.classList.toggle("active", button.dataset.frame === key));
+        const fallbackRows = document.getElementById("codeRows");
+        if (fallbackRows) fallbackRows.innerHTML = frame.code.map((line, index) => {
+          const number = frame.start + index;
+          return `<span class="code-row ${number === frame.active ? "active" : ""}"><span class="line-number">${number}</span>${highlightCode(line)}</span>`;
+        }).join("");
+        if (codeMirrorView) {
+          const doc = frame.code.join("\n");
+          codeMirrorView.dispatch({ changes: { from: 0, to: codeMirrorView.state.doc.length, insert: doc } });
+          const activeLine = frame.active - frame.start + 1;
+          const activePosition = codeMirrorView.state.doc.line(activeLine).from;
+          codeMirrorView.dispatch({ selection: { anchor: activePosition }, scrollIntoView: true });
+          const staticLines = document.getElementById("cmStaticLines");
+          if (staticLines) {
+            staticLines.innerHTML = frame.code.map((_, index) => {
+              const lineNumber = frame.start + index;
+              return `<span class="${lineNumber === frame.active ? "active" : ""}">${lineNumber}</span>`;
+            }).join("");
+          }
+        }
+      }
+
+      document.querySelectorAll(".frame-tab").forEach((button) => button.addEventListener("click", () => renderFrame(button.dataset.frame)));
+      renderFrame("register");
+
+      const selectTrigger = document.getElementById("selectTrigger");
+      const selectContent = document.getElementById("selectContent");
+      const selectItems = [...document.querySelectorAll(".select-item")];
+      const issueRows = [...document.querySelectorAll(".issue-row")];
+      const searchInput = document.getElementById("issueSearch");
+      let statusFilter = "all";
+
+      function setSelectOpen(open) {
+        selectContent.classList.toggle("open", open);
+        selectTrigger.setAttribute("aria-expanded", String(open));
+      }
+
+      selectTrigger.addEventListener("click", () => setSelectOpen(!selectContent.classList.contains("open")));
+      selectItems.forEach((item) => item.addEventListener("click", () => {
+        statusFilter = item.dataset.value;
+        selectItems.forEach((candidate) => candidate.setAttribute("aria-selected", String(candidate === item)));
+        document.getElementById("selectValue").textContent = item.querySelector("span").textContent;
+        setSelectOpen(false);
+        applyFilters();
+      }));
+
+      document.addEventListener("click", (event) => {
+        if (!document.getElementById("statusSelect").contains(event.target)) setSelectOpen(false);
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          setSelectOpen(false);
+          toggleFloatingPanel(false);
+        }
+      });
+
+      function applyFilters() {
+        const query = searchInput.value.trim().toLowerCase();
+        let visible = 0;
+        issueRows.forEach((row) => {
+          const matchStatus = statusFilter === "all" || row.dataset.status === statusFilter;
+          const matchQuery = !query || row.dataset.search.includes(query);
+          row.hidden = !(matchStatus && matchQuery);
+          if (!row.hidden) visible += 1;
+        });
+        document.getElementById("filterCount").textContent = `${visible} of ${issueRows.length} issues`;
+        document.getElementById("emptyState").style.display = visible === 0 ? "block" : "none";
+        document.querySelector(".issue-table").style.display = visible === 0 ? "none" : "table";
+      }
+
+      searchInput.addEventListener("input", applyFilters);
+      document.getElementById("playReplay").addEventListener("click", () => {
+        document.getElementById("playReplay").innerHTML = '<i data-lucide="loader-circle" class="icon"></i>Loading replay at 01:42…';
+        refreshIcons();
+        setTimeout(() => {
+          document.getElementById("playReplay").innerHTML = '<i data-lucide="play" class="icon"></i>Open replay at 01:42';
+          refreshIcons();
+        }, 1300);
+      });
+    </script>
+
+    <script type="module">
+      try {
+        const [{ EditorView, keymap }, { EditorState }, { javascript }, { oneDark }, { defaultKeymap }] = await Promise.all([
+          import("https://esm.sh/@codemirror/view@6.35.0"),
+          import("https://esm.sh/@codemirror/state@6.5.2"),
+          import("https://esm.sh/@codemirror/lang-javascript@6.2.2"),
+          import("https://esm.sh/@codemirror/theme-one-dark@6.1.2"),
+          import("https://esm.sh/@codemirror/commands@6.7.1"),
+        ]);
+        const host = document.getElementById("codeMirrorHost");
+        const initial = frameData.register.code.join("\n");
+        const initialActiveLine = frameData.register.active - frameData.register.start + 1;
+        const initialActivePosition = initial.split("\n").slice(0, initialActiveLine - 1).join("\n").length + (initialActiveLine > 1 ? 1 : 0);
+        document.getElementById("codeFallback").remove();
+        host.innerHTML = `<div class="cm-shell"><pre class="cm-static-lines" id="cmStaticLines">${frameData.register.code.map((_, index) => {
+          const lineNumber = frameData.register.start + index;
+          return `<span class="${lineNumber === frameData.register.active ? "active" : ""}">${lineNumber}</span>`;
+        }).join("")}</pre><div class="cm-mount" id="cmMount"></div></div>`;
+        codeMirrorView = new EditorView({
+          parent: document.getElementById("cmMount"),
+          state: EditorState.create({
+            doc: initial,
+            selection: { anchor: initialActivePosition },
+            extensions: [
+              javascript({ typescript: true }),
+              oneDark,
+              keymap.of(defaultKeymap),
+              EditorView.editable.of(false),
+              EditorState.readOnly.of(true),
+              EditorView.lineWrapping,
+              EditorView.theme({
+                "&": { height: "100%", backgroundColor: "#111216", fontSize: "11px" },
+                ".cm-scroller": { fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", lineHeight: "1.72" },
+                ".cm-content": { padding: "10px 0 18px" },
+                ".cm-line": { padding: "0 16px" },
+                ".cm-activeLine": { backgroundColor: "rgba(143,156,255,.14)" },
+              }),
+            ],
+          }),
+        });
+      } catch (error) {
+        console.info("CodeMirror CDN unavailable; preserving the styled read-only fallback.", error);
+      }
+    </script>
+  </body>
+</html>

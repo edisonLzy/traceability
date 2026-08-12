@@ -7,7 +7,7 @@ Traceability connects frontend error capture to an AI-assisted fix loop. Fronten
 ### Capture
 
 **Monitor**:
-The frontend error-capture SDK (`@tracerability/monitor`). The browser/Electron entry points that record events, breadcrumbs, and performance metrics.
+The frontend capture SDK (`@tracerability/monitor`). Its browser, React, Electron main, Electron renderer, and Electron preload entry points record errors, messages, breadcrumbs, traces, metrics, replay, and runtime context.
 _Avoid_: core, core SDK, client, agent
 
 **Instrument**:
@@ -115,11 +115,15 @@ The AI assistant runtime in the Electron app that operates on an Issue within a 
 _Avoid_: bot, assistant, model
 
 **Inbox**:
-The Electron app's triage view for Issues awaiting attention.
-_Avoid_: queue, worklist
+The Electron app's reserved landing view. It is currently a placeholder; Issue triage lives under **Monitor → Issues**.
+_Avoid_: issue list, queue, worklist
+
+**Monitor workspace**:
+The Electron app area containing **Issues** and **Sourcemaps**. This UI label is distinct from the Monitor SDK package, though both concern captured telemetry.
+_Avoid_: Inbox (when the Issues page is meant)
 
 **Explorer**:
-The Electron app's view for browsing captured data (Replays, Performance) beyond the triage surface.
+The Electron app's view for browsing captured data beyond the Issue/Sourcemap management surface.
 _Avoid_: browser, console
 
 ### Ingestion pipeline

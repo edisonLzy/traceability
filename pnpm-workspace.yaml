@@ -12,12 +12,16 @@ allowBuilds:
   protobufjs: true
   "@google/genai": false
   electron-winstaller: false
-  '@sentry/cli': true
+  "@sentry/cli": true
 
 minimumReleaseAgeExclude:
-  - '@aws-sdk/*'
+  - "@aws-sdk/*"
 
 catalog:
+  "@codemirror/lang-javascript": ^6.2.5
+  "@codemirror/language": ^6.12.4
+  "@codemirror/state": ^6.7.1
+  "@codemirror/view": ^6.43.8
   typescript: ^7.0.2
   vitest: ^4.0.16
   tsx: ^4.21.0

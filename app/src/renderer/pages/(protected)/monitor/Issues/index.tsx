@@ -1,5 +1,13 @@
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@renderer/components/ui/hover-card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@renderer/components/ui/select";
 import { useIssues } from "@renderer/hooks/use-issues";
-import { cn, issueSource, relativeTime, statusGroup } from "@renderer/lib/utils";
+import { cn, relativeTime, statusGroup } from "@renderer/lib/utils";
 import { projectStore } from "@renderer/store/project";
 import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Search } from "lucide-react";
@@ -8,10 +16,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useStore } from "zustand";
 
-const STATUS_ITEMS: Array<{
-  value: "all" | "unresolved" | "resolved" | "ignored";
-  label: string;
-}> = [
+type StatusFilter = "all" | "unresolved" | "resolved" | "ignored";
+
+const STATUS_ITEMS: Array<{ value: StatusFilter; label: string }> = [
   { value: "all", label: "All statuses" },
   { value: "unresolved", label: "Open" },
   { value: "resolved", label: "Resolved" },
@@ -19,32 +26,34 @@ const STATUS_ITEMS: Array<{
 ];
 
 export function IssuesPage() {
-  const projectId = useStore(projectStore, (s) => s.currentProject?.id ?? "");
-  const nav = useNavigate();
+  const projectId = useStore(projectStore, (state) => state.currentProject?.id ?? "");
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState<"all" | "unresolved" | "resolved" | "ignored">("all");
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("all");
 
   const { data, isLoading } = useIssues({ projectId, limit: 100 });
   const issues = data?.data ?? [];
-
   const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
+    const normalizedQuery = query.trim().toLowerCase();
     return issues.filter((issue) => {
       if (status !== "all" && statusGroup(issue.status) !== status) return false;
       if (
-        query &&
-        !`${issue.title} ${issue.id} ${issueSource(issue)}`.toLowerCase().includes(query)
-      )
+        normalizedQuery &&
+        !`${issue.title} ${issue.id} ${issue.fingerprint}`.toLowerCase().includes(normalizedQuery)
+      ) {
         return false;
+      }
       return true;
     });
-  }, [issues, status, q]);
+  }, [issues, query, status]);
 
-  const open = issues.filter((i) => statusGroup(i.status) === "unresolved").length;
-  const resolved = issues.filter((i) => statusGroup(i.status) === "resolved").length;
-  const ignored = issues.filter((i) => statusGroup(i.status) === "ignored").length;
-  const events = issues.reduce((n, i) => n + i.eventCount, 0);
+  const open = issues.filter((issue) => statusGroup(issue.status) === "unresolved").length;
+  const resolved = issues.filter((issue) => statusGroup(issue.status) === "resolved").length;
+  const ignored = issues.filter((issue) => statusGroup(issue.status) === "ignored").length;
+  const events = issues.reduce((total, issue) => total + issue.eventCount, 0);
+  const selectedStatusLabel =
+    STATUS_ITEMS.find((item) => item.value === status)?.label ?? "All statuses";
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["issues"] });
@@ -52,71 +61,89 @@ export function IssuesPage() {
   };
 
   return (
-    <div className="mx-auto block min-h-full max-w-[1260px] px-[22px] pt-[22px] pb-12">
-      <header className="mb-[18px] flex items-start justify-between gap-5">
-        <div>
-          <div className="mb-1 text-[11px] font-[680] uppercase tracking-[0.07em] text-primary-hover">
+    <div className="@container mx-auto block min-h-full max-w-[1120px] px-[22px] pt-[22px] pb-12 @max-[620px]:px-4">
+      <header className="mb-[18px] flex flex-wrap items-start justify-between gap-5">
+        <div className="min-w-0 flex-1 basis-[360px]">
+          <div className="mb-1 text-[11px] font-[680] tracking-[0.07em] text-primary-hover uppercase">
             Monitor
           </div>
-          <h1 className="m-0 text-[24px] font-[680] leading-[1.12] tracking-[-0.04em]">Issues</h1>
+          <h1 className="m-0 text-[24px] leading-[1.12] font-[680] tracking-[-0.04em]">Issues</h1>
           <p className="mt-1.5 max-w-[620px] text-[12px] text-tertiary">
-            Triage grouped runtime problems for the current project. Select an issue to inspect its
-            evidence or investigate it with the agent.
+            Triage grouped runtime problems. Long titles stay on one line so every issue remains
+            scannable.
           </p>
         </div>
-        <div className="flex items-center gap-2 pt-1.5">
-          <button
-            type="button"
-            onClick={refresh}
-            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-hairline bg-overlay px-3 text-[12px] font-[590] text-muted transition-colors hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink"
-          >
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => void refresh()}
+          className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-hairline bg-overlay px-3 text-[12px] font-[590] text-muted transition-colors hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink"
+        >
+          <RefreshCw className="size-3.5" /> Refresh
+        </button>
       </header>
 
-      <div className="mb-[18px] grid grid-cols-4 overflow-hidden rounded-2xl border border-hairline bg-overlay">
-        <Metric label="Open issues" value={open} note="Needs triage" noteClass="text-warning" />
+      <div className="mb-[18px] grid grid-cols-2 overflow-hidden rounded-2xl border border-hairline bg-overlay @min-[850px]:grid-cols-4">
         <Metric
-          label="Events · 24h"
-          value={events.toLocaleString()}
-          note="Aggregated by fingerprint"
+          index={0}
+          label="Open issues"
+          value={open}
+          note="Needs triage"
+          noteClass="text-warning"
         />
-        <Metric label="Ignored" value={ignored} note="Excluded from active triage" />
         <Metric
+          index={1}
+          label="Total events"
+          value={events.toLocaleString()}
+          note="Across loaded issues"
+        />
+        <Metric index={2} label="Ignored" value={ignored} note="Excluded from active triage" />
+        <Metric
+          index={3}
           label="Resolved"
           value={resolved}
           note="Successfully closed issues"
           noteClass="text-success"
-          last
         />
       </div>
 
-      <div className="mb-3.5 flex items-center gap-2">
-        <label className="flex h-9 max-w-[400px] min-w-[240px] flex-1 items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-2.5 text-tertiary focus-within:border-primary/55 focus-within:shadow-[0_0_0_3px_rgba(143,156,255,0.1)]">
-          <Search size={14} />
+      <div className="mb-3.5 flex flex-wrap items-center gap-2">
+        <label className="flex h-9 min-w-[220px] flex-1 basis-[300px] items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-2.5 text-tertiary focus-within:border-primary/55 focus-within:shadow-[0_0_0_3px_rgba(143,156,255,0.1)]">
+          <Search className="size-3.5 shrink-0" />
           <input
             type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="Search issues"
             className="min-w-0 flex-1 border-0 bg-transparent text-[12px] text-ink outline-none placeholder:text-tertiary"
           />
         </label>
-        <select
+
+        <Select
           value={status}
-          onChange={(e) => setStatus(e.target.value as typeof status)}
-          aria-label="Filter issue status"
-          className="h-9 rounded-[9px] border border-hairline bg-surface-2 px-2.5 pr-7 text-[12px] text-muted outline-none focus:border-primary/55"
+          onValueChange={(nextStatus) => {
+            if (isStatusFilter(nextStatus)) setStatus(nextStatus);
+          }}
         >
-          {STATUS_ITEMS.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.label}
-            </option>
-          ))}
-        </select>
-        <span className="flex-1" />
-        <span className="text-[11px] text-tertiary">
+          <SelectTrigger
+            aria-label="Filter issue status"
+            className="w-[132px] rounded-[9px] border-hairline bg-surface-2 text-[12px] hover:border-hairline-strong data-popup-open:border-primary/55"
+          >
+            <SelectValue>{selectedStatusLabel}</SelectValue>
+          </SelectTrigger>
+          <SelectContent className="w-[var(--anchor-width)] rounded-[9px] border-hairline-strong bg-surface-glass-elevated p-1 shadow-[0_14px_36px_rgba(0,0,0,0.22)]">
+            {STATUS_ITEMS.map((item) => (
+              <SelectItem
+                key={item.value}
+                value={item.value}
+                className="rounded-[7px] py-2 text-[11px]"
+              >
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <span className="ml-auto text-[11px] text-tertiary @max-[520px]:w-full @max-[520px]:text-right">
           {filtered.length} of {issues.length} issues
         </span>
       </div>
@@ -126,62 +153,78 @@ export function IssuesPage() {
           <span className="text-[12px] font-[630] text-muted">All issues</span>
           <span className="ml-auto text-[11px] text-tertiary">Updated in real time</span>
         </div>
-        <table className="w-full border-collapse text-left">
+        <table className="w-full table-fixed border-collapse text-left">
           <thead>
             <tr>
-              <th className="border-b border-hairline px-4 py-2.5 text-[10px] font-[670] uppercase tracking-[0.075em] text-tertiary">
-                Issue
-              </th>
-              <th className="border-b border-hairline px-4 py-2.5 text-[10px] font-[670] uppercase tracking-[0.075em] text-tertiary">
-                Status
-              </th>
-              <th className="border-b border-hairline px-4 py-2.5 text-[10px] font-[670] uppercase tracking-[0.075em] text-tertiary">
-                Events
-              </th>
-              <th className="border-b border-hairline px-4 py-2.5 text-[10px] font-[670] uppercase tracking-[0.075em] text-tertiary">
-                Last seen
-              </th>
+              <TableHeading className="w-auto">Issue</TableHeading>
+              <TableHeading className="w-[112px] @max-[620px]:hidden">Status</TableHeading>
+              <TableHeading className="w-[78px]">Events</TableHeading>
+              <TableHeading className="w-[112px] @max-[500px]:w-[88px]">Last seen</TableHeading>
             </tr>
           </thead>
           <tbody>
             {filtered.map((issue) => {
               const group = statusGroup(issue.status);
+              const href = `/monitor/issues/${issue.id}`;
               return (
                 <tr
                   key={issue.id}
-                  onClick={() => nav(`/monitor/issues/${issue.id}`)}
-                  className="cursor-pointer transition-colors hover:bg-overlay"
+                  onClick={() => navigate(href)}
+                  className="h-[58px] cursor-pointer transition-colors hover:bg-overlay-strong"
                 >
-                  <td className="border-b border-hairline px-4 py-3 text-[12px] text-muted">
-                    <div className="flex items-start gap-2.5">
+                  <td className="h-[58px] min-w-0 border-b border-hairline px-4 py-0 text-[12px] text-muted">
+                    <div className="flex min-w-0 items-center gap-2.5">
                       <span
                         className={cn(
-                          "mt-[5px] size-2 shrink-0 rounded-full",
-                          issue.type === "error" ? "bg-danger" : "bg-warning",
+                          "size-2 shrink-0 rounded-full",
+                          issue.type === "error"
+                            ? "bg-danger shadow-[0_0_0_3px_rgba(241,124,124,0.1)]"
+                            : "bg-warning shadow-[0_0_0_3px_rgba(228,181,90,0.1)]",
                         )}
-                        style={{
-                          boxShadow:
-                            issue.type === "error"
-                              ? "0 0 0 3px rgba(241,124,124,0.1)"
-                              : "0 0 0 3px rgba(228,181,90,0.1)",
-                        }}
                       />
-                      <span>
-                        <span className="block text-[12px] font-[590] text-ink">{issue.title}</span>
-                        <span className="mt-0.5 block font-mono text-[10px] text-tertiary">
-                          {issue.id} · {issueSource(issue)}
-                        </span>
-                      </span>
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <HoverCard>
+                          <HoverCardTrigger
+                            render={
+                              <button
+                                type="button"
+                                aria-label={`Open issue: ${issue.title}`}
+                                title={issue.title}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  navigate(href);
+                                }}
+                                className="block w-full truncate text-left text-[12px] font-[590] text-ink outline-none focus-visible:underline"
+                              />
+                            }
+                          >
+                            {issue.title}
+                          </HoverCardTrigger>
+                          <HoverCardContent
+                            side="top"
+                            align="start"
+                            className="w-80 max-w-[min(320px,var(--available-width))] rounded-[9px] border border-hairline-strong bg-surface-glass-elevated p-2.5 text-[11px] leading-5 text-ink shadow-[0_14px_36px_rgba(0,0,0,0.2)]"
+                          >
+                            {issue.title}
+                          </HoverCardContent>
+                        </HoverCard>
+                        <div
+                          className="mt-0.5 truncate font-mono text-[10px] text-tertiary"
+                          title={`${issue.id} · ${issue.fingerprint}`}
+                        >
+                          {issue.id} · {shortFingerprint(issue.fingerprint)}
+                        </div>
+                      </div>
                     </div>
                   </td>
-                  <td className="border-b border-hairline px-4 py-3">
+                  <td className="h-[58px] border-b border-hairline px-4 py-0 @max-[620px]:hidden">
                     <StatusBadge group={group} />
                   </td>
-                  <td className="border-b border-hairline px-4 py-3 text-[12px] text-muted tabular-nums">
+                  <td className="h-[58px] border-b border-hairline px-4 py-0 text-[12px] text-muted tabular-nums">
                     {issue.eventCount.toLocaleString()}
                   </td>
-                  <td className="border-b border-hairline px-4 py-3 text-[12px] text-muted">
-                    {relativeTime(issue.lastSeen)}
+                  <td className="h-[58px] border-b border-hairline px-4 py-0 text-[12px] whitespace-nowrap text-muted">
+                    {relativeTime(String(issue.lastSeen))}
                   </td>
                 </tr>
               );
@@ -199,24 +242,45 @@ export function IssuesPage() {
 }
 
 function Metric({
+  index,
   label,
   value,
   note,
   noteClass,
-  last,
 }: {
+  index: number;
   label: string;
   value: number | string;
   note: string;
   noteClass?: string;
-  last?: boolean;
 }) {
   return (
-    <div className={cn("min-h-[84px] px-4 py-3.5", !last && "border-r border-hairline")}>
+    <div
+      className={cn(
+        "min-h-[84px] border-hairline px-4 py-3.5 @min-[850px]:border-b-0",
+        index < 2 && "border-b",
+        index % 2 === 0 && "border-r",
+        index < 3 && "@min-[850px]:border-r",
+        index === 3 && "@min-[850px]:border-r-0",
+      )}
+    >
       <div className="text-[11px] font-[570] text-tertiary">{label}</div>
       <div className="mt-1 text-[22px] font-[660] tracking-[-0.045em] tabular-nums">{value}</div>
       <div className={cn("mt-0.5 text-[10px] text-tertiary", noteClass)}>{note}</div>
     </div>
+  );
+}
+
+function TableHeading({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <th
+      className={cn(
+        "h-9 border-b border-hairline px-4 py-0 text-[10px] font-[670] tracking-[0.075em] text-tertiary uppercase",
+        className,
+      )}
+    >
+      {children}
+    </th>
   );
 }
 
@@ -225,9 +289,17 @@ function StatusBadge({ group }: { group: "unresolved" | "resolved" | "ignored" }
     group === "unresolved" ? "bg-danger" : group === "resolved" ? "bg-success" : "bg-muted";
   const label = group === "unresolved" ? "Open" : group === "resolved" ? "Resolved" : "Ignored";
   return (
-    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-overlay px-2 text-[10px] font-[600] text-muted">
+    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-hairline bg-overlay px-2 text-[10px] font-[600] whitespace-nowrap text-muted">
       <span className={cn("size-1.5 rounded-full", dot)} />
       {label}
     </span>
   );
+}
+
+function isStatusFilter(value: unknown): value is StatusFilter {
+  return value === "all" || value === "unresolved" || value === "resolved" || value === "ignored";
+}
+
+function shortFingerprint(value: string): string {
+  return value.length <= 16 ? value : `${value.slice(0, 8)}…${value.slice(-6)}`;
 }

@@ -6,8 +6,8 @@ Traceability 的 Fastify 服务端，负责 Sentry 兼容的事件接收、Postg
 
 ## 前置依赖
 
-- Node.js 20+
-- pnpm 10+
+- Node.js 22 (`>=22 <23` at the workspace root)
+- pnpm 11.18.0
 - Docker（可选，用于 `pnpm db:up` 一键启动基础设施）
 - PostgreSQL
 - Redis
@@ -43,14 +43,14 @@ pnpm db:down
 pnpm db:migrate
 ```
 
-首次启动必须执行，用于创建各 domain 的数据表。修改 domain schema 后重新生成并执行迁移：
+首次启动必须执行，用于创建各 module 的数据表。修改 module schema 后重新生成并执行迁移：
 
 ```bash
 pnpm db:generate
 pnpm db:migrate
 ```
 
-数据库表定义位于 `src/domains/*/db.ts`，统一由 `src/db/schema.ts` 聚合。
+数据库表定义位于 `src/modules/*/schema.ts`，统一由 `src/infrastructure/database/schema.ts` 聚合。
 
 快速一步到位：
 
