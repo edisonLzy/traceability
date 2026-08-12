@@ -16,7 +16,10 @@ export { RendererExtensionRegistry } from "./registry";
 export type { ExtensionsContextAPI, ExtensionsContextAPIProviderProps } from "./contextAPI";
 export type {
   AssistantBlockRegistration,
+  AssistantBlockRegistrar,
   AssistantBlockRenderProps,
+  DefinedAssistantBlockRegistration,
+  LegacyAssistantBlockRegistration,
   RendererExtensionContext,
   RendererExtensionDefinition,
   RendererSlashCommand,

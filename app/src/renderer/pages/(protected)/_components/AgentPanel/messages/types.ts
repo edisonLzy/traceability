@@ -1,6 +1,7 @@
 import type { AgentMessage, AppUserMessage } from "@earendil-works/pi-agent-core";
 import type { AssistantMessage } from "@earendil-works/pi-ai";
 import { EntryStatus, type Entry, type SessionEntry } from "@renderer/store/agent";
+import type { AppAssistantBlockMessage } from "@shared/agent-message";
 import type { AvailableModel } from "@shared/models-ipc";
 
 export function isAssistantMessage(message: AgentMessage): message is AssistantMessage {
@@ -9,6 +10,12 @@ export function isAssistantMessage(message: AgentMessage): message is AssistantM
 
 export function isUserMessage(message: AgentMessage): message is AppUserMessage {
   return message.role === "user";
+}
+
+export function isAssistantBlockMessage(
+  message: AgentMessage,
+): message is AppAssistantBlockMessage {
+  return message.role === "assistantBlock";
 }
 
 export function isFailedAssistantMessage(message: unknown): message is AssistantMessage {

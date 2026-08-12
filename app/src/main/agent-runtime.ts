@@ -1,5 +1,4 @@
 import { Agent } from "@earendil-works/pi-agent-core";
-import type { Message } from "@earendil-works/pi-ai";
 import Emittery from "emittery";
 
 import type {
@@ -14,6 +13,7 @@ import type { AgentSessionScope, AllowedMainExposeEvents } from "../shared/event
 import type { AgentModelsIPC } from "../shared/models-ipc.js";
 import type { AgentSessionIPC } from "../shared/session-ipc.js";
 import type { AgentSkillsIPC } from "../shared/skills-ipc.js";
+import { convertAgentMessagesToLlmMessages } from "./agent-messages.js";
 import type { ExtensionService } from "./extensions/index.js";
 import { AskUserQuestionService } from "./human-in-the-loop/ask-user-question-service.js";
 import { ModelRegistry } from "./models/index.js";
@@ -120,25 +120,7 @@ export class AgentRuntime extends Emittery<AgentRuntimeEvents> implements AgentR
     });
 
     const agent = new Agent({
-      convertToLlm: (messages) => {
-        return messages.flatMap((message): Message[] => {
-          if (message.role === "user") {
-            return [
-              {
-                role: "user",
-                content: message.content,
-                timestamp: message.timestamp,
-              },
-            ];
-          }
-
-          if (message.role === "assistant" || message.role === "toolResult") {
-            return [message];
-          }
-
-          return [];
-        });
-      },
+      convertToLlm: convertAgentMessagesToLlmMessages,
       getApiKey: (provider) => {
         return this.modelRegistry.resolveApiKey(provider);
       },

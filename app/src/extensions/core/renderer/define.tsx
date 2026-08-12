@@ -1,7 +1,9 @@
 import type { AnyExtension, Editor, Range } from "@tiptap/core";
 import type { ComponentType, JSX } from "react";
 import type { Components as StreamdownComponents, StreamdownProps } from "streamdown";
+import type { output, ZodType } from "zod";
 
+import type { AssistantBlockDefinition } from "../../../shared/assistant-block";
 import type { ExtensionMetadata } from "../common/ipc/index";
 
 export interface RendererSlashCommandRunContext {
@@ -25,14 +27,28 @@ export interface RendererSlashCommand {
  */
 export type TipTapExtensionRegistration = AnyExtension;
 
-export interface AssistantBlockRenderProps<TProps = Record<string, unknown>> {
+export interface AssistantBlockRenderProps<TProps = unknown> {
   props: TProps;
   raw: string;
 }
 
-export interface AssistantBlockRegistration<TProps = Record<string, unknown>> {
+export interface DefinedAssistantBlockRegistration<TSchema extends ZodType = ZodType> {
+  definition: AssistantBlockDefinition<TSchema>;
+  render: ComponentType<AssistantBlockRenderProps<output<TSchema>>>;
+}
+
+export interface LegacyAssistantBlockRegistration<TProps = Record<string, unknown>> {
   type: string;
   render: ComponentType<AssistantBlockRenderProps<TProps>>;
+}
+
+export type AssistantBlockRegistration<TSchema extends ZodType = ZodType> =
+  | DefinedAssistantBlockRegistration<TSchema>
+  | LegacyAssistantBlockRegistration;
+
+export interface AssistantBlockRegistrar {
+  register<TSchema extends ZodType>(block: DefinedAssistantBlockRegistration<TSchema>): void;
+  register(block: LegacyAssistantBlockRegistration): void;
 }
 
 export type StreamdownComponent = ComponentType<any> | keyof JSX.IntrinsicElements;
@@ -50,9 +66,7 @@ export interface RendererExtensionContext {
   slashCommands: {
     register(command: RendererSlashCommand): void;
   };
-  assistantBlocks: {
-    register(block: AssistantBlockRegistration): void;
-  };
+  assistantBlocks: AssistantBlockRegistrar;
   streamdown: {
     registerComponents(components: StreamdownComponentComposerMap): void;
     registerRehypePlugins(composer: StreamdownRehypePluginComposer): void;

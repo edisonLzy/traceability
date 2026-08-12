@@ -24,6 +24,9 @@ export class MainExtensionBridge {
       const disposer = extension.setup({
         ...this.hostContextValues,
         ipc,
+        assistantBlocks: {
+          register: (definition) => this.registry.registerAssistantBlock(definition),
+        },
         systemPrompt: {
           register: (prompt) => this.registry.registerSystemPrompt(extension, prompt),
         },
@@ -43,6 +46,10 @@ export class MainExtensionBridge {
 
   getSystemPrompts() {
     return this.registry.getSystemPrompts();
+  }
+
+  getAssistantBlockDefinitions() {
+    return this.registry.getAssistantBlockDefinitions();
   }
 
   getTools() {

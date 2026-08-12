@@ -6,6 +6,7 @@ import {
 } from "@renderer/components/ui/collapsible";
 import { cn } from "@renderer/lib/utils";
 import type { ToolExecutionState } from "@renderer/store/agent";
+import { RENDER_UI_TOOL_NAME } from "@shared/assistant-block";
 import { ChevronRightIcon, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -19,7 +20,6 @@ interface AssistantMessageProps {
   completedAt?: number;
   isStreaming: boolean;
   message: AssistantMessageType;
-  sessionId: string;
   startedAt: number;
   toolStates: Map<string, ToolExecutionState>;
 }
@@ -28,7 +28,6 @@ export function AssistantMessage({
   completedAt,
   isStreaming,
   message,
-  sessionId,
   startedAt,
   toolStates,
 }: AssistantMessageProps) {
@@ -43,6 +42,7 @@ export function AssistantMessage({
   }>(
     (acc, block) => {
       if (block.type === "thinking" || block.type === "toolCall") {
+        if (block.type === "toolCall" && block.name === RENDER_UI_TOOL_NAME) return acc;
         acc.processingContent.push(block as ThinkingContent | ToolCall);
       } else if (block.type === "text") {
         acc.textContent.push(block as TextContent);
@@ -59,6 +59,8 @@ export function AssistantMessage({
   useEffect(() => {
     setIsProcessingOpen(textContent.length === 0);
   }, [textContent.length]);
+
+  if (processingContent.length === 0 && textContent.length === 0 && !hasError) return null;
 
   return (
     <article className="mb-5 min-w-0 max-w-full overflow-hidden pr-2">
@@ -96,11 +98,7 @@ export function AssistantMessage({
 
                 if (block.type === "toolCall") {
                   return (
-                    <AssistantToolMessage
-                      key={block.id}
-                      sessionId={sessionId}
-                      toolState={toolStates.get(block.id)}
-                    />
+                    <AssistantToolMessage key={block.id} toolState={toolStates.get(block.id)} />
                   );
                 }
 

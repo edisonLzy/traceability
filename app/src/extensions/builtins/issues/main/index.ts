@@ -2,41 +2,20 @@ import { Type } from "@earendil-works/pi-ai";
 
 import { createMainTrpcClient } from "../../../../main/trpc/client.js";
 import type { Issue } from "../../../../shared/trpc-types.js";
-import { formatAssistantBlockFence } from "../../../core/common/index.js";
 import { defineMainExtension } from "../../../core/main/index.js";
 import type { MainExtensionContext } from "../../../core/main/index.js";
 import { ISSUES_EXTENSION } from "../common/extension.js";
-import { ISSUES_GET_TOOL, ISSUES_LIST_BLOCK_TYPE, ISSUES_LIST_TOOL } from "../common/types.js";
+import { ISSUES_GET_TOOL, ISSUES_LIST_BLOCK, ISSUES_LIST_TOOL } from "../common/types.js";
 
 const client = createMainTrpcClient();
 
 export default defineMainExtension({
   ...ISSUES_EXTENSION,
   setup(ctx) {
+    ctx.assistantBlocks.register(ISSUES_LIST_BLOCK);
     ctx.systemPrompt.register({
       id: "issues.prompt",
-      content: `Use ${ISSUES_LIST_TOOL} to list issues for a Traceability project and ${ISSUES_GET_TOOL} to fetch one issue. Use projectId when known; if omitted, ask the user to choose a project. Supported statuses are unresolved, resolved, and ignored.
-
-After ${ISSUES_LIST_TOOL}, emit a fenced ${ISSUES_LIST_BLOCK_TYPE} agent-block with the exact props shape shown below:
-
-${formatAssistantBlockFence({
-  type: ISSUES_LIST_BLOCK_TYPE,
-  props: {
-    projectId: "<project-id>",
-    nextCursor: null,
-    issues: [
-      {
-        id: "<issue-id>",
-        projectId: "<project-id>",
-        fingerprint: "<fingerprint>",
-        title: "TypeError: Cannot read properties of undefined",
-        type: "error",
-        eventCount: 5,
-        status: "unresolved",
-      },
-    ],
-  },
-})}`,
+      content: `Use ${ISSUES_LIST_TOOL} when you need issue records for reasoning or a text answer and ${ISSUES_GET_TOOL} to fetch one issue. For an interactive issue list, call render_ui with type "issues.list" and lightweight query props; the component loads its own data, so do not call ${ISSUES_LIST_TOOL} first.`,
     });
 
     ctx.tools.register({
@@ -64,13 +43,7 @@ ${formatAssistantBlockFence({
           : result.data;
         return {
           content: [{ type: "text", text: summarizeIssues(issues) }],
-          details: {
-            type: "monitor.issues.runtime",
-            assistantBlock: {
-              type: ISSUES_LIST_BLOCK_TYPE,
-              props: { issues, projectId, nextCursor: result.nextCursor },
-            },
-          },
+          details: {},
         };
       },
     });

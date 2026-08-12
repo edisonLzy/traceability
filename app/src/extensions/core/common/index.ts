@@ -1,3 +1,15 @@
+import type { AssistantBlockDescriptor } from "../../../shared/assistant-block";
+
+export {
+  defineAssistantBlock,
+  GENERATIVE_UI_DETAILS_TYPE,
+  getAssistantBlockDescriptor,
+  RENDER_UI_TOOL_NAME,
+} from "../../../shared/assistant-block";
+export type {
+  AssistantBlockDefinition,
+  AssistantBlockDescriptor,
+} from "../../../shared/assistant-block";
 export * from "./ipc/index";
 export type {
   AskUserQuestion,
@@ -9,10 +21,8 @@ export type {
 
 export const AGENT_BLOCK_LANGUAGE = "agent-block";
 
-export interface AssistantBlockPayload {
-  props: Record<string, unknown>;
+export interface AssistantBlockPayload extends AssistantBlockDescriptor {
   raw: string;
-  type: string;
 }
 
 export type AssistantBlockPayloadParseResult =
@@ -21,7 +31,7 @@ export type AssistantBlockPayloadParseResult =
   | { raw: string; status: "pending" };
 
 export interface FormatAssistantBlockFenceOptions {
-  props?: Record<string, unknown>;
+  props?: unknown;
   type: string;
 }
 
@@ -56,7 +66,7 @@ export function parseAssistantBlockPayload(
 
     return {
       payload: {
-        props: isRecord(parsed.props) ? parsed.props : {},
+        props: "props" in parsed ? parsed.props : {},
         raw: trimmed,
         type: parsed.type,
       },
@@ -65,8 +75,4 @@ export function parseAssistantBlockPayload(
   } catch {
     return isIncomplete ? { raw, status: "pending" } : { raw: trimmed, status: "invalid" };
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -4,8 +4,9 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Sparkles } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+import { AssistantBlockMessage } from "./AssistantBlockMessage";
 import { AssistantMessage } from "./AssistantMessage";
-import { isAssistantMessage, isUserMessage } from "./types";
+import { isAssistantBlockMessage, isAssistantMessage, isUserMessage } from "./types";
 import { StickyUserMessage, UserMessage, useStickyUserMessage } from "./UserMessage";
 
 interface ChatMessagesProps {
@@ -115,10 +116,11 @@ export function ChatMessages({
                       completedAt={entry.completedAt}
                       isStreaming={entry.id === streamingEntryId}
                       message={message}
-                      sessionId={sessionId}
                       startedAt={entry.timestamp}
                       toolStates={toolStates}
                     />
+                  ) : isAssistantBlockMessage(message) ? (
+                    <AssistantBlockMessage message={message} />
                   ) : null}
                 </div>
               </div>

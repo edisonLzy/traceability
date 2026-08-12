@@ -1,6 +1,4 @@
 import { Agent } from "@earendil-works/pi-agent-core";
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { Message } from "@earendil-works/pi-ai";
 import type { BrowserWindow } from "electron";
 import Emittery from "emittery";
 
@@ -9,6 +7,7 @@ import { AgentModelsIPC } from "../shared/models-ipc.js";
 import { AgentSessionIPC } from "../shared/session-ipc.js";
 import { AgentSkillsIPC } from "../shared/skills-ipc.js";
 import { AbstractAgentIPCHandler } from "./agent-ipc.js";
+import { convertAgentMessagesToLlmMessages } from "./agent-messages.js";
 import { AgentRuntime } from "./agent-runtime.js";
 import { ExtensionService, ExtensionRuntimeService } from "./extensions/index.js";
 import { ModelRegistry } from "./models/index.js";
@@ -295,26 +294,6 @@ export class AgentPool
   public setSkillEnabled: AgentSkillsIPC["setSkillEnabled"] = async (skillId, enabled) => {
     return this.skillService.setSkillEnabled(skillId, enabled);
   };
-}
-
-function convertAgentMessagesToLlmMessages(messages: AgentMessage[]): Message[] {
-  return messages.flatMap((message): Message[] => {
-    if (message.role === "user") {
-      return [
-        {
-          role: "user",
-          content: message.content,
-          timestamp: message.timestamp,
-        },
-      ];
-    }
-
-    if (message.role === "assistant" || message.role === "toolResult") {
-      return [message];
-    }
-
-    return [];
-  });
 }
 
 function cleanOneTimeAgentOutput(output: string) {
