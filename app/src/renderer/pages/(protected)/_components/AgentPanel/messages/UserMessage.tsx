@@ -164,7 +164,7 @@ function ReadonlyUserMessage({ message, isRunning, onStartEdit }: ReadonlyUserMe
   return (
     <article className="mb-4 flex justify-end pl-10">
       <div className="flex max-w-[92%] min-w-0 flex-col items-end gap-1">
-        <div className="rounded-[12px_12px_4px_12px] border border-primary/20 bg-primary/[0.12] px-3 py-2 text-primary-soft">
+        <div className="rounded-[15px_15px_5px_15px] border border-primary/20 bg-[linear-gradient(135deg,rgba(115,146,255,0.17),rgba(139,111,255,0.1))] px-3 py-2.5 text-primary-soft shadow-glass-sm backdrop-blur-xl">
           <div className="pm-readonly min-w-0 text-[12px] leading-[1.55]">
             <EditorContent editor={readOnlyEditor} className="prompt-editor max-w-none min-w-0" />
           </div>

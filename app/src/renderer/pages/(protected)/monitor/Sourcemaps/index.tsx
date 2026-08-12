@@ -86,7 +86,7 @@ export function SourcemapsPage() {
         />
       </div>
 
-      <section className="overflow-hidden rounded-2xl border border-hairline bg-overlay">
+      <section className="glass-panel overflow-hidden rounded-[18px]">
         <div className="flex items-center justify-between border-b border-hairline px-4 py-3 text-[12px] font-[630] text-muted">
           <span>Artifacts {artifactsQuery.data ? `· ${artifactsQuery.data.length}` : ""}</span>
           {projectSlug && (

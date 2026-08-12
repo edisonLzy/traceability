@@ -24,7 +24,7 @@ export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTable
   return (
     <tr
       className={cn(
-        "transition-colors hover:bg-surface-2 data-[state=selected]:bg-surface-2",
+        "transition-colors hover:bg-overlay-strong data-[state=selected]:bg-primary/10",
         className,
       )}
       {...props}
@@ -36,7 +36,7 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
   return (
     <th
       className={cn(
-        "border-b border-hairline bg-surface-3 px-4 py-2.5 text-left text-[11px] font-medium text-tertiary [&:has([role=checkbox])]:pr-0",
+        "border-b border-hairline bg-surface-3/60 px-4 py-2.5 text-left text-[11px] font-medium text-tertiary backdrop-blur-lg [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}

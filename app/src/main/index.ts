@@ -7,8 +7,9 @@ import { AuthSession } from "./auth/auth-session.js";
 import { initMonitor } from "./monitor.js";
 import { SessionPersistence } from "./sessions/index.js";
 import { applyPersistedThemeSource, ThemeController } from "./theme.js";
+import { WindowController } from "./window-controller.js";
 
-const developmentIconPath = join(__dirname, "../../resources/icon.png");
+const developmentIconPath = join(__dirname, "../../resources/icon-fingerprint.png");
 
 void initMonitor();
 
@@ -24,6 +25,7 @@ void app
     const sessionPersistence = new SessionPersistence(browserWindow);
     const authSession = new AuthSession(browserWindow);
     const themeController = new ThemeController(browserWindow);
+    const windowController = new WindowController(browserWindow);
 
     app.on("activate", () => {
       if (!browserWindow || browserWindow.isDestroyed()) {
@@ -32,6 +34,7 @@ void app
         sessionPersistence.updateBrowserWindow(browserWindow);
         authSession.updateBrowserWindow(browserWindow);
         themeController.updateBrowserWindow(browserWindow);
+        windowController.updateBrowserWindow(browserWindow);
       }
     });
 
@@ -40,6 +43,7 @@ void app
       void sessionPersistence.destroyAll();
       void authSession.destroyAll();
       themeController.destroyAll();
+      windowController.destroyAll();
     });
   })
   .catch((error: unknown) => {
@@ -63,22 +67,25 @@ nativeTheme.on("updated", () => {
 
 function createWindow() {
   const isMac = process.platform === "darwin";
+  const isWindows = process.platform === "win32";
   const mainWindow = new BrowserWindow({
     ...(!app.isPackaged && !isMac ? { icon: developmentIconPath } : {}),
     frame: false,
     titleBarStyle: isMac ? "hiddenInset" : "hidden",
     ...(isMac
-      ? { trafficLightPosition: { x: 14, y: 18 } }
+      ? { roundedCorners: true, trafficLightPosition: { x: 14, y: 14 } }
       : {
           titleBarOverlay: {
             color: "#00000000",
             symbolColor: nativeTheme.shouldUseDarkColors ? "#f5f5f7" : "#1a1a1f",
-            height: 30,
+            height: 40,
           },
         }),
-    vibrancy: "under-window",
-    visualEffectState: "active",
+    ...(isMac ? { vibrancy: "under-window", visualEffectState: "active" } : {}),
+    ...(isWindows ? { backgroundMaterial: "acrylic", thickFrame: true } : {}),
     backgroundColor: "#00000000",
+    minWidth: 880,
+    minHeight: 620,
     width: 1200,
     height: 800,
     x: 100,

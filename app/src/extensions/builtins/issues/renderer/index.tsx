@@ -13,7 +13,7 @@ function IssuesListBlock({ props }: { props: Record<string, unknown> }) {
   if (!block) return null;
 
   return (
-    <Card className="not-prose my-2 bg-white/[0.03] text-card-foreground">
+    <Card className="not-prose my-2 bg-surface-glass text-card-foreground">
       <div className="flex min-h-8 items-center justify-between gap-2 px-2.5 py-2 text-[10px] text-muted">
         <span className="font-[620]">Issues</span>
         <span className="text-tertiary">{block.issues.length}</span>
@@ -24,7 +24,7 @@ function IssuesListBlock({ props }: { props: Record<string, unknown> }) {
             key={issue.id}
             type="button"
             onClick={() => navigate(`/monitor/issues/${issue.id}`)}
-            className="flex w-full items-center gap-2 rounded-[7px] px-1.5 py-1.5 text-left transition-colors hover:bg-white/[0.035]"
+            className="flex w-full items-center gap-2 rounded-[8px] px-1.5 py-1.5 text-left transition-colors hover:bg-overlay-strong"
           >
             <span
               className={cn(

@@ -10,7 +10,7 @@ export function PanelLayout({ children }: PanelLayoutProps) {
   return (
     <aside
       aria-label="Traceability Agent"
-      className="relative flex h-full min-w-0 flex-col bg-surface-glass backdrop-blur-2xl"
+      className="glass-panel relative flex h-full min-w-0 flex-col overflow-hidden rounded-[18px]"
     >
       {children}
     </aside>
@@ -26,8 +26,8 @@ interface PanelHeaderProps {
 
 export function PanelHeader({ title, actions, isRunning = false, subtitle }: PanelHeaderProps) {
   return (
-    <header className="relative flex min-h-12 items-center gap-2 border-b border-hairline px-2.5">
-      <span className="grid size-7 shrink-0 place-items-center rounded-[8px] border border-primary/20 bg-primary/10 text-primary-hover">
+    <header className="relative flex min-h-12 items-center gap-2 border-b border-hairline bg-surface-glass/70 px-3 backdrop-blur-2xl">
+      <span className="grid size-7 shrink-0 place-items-center rounded-[9px] border border-primary/20 bg-primary/10 text-primary-hover shadow-glass-sm">
         <Sparkles size={15} />
       </span>
       <div className="min-w-0 flex-1 px-1">
@@ -64,9 +64,5 @@ interface PanelFooterProps {
 }
 
 export function PanelFooter({ children }: PanelFooterProps) {
-  return (
-    <section className="shrink-0 border-t border-hairline bg-surface-glass-elevated px-3 pt-2 pb-2.5">
-      {children}
-    </section>
-  );
+  return <section className="shrink-0 bg-transparent px-3 pt-2 pb-2.5">{children}</section>;
 }

@@ -27,12 +27,12 @@ function DialogContent({
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop
         data-slot="dialog-overlay"
-        className={cn("fixed inset-0 z-20 bg-black/75", backdropClassName)}
+        className={cn("fixed inset-0 z-20 bg-[#0a1022]/45 backdrop-blur-[8px]", backdropClassName)}
       />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed left-1/2 top-1/2 z-20 grid w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-hairline-strong bg-surface-2",
+          "glass-panel-raised fixed top-1/2 left-1/2 z-20 grid w-full max-w-md overflow-hidden rounded-[18px]",
           className,
         )}
         {...props}

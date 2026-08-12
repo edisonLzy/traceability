@@ -76,13 +76,13 @@ export function IssuesPage() {
         <button
           type="button"
           onClick={() => void refresh()}
-          className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-hairline bg-overlay px-3 text-[12px] font-[590] text-muted transition-colors hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink"
+          className="glass-control inline-flex h-8.5 items-center gap-1.5 rounded-[10px] px-3 text-[12px] font-[590] text-muted transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:bg-overlay-strong hover:text-ink active:bg-overlay-strong"
         >
           <RefreshCw className="size-3.5" /> Refresh
         </button>
       </header>
 
-      <div className="mb-[18px] grid grid-cols-2 overflow-hidden rounded-2xl border border-hairline bg-overlay @min-[850px]:grid-cols-4">
+      <div className="glass-panel mb-[18px] grid grid-cols-2 overflow-hidden rounded-[18px] @min-[850px]:grid-cols-4">
         <Metric
           index={0}
           label="Open issues"
@@ -107,7 +107,7 @@ export function IssuesPage() {
       </div>
 
       <div className="mb-3.5 flex flex-wrap items-center gap-2">
-        <label className="flex h-9 min-w-[220px] flex-1 basis-[300px] items-center gap-2 rounded-[9px] border border-hairline bg-overlay px-2.5 text-tertiary focus-within:border-primary/55 focus-within:shadow-[0_0_0_3px_rgba(143,156,255,0.1)]">
+        <label className="glass-control flex h-9 min-w-[220px] flex-1 basis-[300px] items-center gap-2 rounded-[10px] px-2.5 text-tertiary focus-within:border-primary/55 focus-within:shadow-[0_0_0_3px_var(--glow)]">
           <Search className="size-3.5 shrink-0" />
           <input
             type="search"
@@ -126,11 +126,11 @@ export function IssuesPage() {
         >
           <SelectTrigger
             aria-label="Filter issue status"
-            className="w-[132px] rounded-[9px] border-hairline bg-surface-2 text-[12px] hover:border-hairline-strong data-popup-open:border-primary/55"
+            className="glass-control w-[132px] rounded-[10px] text-[12px] hover:border-hairline-strong data-popup-open:border-primary/55"
           >
             <SelectValue>{selectedStatusLabel}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="w-[var(--anchor-width)] rounded-[9px] border-hairline-strong bg-surface-glass-elevated p-1 shadow-[0_14px_36px_rgba(0,0,0,0.22)]">
+          <SelectContent className="glass-panel-raised w-[var(--anchor-width)] rounded-[12px] p-1">
             {STATUS_ITEMS.map((item) => (
               <SelectItem
                 key={item.value}
@@ -148,7 +148,7 @@ export function IssuesPage() {
         </span>
       </div>
 
-      <section className="overflow-hidden rounded-2xl border border-hairline bg-overlay">
+      <section className="glass-panel overflow-hidden rounded-[18px]">
         <div className="flex min-h-12 items-center border-b border-hairline px-4">
           <span className="text-[12px] font-[630] text-muted">All issues</span>
           <span className="ml-auto text-[11px] text-tertiary">Updated in real time</span>
@@ -170,7 +170,7 @@ export function IssuesPage() {
                 <tr
                   key={issue.id}
                   onClick={() => navigate(href)}
-                  className="h-[58px] cursor-pointer transition-colors hover:bg-overlay-strong"
+                  className="h-[58px] cursor-pointer transition-colors hover:bg-overlay-strong active:bg-overlay"
                 >
                   <td className="h-[58px] min-w-0 border-b border-hairline px-4 py-0 text-[12px] text-muted">
                     <div className="flex min-w-0 items-center gap-2.5">

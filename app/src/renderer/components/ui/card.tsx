@@ -2,12 +2,7 @@ import { cn } from "@renderer/lib/utils";
 import * as React from "react";
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("overflow-hidden rounded-xl border border-hairline bg-surface-1", className)}
-      {...props}
-    />
-  );
+  return <div className={cn("glass-panel overflow-hidden rounded-[16px]", className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

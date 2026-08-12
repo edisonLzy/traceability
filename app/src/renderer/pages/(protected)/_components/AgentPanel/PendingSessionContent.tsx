@@ -76,8 +76,8 @@ export function PendingSessionContent() {
     <PanelLayout>
       <PanelHeader subtitle="Traceability Agent" title="New conversation" />
       <PanelBody className="flex items-center justify-center">
-        <div className="mx-auto max-w-[280px] px-6 text-center">
-          <span className="mx-auto mb-3 grid size-10 place-items-center rounded-[11px] border border-hairline bg-overlay text-primary-hover">
+        <div className="glass-control mx-auto max-w-[300px] rounded-[18px] px-8 py-7 text-center">
+          <span className="mx-auto mb-3 grid size-10 place-items-center rounded-[12px] border border-primary/20 bg-primary/10 text-primary-hover shadow-glow">
             <Sparkles size={17} />
           </span>
           <h2 className="text-[13px] font-[620] leading-snug text-ink">Investigate this project</h2>

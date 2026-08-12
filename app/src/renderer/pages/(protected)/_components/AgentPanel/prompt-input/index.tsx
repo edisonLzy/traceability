@@ -6,7 +6,7 @@ import { Button } from "@renderer/components/ui/button";
 import { cn } from "@renderer/lib/utils";
 import type { AvailableModel } from "@shared/models-ipc";
 import { EditorContent } from "@tiptap/react";
-import { ArrowUp, Square } from "lucide-react";
+import { Send, Square } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 
 import type { PromptSubmission } from "../promptTypes";
@@ -142,7 +142,7 @@ export function PromptInput({
     <div>
       <div
         className={cn(
-          "rounded-[11px] border border-hairline-strong bg-overlay shadow-[0_10px_28px_rgba(0,0,0,0.18)] transition-[border-color,box-shadow] focus-within:border-primary/55 focus-within:shadow-[0_0_0_3px_rgba(143,156,255,0.08),0_10px_28px_rgba(0,0,0,0.18)]",
+          "rounded-[15px] border-0 bg-transparent [box-shadow:var(--ui-shadow-input)] backdrop-blur-[24px] transition-[background-color,box-shadow] focus-within:bg-surface-glass/20 focus-within:[box-shadow:0_0_0_3px_var(--glow),var(--ui-shadow-input)]",
           disabled && !isRunning && "opacity-80",
         )}
       >
@@ -155,7 +155,7 @@ export function PromptInput({
           <Button
             aria-label={isRunning ? "Stop response" : "Send prompt"}
             className={cn(
-              "size-7 rounded-[7px]",
+              "size-7 rounded-[9px] disabled:!border-primary/20 disabled:!bg-primary/10 disabled:!text-primary-hover disabled:opacity-100 disabled:shadow-none",
               isRunning && "border-danger/30 bg-danger/15 text-danger",
             )}
             disabled={isRunning ? !isStopEnabled : !canSubmit}
@@ -171,7 +171,11 @@ export function PromptInput({
             type="button"
             variant={isRunning ? "danger" : "primary"}
           >
-            {isRunning ? <Square className="size-3" fill="currentColor" /> : <ArrowUp size={14} />}
+            {isRunning ? (
+              <Square className="size-3" fill="currentColor" />
+            ) : (
+              <Send className="size-3.5" strokeWidth={2.2} />
+            )}
           </Button>
         </div>
       </div>

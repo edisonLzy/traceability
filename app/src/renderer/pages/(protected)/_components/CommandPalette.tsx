@@ -135,8 +135,8 @@ export function CommandPalette() {
     >
       <DialogContent
         showCloseButton={false}
-        backdropClassName="z-[89] bg-black/40"
-        className="z-[90] w-[min(570px,calc(100vw-48px))] max-w-none overflow-hidden border-hairline-strong bg-surface-glass-elevated p-0 shadow-[0_16px_50px_rgba(0,0,0,0.34),0_2px_12px_rgba(0,0,0,0.22)] backdrop-blur-2xl"
+        backdropClassName="command-palette-overlay z-[89]"
+        className="command-palette-content z-[90] max-h-[calc(100vh-96px)] w-[min(620px,calc(100vw-48px))] max-w-none overflow-hidden p-0"
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <DialogDescription className="sr-only">{description}</DialogDescription>
@@ -215,7 +215,7 @@ export function CommandPalette() {
 
 function CommandIcon({ icon: Icon }: { icon?: CommandDefinition["icon"] }) {
   return (
-    <span className="grid size-[27px] place-items-center rounded-[7px] bg-overlay text-primary-hover">
+    <span className="grid size-[27px] place-items-center rounded-[8px] border border-primary/15 bg-primary/10 text-primary-hover shadow-glass-sm">
       {Icon ? <Icon size={14} /> : null}
     </span>
   );

@@ -41,7 +41,7 @@ export function AskUserQuestionPanel({ request, sessionId }: AskUserQuestionPane
   return (
     <section
       aria-label="Agent question"
-      className="rounded-[11px] border border-warning/30 bg-warning/[0.055] p-3 shadow-[0_10px_28px_rgba(0,0,0,0.16)]"
+      className="rounded-[14px] border border-warning/30 bg-warning/[0.07] p-3 shadow-glass-sm backdrop-blur-2xl"
     >
       <div className="mb-2 flex items-center justify-between gap-2 text-[10px] font-[660] uppercase tracking-[0.08em] text-warning">
         Agent needs your input
@@ -92,7 +92,7 @@ export function AskUserQuestionPanel({ request, sessionId }: AskUserQuestionPane
         })}
       </div>
       <textarea
-        className="mt-2 min-h-14 w-full resize-y rounded-[7px] border border-hairline bg-black/15 p-2 text-[11px] text-ink outline-none placeholder:text-tertiary focus:border-primary/55"
+        className="glass-control mt-2 min-h-14 w-full resize-y rounded-[10px] p-2 text-[11px] text-ink outline-none placeholder:text-tertiary focus:border-primary/55"
         onChange={(event) => setNote(event.target.value)}
         placeholder="Add context for the agent (optional)"
         value={note}

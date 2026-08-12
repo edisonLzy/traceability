@@ -1,4 +1,3 @@
-import { ModeToggle } from "@renderer/components/Themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,10 +9,8 @@ import {
 import {
   Sidebar as SidebarRoot,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -21,15 +18,7 @@ import {
 import { useIssues } from "@renderer/hooks/use-issues";
 import { cn } from "@renderer/lib/utils";
 import { projectStore } from "@renderer/store/project";
-import {
-  Activity,
-  Bug,
-  Compass,
-  FileCode2,
-  Fingerprint,
-  Inbox,
-  type LucideIcon,
-} from "lucide-react";
+import { Activity, Bug, Compass, FileCode2, Inbox, type LucideIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -44,15 +33,10 @@ export function Sidebar() {
   return (
     <SidebarRoot
       aria-label="Primary navigation"
-      className="relative z-20 w-[52px] shrink-0 overflow-visible border-r border-hairline bg-surface-glass px-2 pb-3 backdrop-blur-2xl"
+      className="glass-panel relative z-20 w-[56px] shrink-0 overflow-visible rounded-[18px] px-2 py-3"
     >
-      <SidebarHeader className="items-center pt-3">
-        <div className="grid h-7 w-8 place-items-center" aria-label="Traceability">
-          <Fingerprint size={17} className="text-primary-hover" />
-        </div>
-      </SidebarHeader>
       <SidebarContent className="items-center">
-        <SidebarGroup className="items-center pt-3">
+        <SidebarGroup className="items-center">
           <SidebarGroupContent>
             <SidebarMenu className="items-center">
               <SidebarNavLink to="/inbox" icon={Inbox} label="Inbox" />
@@ -74,9 +58,6 @@ export function Sidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="items-center border-t border-hairline pt-2.5">
-        <ModeToggle />
-      </SidebarFooter>
     </SidebarRoot>
   );
 }
@@ -103,8 +84,8 @@ function SidebarNavLink({
         isActive={active}
         onClick={() => navigate(to)}
         className={cn(
-          "size-8 border border-hairline bg-overlay text-muted hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink",
-          active && "border-hairline-strong bg-overlay-strong text-ink",
+          "size-8 border border-transparent bg-transparent text-tertiary transition-[color,background-color,box-shadow] hover:border-hairline hover:bg-overlay-strong hover:text-ink",
+          active && "border-primary/20 bg-primary/10 text-primary-hover shadow-glass-sm",
         )}
       >
         <Icon size={15} className={cn(active && "text-primary-hover")} />
@@ -162,8 +143,8 @@ function SidebarNavigationMenu({
               aria-label={label}
               isActive={isActive}
               className={cn(
-                "size-8 border border-hairline bg-overlay text-muted hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink",
-                isActive && "border-hairline-strong bg-overlay-strong text-ink",
+                "size-8 border border-transparent bg-transparent text-tertiary transition-[color,background-color,box-shadow] hover:border-hairline hover:bg-overlay-strong hover:text-ink",
+                isActive && "border-primary/20 bg-primary/10 text-primary-hover shadow-glass-sm",
               )}
             />
           }

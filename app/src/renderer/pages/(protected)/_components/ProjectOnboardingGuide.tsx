@@ -17,8 +17,6 @@ import { useCreateProject } from "../_hooks/useCreateProject";
 
 const STEPS = ["Welcome", "Slug", "Name", "Review"] as const;
 
-const AVATAR_GRADIENT = "linear-gradient(145deg,#9ba7ff,#626fd2)";
-
 /**
  * Full-screen first-run guide shown when no projects exist yet. Walks the
  * user through creating their first project in four steps; on success the
@@ -52,13 +50,13 @@ export function ProjectOnboardingGuide() {
   };
 
   return (
-    <div className="app-drag-region relative h-screen overflow-hidden bg-canvas">
+    <div className="app-drag-region relative h-screen overflow-hidden bg-transparent">
       <AmbientBackground />
       <div className="app-no-drag select-text relative flex h-full flex-col items-center justify-center px-6 py-8">
         <div className="w-full max-w-[560px]">
           <Stepper current={step} />
 
-          <div key={step} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div key={step} className="onboarding-step">
             {step === 0 && <WelcomeStep />}
             {step === 1 && (
               <SlugStep
@@ -96,28 +94,15 @@ export function ProjectOnboardingGuide() {
 function AmbientBackground() {
   return (
     <>
-      <div
-        className="pointer-events-none absolute -top-40 left-1/2 h-[460px] w-[680px] -translate-x-1/2 rounded-full opacity-70 blur-[130px]"
-        style={{
-          background: "radial-gradient(closest-side, rgba(143,156,255,0.30), transparent))",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-60"
-        style={{
-          backgroundImage: "radial-gradient(var(--overlay) 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-          maskImage: "radial-gradient(ellipse at 50% 42%, black, transparent 72%)",
-          WebkitMaskImage: "radial-gradient(ellipse at 50% 42%, black, transparent 72%)",
-        }}
-      />
+      <div className="pointer-events-none absolute -top-52 left-1/2 h-[520px] w-[760px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,var(--glow-strong),transparent)] opacity-80 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-52 -bottom-72 size-[640px] rounded-full bg-[radial-gradient(closest-side,var(--glow),transparent)] blur-[120px]" />
     </>
   );
 }
 
 function Stepper({ current }: { current: number }) {
   return (
-    <div className="mb-10 flex flex-col items-center gap-2.5">
+    <div className="mb-9 flex flex-col items-center gap-2.5">
       <div className="flex items-center gap-1.5">
         {STEPS.map((label, i) => {
           const state = i < current ? "done" : i === current ? "active" : "upcoming";
@@ -127,7 +112,8 @@ function Stepper({ current }: { current: number }) {
                 className={cn(
                   "grid size-6 place-items-center rounded-full border text-[10px] font-[620] transition-colors",
                   state === "done" && "border-primary bg-primary text-primary-foreground",
-                  state === "active" && "border-primary bg-primary/15 text-primary",
+                  state === "active" &&
+                    "border-primary/60 bg-primary/15 text-primary shadow-[0_0_0_4px_var(--glow)]",
                   state === "upcoming" && "border-hairline text-tertiary",
                 )}
               >
@@ -158,11 +144,8 @@ function WelcomeStep() {
     { icon: Sparkles, label: "Agent" },
   ];
   return (
-    <div className="flex flex-col items-center text-center">
-      <div
-        className="mb-6 grid size-[104px] place-items-center rounded-[28px] border border-hairline-strong shadow-[0_18px_50px_rgba(0,0,0,0.4)]"
-        style={{ background: AVATAR_GRADIENT }}
-      >
+    <div className="glass-panel flex flex-col items-center rounded-[24px] px-12 py-11 text-center">
+      <div className="mb-6 grid size-[104px] place-items-center rounded-[28px] border border-white/30 bg-[linear-gradient(145deg,#9db2ff,#5d75ee)] shadow-[0_24px_55px_rgba(68,91,196,0.3),inset_0_1px_rgba(255,255,255,0.5)]">
         <Fingerprint size={42} className="text-white" />
       </div>
       <h1 className="m-0 text-[28px] font-[670] tracking-[-0.025em] text-ink">
@@ -176,7 +159,7 @@ function WelcomeStep() {
         {pills.map(({ icon: Icon, label }) => (
           <span
             key={label}
-            className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-overlay px-3 py-1.5 text-[11px] text-muted"
+            className="glass-control inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] text-muted"
           >
             <Icon size={12} className="text-primary-hover" /> {label}
           </span>
@@ -196,11 +179,8 @@ function SlugStep({
   onContinue?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center text-center">
-      <div
-        className="mb-6 grid size-20 place-items-center rounded-[22px] text-[22px] font-[680] text-white shadow-[0_14px_36px_rgba(0,0,0,0.36)] transition-transform"
-        style={{ background: AVATAR_GRADIENT }}
-      >
+    <div className="glass-panel flex flex-col items-center rounded-[24px] px-12 py-11 text-center">
+      <div className="mb-6 grid size-20 place-items-center rounded-[22px] bg-[linear-gradient(145deg,#9db2ff,#5d75ee)] text-[22px] font-[680] text-white shadow-glow transition-transform">
         {slug.trim() ? initials(slug) : "··"}
       </div>
       <h2 className="m-0 text-[20px] font-[660] tracking-[-0.02em] text-ink">
@@ -217,7 +197,7 @@ function SlugStep({
           if (event.key === "Enter" && onContinue) onContinue();
         }}
         placeholder="e.g. checkout-web"
-        className="mt-6 h-11 w-full max-w-[360px] rounded-[10px] border border-hairline bg-surface-2 px-3.5 text-[14px] text-ink outline-none transition-colors placeholder:text-tertiary focus:border-primary"
+        className="glass-control mt-6 h-11 w-full max-w-[360px] rounded-[12px] px-3.5 text-[14px] text-ink outline-none transition-[border-color,box-shadow,background-color] placeholder:text-tertiary focus:border-primary/60 focus:bg-surface-2 focus:shadow-[0_0_0_4px_var(--glow)]"
       />
     </div>
   );
@@ -233,8 +213,8 @@ function NameStep({
   onContinue?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center text-center">
-      <div className="mb-6 grid size-20 place-items-center rounded-[22px] border border-hairline bg-overlay text-primary-hover shadow-[0_14px_36px_rgba(0,0,0,0.36)]">
+    <div className="glass-panel flex flex-col items-center rounded-[24px] px-12 py-11 text-center">
+      <div className="glass-control mb-6 grid size-20 place-items-center rounded-[22px] bg-primary/10 text-primary-hover shadow-glow">
         <GitBranch size={34} />
       </div>
       <h2 className="m-0 text-[20px] font-[660] tracking-[-0.02em] text-ink">
@@ -256,7 +236,7 @@ function NameStep({
             if (event.key === "Enter" && onContinue) onContinue();
           }}
           placeholder="Checkout web"
-          className="h-11 w-full rounded-[10px] border border-hairline bg-surface-2 py-0 pl-10 pr-3.5 text-[14px] text-ink outline-none transition-colors placeholder:text-tertiary focus:border-primary"
+          className="glass-control h-11 w-full rounded-[12px] py-0 pr-3.5 pl-10 text-[14px] text-ink outline-none transition-[border-color,box-shadow,background-color] placeholder:text-tertiary focus:border-primary/60 focus:bg-surface-2 focus:shadow-[0_0_0_4px_var(--glow)]"
         />
       </div>
       <p className="mt-2.5 text-[11px] text-tertiary">This name can be changed later.</p>
@@ -266,16 +246,13 @@ function NameStep({
 
 function ReviewStep({ name, slug }: { name: string; slug: string }) {
   return (
-    <div className="flex flex-col items-center text-center">
+    <div className="glass-panel flex flex-col items-center rounded-[24px] px-12 py-11 text-center">
       <h2 className="m-0 text-[20px] font-[660] tracking-[-0.02em] text-ink">Looks good?</h2>
       <p className="mt-2 max-w-[380px] text-[12px] text-muted">
         Confirm the details and create your project.
       </p>
-      <div className="mt-6 flex w-full max-w-[360px] items-center gap-3 rounded-[14px] border border-hairline bg-surface-2 p-4 text-left">
-        <div
-          className="grid size-11 shrink-0 place-items-center rounded-[12px] text-[13px] font-[680] text-white"
-          style={{ background: AVATAR_GRADIENT }}
-        >
+      <div className="glass-control mt-6 flex w-full max-w-[360px] items-center gap-3 rounded-[16px] p-4 text-left">
+        <div className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[linear-gradient(145deg,#9db2ff,#5d75ee)] text-[13px] font-[680] text-white shadow-glow">
           {initials(name)}
         </div>
         <div className="min-w-0">
@@ -309,7 +286,7 @@ function Footer({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex h-10 items-center gap-1.5 rounded-[10px] border border-hairline bg-overlay px-4 text-[12px] text-muted transition-colors hover:bg-overlay-strong hover:text-ink"
+          className="glass-control inline-flex h-10 items-center gap-1.5 rounded-[11px] px-4 text-[12px] text-muted transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:bg-overlay-strong hover:text-ink active:bg-overlay-strong"
         >
           <ArrowLeft size={14} /> Back
         </button>
@@ -319,7 +296,7 @@ function Footer({
           type="button"
           onClick={onCreate}
           disabled={creating}
-          className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-primary bg-primary px-5 text-[12px] font-[600] text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-10 items-center gap-2 rounded-[11px] border border-primary/70 bg-primary px-5 text-[12px] font-[620] text-primary-foreground shadow-glow transition-[background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-primary-hover active:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {creating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
           {creating ? "Creating…" : "Create project"}
@@ -329,7 +306,7 @@ function Footer({
           type="button"
           onClick={onNext}
           disabled={!canContinue}
-          className="inline-flex h-10 items-center gap-1.5 rounded-[10px] border border-primary bg-primary px-5 text-[12px] font-[600] text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-10 items-center gap-1.5 rounded-[11px] border border-primary/70 bg-primary px-5 text-[12px] font-[620] text-primary-foreground shadow-glow transition-[background-color,box-shadow] duration-150 [transition-timing-function:var(--ease-out)] hover:bg-primary-hover active:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {step === 0 ? "Get started" : "Continue"}
           <ArrowRight size={14} />

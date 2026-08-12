@@ -29,8 +29,8 @@ export function DropZone({ onFiles, disabled = false, hint }: DropZoneProps) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-hairline bg-overlay px-6 py-10 text-center transition-colors",
-        dragging && "border-primary/60 bg-primary/5",
+        "glass-panel flex flex-col items-center justify-center gap-2 rounded-[18px] border-dashed px-6 py-10 text-center transition-[border-color,background-color,box-shadow] hover:border-primary/30",
+        dragging && "border-primary/60 bg-primary/10 shadow-glow",
         disabled && "cursor-not-allowed opacity-60",
       )}
       onDragOver={(event) => {
@@ -64,7 +64,7 @@ export function DropZone({ onFiles, disabled = false, hint }: DropZoneProps) {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={disabled}
-        className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-overlay px-3 py-1.5 text-[12px] text-muted hover:border-hairline-strong hover:bg-overlay-strong hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+        className="glass-control mt-1 inline-flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[12px] text-muted transition-colors hover:bg-overlay-strong hover:text-ink active:bg-overlay-strong disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Upload size={13} /> Choose files
       </button>

@@ -152,7 +152,7 @@ export function IssueDetailPage() {
             type="button"
             disabled={updateIssue.isPending}
             onClick={() => void changeStatus(group === "unresolved" ? "resolved" : "unresolved")}
-            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-hairline bg-surface-1 px-3 text-[11px] font-[590] text-muted transition-colors hover:border-hairline-strong hover:bg-overlay disabled:opacity-50"
+            className="glass-control inline-flex h-8.5 items-center gap-1.5 rounded-[10px] px-3 text-[11px] font-[590] text-muted transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:bg-overlay-strong active:bg-overlay-strong disabled:opacity-50"
           >
             {group === "unresolved" ? (
               <Check className="size-3.5" />
@@ -164,7 +164,7 @@ export function IssueDetailPage() {
           <button
             type="button"
             onClick={investigate}
-            className="inline-flex h-8.5 items-center gap-1.5 rounded-[9px] border border-primary/40 bg-primary px-3 text-[11px] font-[590] text-primary-foreground transition-colors hover:bg-primary-hover"
+            className="inline-flex h-8.5 items-center gap-1.5 rounded-[10px] border border-primary/60 bg-primary px-3 text-[11px] font-[620] text-primary-foreground shadow-glow transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:bg-primary-hover active:bg-primary-hover"
           >
             <Sparkles className="size-3.5" /> Investigate
           </button>
@@ -261,7 +261,7 @@ export function IssueDetailPage() {
                       aria-selected={active}
                       onClick={() => setSelectedEventId(event.id)}
                       className={cn(
-                        "inline-flex h-[30px] shrink-0 items-center gap-1.5 rounded-lg border border-hairline bg-surface-1 px-2.5 text-[9px] text-tertiary transition-colors",
+                        "glass-control inline-flex h-[30px] shrink-0 items-center gap-1.5 rounded-[9px] px-2.5 text-[9px] text-tertiary transition-colors",
                         active && "border-primary/45 bg-primary/8 text-primary-hover",
                       )}
                     >
@@ -389,10 +389,7 @@ function IssueModule({
 }) {
   const titleId = `${id}-title`;
   return (
-    <section
-      aria-labelledby={titleId}
-      className="overflow-hidden rounded-[14px] border border-hairline bg-surface-glass"
-    >
+    <section aria-labelledby={titleId} className="glass-panel overflow-hidden rounded-[16px]">
       <div className="flex min-h-11.5 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-hairline px-3.5 py-2.5">
         <h2 id={titleId} className="m-0 text-[12px] font-[660] text-muted">
           {title}
@@ -487,7 +484,7 @@ function StatusButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-lg border border-hairline bg-surface-1 px-2.5 text-[10px] text-muted transition-colors hover:bg-overlay disabled:opacity-50",
+        "glass-control inline-flex h-7 items-center gap-1.5 rounded-[9px] px-2.5 text-[10px] text-muted transition-colors hover:bg-overlay-strong active:bg-overlay-strong disabled:opacity-50",
         active && "border-primary/50 bg-primary/10 text-ink",
       )}
     >
@@ -542,7 +539,7 @@ function RelatedReplayBody({
   const replay = replays[0]!;
   return (
     <div className="grid grid-cols-1 gap-3 p-3.5 @min-[760px]:grid-cols-[minmax(0,1fr)_auto]">
-      <div className="min-w-0 rounded-[10px] border border-hairline bg-overlay p-3">
+      <div className="glass-control min-w-0 rounded-[12px] p-3">
         <div className="mb-1 text-[9px] font-[700] tracking-[0.07em] text-tertiary uppercase">
           Replay ID
         </div>
@@ -559,7 +556,7 @@ function RelatedReplayBody({
           </div>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-4 rounded-[10px] border border-hairline bg-overlay p-3 @min-[760px]:grid-cols-1">
+      <div className="glass-control grid grid-cols-3 gap-4 rounded-[12px] p-3 @min-[760px]:grid-cols-1">
         <ReplayMetric label="Started" value={formatDateTime(replay.startedAt)} />
         <ReplayMetric label="Duration" value={formatDuration(replay.durationMs)} />
         <ReplayMetric label="Segments" value={replay.segmentCount.toLocaleString()} />
@@ -585,7 +582,7 @@ function ReplayMetric({ label, value }: { label: string; value: string }) {
 
 function RawPayloadModule({ payload }: { payload: Record<string, unknown> | undefined }) {
   return (
-    <section className="overflow-hidden rounded-[14px] border border-hairline bg-surface-glass">
+    <section className="glass-panel overflow-hidden rounded-[16px]">
       <details className="group">
         <summary className="flex min-h-11.5 cursor-pointer list-none items-center gap-2 px-3.5 text-[11px] font-[620] text-muted">
           <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
