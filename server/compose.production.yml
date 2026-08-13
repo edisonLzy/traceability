@@ -7,17 +7,17 @@ services:
     command: ["node", "dist/db/migrate.js"]
     environment: &server-environment
       NODE_ENV: production
-      DATABASE_URL: postgresql://traceability:traceability@postgres:5432/traceability
+      DATABASE_URL: postgresql://${POSTGRES_USER:-traceability}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-traceability}
       DATABASE_POOL_MAX: 10
       REDIS_URL: redis://redis:6379
-      PUBLIC_INGEST_URL: ${PUBLIC_INGEST_URL:-http://localhost:3000}
+      PUBLIC_INGEST_URL: ${PUBLIC_INGEST_URL:?PUBLIC_INGEST_URL must be set}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       OBJECT_STORAGE_ENDPOINT: http://minio:9000
       OBJECT_STORAGE_REGION: us-east-1
-      OBJECT_STORAGE_BUCKET: traceability-sourcemaps
-      OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-traceability}
-      OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-traceability-development-secret}
+      OBJECT_STORAGE_BUCKET: ${OBJECT_STORAGE_BUCKET:-traceability-sourcemaps}
+      OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
+      OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,6 +35,7 @@ services:
       <<: *server-environment
       PORT: 3000
       HOST: 0.0.0.0
+    restart: unless-stopped
     ports:
       - "${TRACEABILITY_PORT:-3000}:3000"
     healthcheck:
@@ -67,6 +68,7 @@ services:
     image: ${TRACEABILITY_SERVER_IMAGE:-traceability-server:local}
     command: ["node", "dist/dispatcher.js"]
     environment: *server-environment
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,6 +84,7 @@ services:
     image: ${TRACEABILITY_SERVER_IMAGE:-traceability-server:local}
     command: ["node", "dist/worker.js"]
     environment: *server-environment
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -96,13 +99,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: traceability
-      POSTGRES_USER: traceability
-      POSTGRES_PASSWORD: traceability
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-traceability}
+      POSTGRES_USER: ${POSTGRES_USER:-traceability}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U traceability -d traceability"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-traceability} -d ${POSTGRES_DB:-traceability}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -124,8 +129,8 @@ services:
     image: minio/minio:latest
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-traceability}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-traceability-development-secret}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set}
     healthcheck:
       test: ["CMD-SHELL", "mc ready local || exit 1"]
       interval: 5s
@@ -141,8 +146,8 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-        mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-traceability} ${MINIO_ROOT_PASSWORD:-traceability-development-secret} &&
-        mc mb --ignore-existing local/traceability-sourcemaps
+        mc alias set local http://minio:9000 ${MINIO_ROOT_USER:?MINIO_ROOT_USER must be set} ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD must be set} &&
+        mc mb --ignore-existing local/${OBJECT_STORAGE_BUCKET:-traceability-sourcemaps}
       "
     restart: "no"
 
