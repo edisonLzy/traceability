@@ -44,6 +44,49 @@ final result: passed
 
 ---
 
+# Design QA: Split-panel separator and corner-shadow follow-up
+
+## Sources
+
+- Light separator reference: `/var/folders/lw/00mw47y55zb84yrfl_xy0qnw0000gn/T/codex-clipboard-0046495b-e807-4b97-a8a3-9f5880c6f638.png`
+- Light corner-shadow reference: `/var/folders/lw/00mw47y55zb84yrfl_xy0qnw0000gn/T/codex-clipboard-f84ec227-c44a-48a6-ab78-51f3be03dbde.png`
+- Dark separator reference: `/var/folders/lw/00mw47y55zb84yrfl_xy0qnw0000gn/T/codex-clipboard-37502916-216b-413e-af1a-7052db105afe.png`
+- Light implementation: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/light-resize-divider-corners-after-clean.png`
+- Dark implementation: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/dark-resize-divider-after.png`
+- Light full comparison: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/light-resize-divider-comparison.png`
+- Light focused comparison: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/light-resize-divider-focused-comparison.png`
+- Dark focused comparison: `/Users/zhiyu/.codex/visualizations/2026/08/12/019ff646-b423-7363-93bd-c39a576368ed/dark-resize-divider-comparison.png`
+
+## Matched states
+
+- Real Electron Inbox + Agent split layout with an empty Inbox and empty `New conversation` state.
+- Light and dark implementations were captured at 1334 × 768.
+- The 964 × 1666 and 2920 × 1678 light references and the 402 × 1688 dark reference were normalized or focused around the split-panel gap before comparison.
+- Typography, copy, icons, and content layout were left unchanged; this pass only adjusted separator color and panel overflow/elevation behavior.
+
+## Root cause and fixes
+
+- P2: the split handle used a translucent canvas fill and backdrop blur, which rendered as a vertical stripe in both themes. The handle now keeps its 8 px hit target but is visually transparent.
+- P2: after removing the fill, the neighboring glass-panel shadows became visible through the top and bottom rounded corners. Split-mode panel containers now clip overflow at the existing 18 px radius.
+- Floating Agent mode explicitly preserves visible overflow, so its elevation behavior is unchanged.
+
+## QA history
+
+1. Compared both annotated light references with the real Electron implementation and confirmed that the stripe and black corner wedges are absent.
+2. Switched the same live split state to dark mode and compared it with the annotated dark reference; the gap is neutral and contains no separator line.
+3. Focused the accessible splitter, moved it from 55.726 to 50.726 with the keyboard, and restored it to 55.726, confirming resize behavior remains intact.
+4. Verified 89 tests, TypeScript type-checking, and linting.
+
+## Severity review
+
+- P0: none.
+- P1: none.
+- P2: none remaining.
+
+final result: passed
+
+---
+
 # Design QA: AI Studio UI refactor
 
 ## Sources
