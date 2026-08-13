@@ -61,18 +61,16 @@ jobs:
         run: |
           mkdir -p .traceability-artifacts
           tar --exclude-vcs \
-            --exclude='.traceability-artifacts' \
-            --exclude='node_modules' \
-            --exclude='*/node_modules' \
-            --exclude='dist' \
-            --exclude='*/dist' \
-            --exclude='out' \
-            --exclude='*/out' \
-            --exclude='.turbo' \
-            --exclude='*/.turbo' \
-            --exclude='server/data' \
-            --exclude='*.env' \
-            -czf .traceability-artifacts/traceability-source.tar.gz .
+            -czf .traceability-artifacts/traceability-source.tar.gz \
+            .dockerignore \
+            .npmrc \
+            package.json \
+            pnpm-lock.yaml \
+            pnpm-workspace.yaml \
+            tsconfig.base.json \
+            turbo.json \
+            packages \
+            server
           cp .traceability-artifacts/traceability-source.tar.gz traceability-source.tar.gz
       - name: Upload source archive
         uses: appleboy/scp-action@v0.1.7
