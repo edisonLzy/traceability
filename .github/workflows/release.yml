@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "app/**"
+      - "server/**"
+      - "packages/monitor/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+      - "tsconfig.base.json"
+      - "turbo.json"
   workflow_dispatch:
 
 permissions:
@@ -64,6 +73,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       RELEASE_VERSION: ${{ needs.version.outputs.version }}
+      VITE_SERVER_URL: http://119.29.145.158:3000
+      MAIN_VITE_SERVER_URL: http://119.29.145.158:3000
+      MAIN_VITE_TRACEABILITY_DSN: ${{ secrets.TRACEABILITY_DSN }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

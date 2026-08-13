@@ -1,0 +1,94 @@
+name: Deploy server
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "server/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+      - "tsconfig.base.json"
+      - "turbo.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-server-master
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Type-check server
+        run: pnpm --filter @tracerability/server typecheck
+      - name: Test server
+        run: pnpm --filter @tracerability/server test
+      - name: Build server
+        run: pnpm --filter @tracerability/server build
+
+  deploy:
+    name: Deploy to Tencent Cloud
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create source archive
+        run: |
+          tar --exclude-vcs \
+            --exclude='node_modules' \
+            --exclude='*/node_modules' \
+            --exclude='dist' \
+            --exclude='*/dist' \
+            --exclude='out' \
+            --exclude='*/out' \
+            --exclude='.turbo' \
+            --exclude='*/.turbo' \
+            --exclude='server/data' \
+            --exclude='*.env' \
+            -czf traceability-source.tar.gz .
+      - name: Upload source archive
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: traceability-source.tar.gz
+          target: /opt/traceability/incoming
+          overwrite: true
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        env:
+          DEPLOY_COMMIT: ${{ github.sha }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: DEPLOY_COMMIT
+          script_stop: true
+          script: |
+            set -eu
+            RELEASE_DIR="/opt/traceability/releases/$DEPLOY_COMMIT"
+            mkdir -p "$RELEASE_DIR"
+            tar -xzf /opt/traceability/incoming/traceability-source.tar.gz -C "$RELEASE_DIR"
+            TRACEABILITY_REPO_DIR="$RELEASE_DIR" \
+              DEPLOY_COMMIT="$DEPLOY_COMMIT" \
+              "$RELEASE_DIR/server/scripts/deploy.sh"
+            ln -sfn "$RELEASE_DIR" /opt/traceability/current
+            rm -f /opt/traceability/incoming/traceability-source.tar.gz

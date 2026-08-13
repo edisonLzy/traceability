@@ -19,10 +19,11 @@ function getPersistedAccessToken(): string | null {
 }
 
 export function createMainTrpcClient(): TRPCClient<AppRouter> {
-  const baseUrl = (process.env.TRACEABILITY_SERVER_URL ?? "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
+  const baseUrl = (
+    import.meta.env.MAIN_VITE_SERVER_URL ??
+    process.env.TRACEABILITY_SERVER_URL ??
+    "http://localhost:3000"
+  ).replace(/\/$/, "");
 
   return createTRPCClient<AppRouter>({
     links: [

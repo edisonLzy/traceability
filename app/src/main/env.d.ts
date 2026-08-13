@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly MAIN_VITE_TRACEABILITY_DSN: string;
+  readonly MAIN_VITE_SERVER_URL?: string;
   // more env variables...
 }
 
