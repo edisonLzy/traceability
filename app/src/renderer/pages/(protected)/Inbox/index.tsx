@@ -6,7 +6,6 @@ import {
   useReopenInboxItem,
   useResolveInboxItem,
 } from "@renderer/hooks/use-inbox";
-import { setAgentContext } from "@renderer/lib/agent-events";
 import { cn, relativeTime } from "@renderer/lib/utils";
 import { projectStore } from "@renderer/store/project";
 import {
@@ -64,17 +63,6 @@ export function InboxPage() {
 
   const detailQuery = useInboxItem(selectedId);
   const selectedItem = detailQuery.data ?? null;
-
-  useEffect(() => {
-    if (!selectedItem) return;
-    setAgentContext({
-      projectId: selectedItem.projectId,
-      projectName: currentProject?.name,
-      source: "issue",
-      issueId: selectedItem.issueId,
-      issueTitle: selectedItem.issue.title,
-    });
-  }, [currentProject?.name, selectedItem]);
 
   return (
     <div className="@container h-full min-h-[520px] overflow-hidden p-2.5 @max-[660px]:p-2">
@@ -414,7 +402,7 @@ function InboxDetailPanel({
         </DetailModule>
 
         <DetailModule
-          subtitle="Structured Agent output attached to this work item"
+          subtitle="Structured investigation context attached to this work item"
           title="Investigation brief"
         >
           <InvestigationBrief detail={detail} />
@@ -485,9 +473,11 @@ function InvestigationBrief({ detail }: { detail: InboxDetail }) {
         <span className="glass-control mx-auto mb-2 grid size-9 place-items-center rounded-[11px] border-primary/20 bg-primary/10 text-primary-hover shadow-glow">
           <Sparkles className="size-4" />
         </span>
-        <strong className="block text-[11px] font-[650] text-ink">No Agent brief yet</strong>
+        <strong className="block text-[11px] font-[650] text-ink">
+          No investigation brief yet
+        </strong>
         <p className="mx-auto mt-1 max-w-[360px] text-[10px] leading-5 text-tertiary">
-          The selected issue is pinned in the Agent panel. Any structured findings will appear here.
+          Structured findings can be attached to this work item when they become available.
         </p>
       </div>
     );

@@ -11,7 +11,6 @@ import { useStore } from "zustand";
 import { AskUserQuestionPanel } from "./AskUserQuestionPanel";
 import { ChatMessages } from "./messages";
 import { getSelectedModel, isMessageEntry, isUserMessage, toSessionEntry } from "./messages/types";
-import { MonitoringContextCard } from "./MonitoringContextCard";
 import { PanelBody, PanelFooter, PanelHeader, PanelLayout } from "./PanelLayout";
 import { PendingMessages } from "./PendingMessages";
 import { PromptInput, type PromptInputProps } from "./prompt-input";
@@ -73,24 +72,14 @@ export function ActiveSessionContent({ sessionId }: { sessionId: string }) {
       />
 
       <PanelBody className="overflow-hidden">
-        <div className="flex h-full min-h-0 flex-col">
-          {activeSession?.monitoringContext?.source === "issue" &&
-          activeSession.monitoringContext.issueId ? (
-            <div className="shrink-0 border-b border-hairline px-3.5 py-3">
-              <MonitoringContextCard context={activeSession.monitoringContext} />
-            </div>
-          ) : null}
-          <div className="min-h-0 flex-1">
-            <ChatMessages
-              entries={entries}
-              isRunning={isRunning}
-              messageEntries={messageEntries}
-              sessionId={sessionId}
-              streamingEntryId={streamingEntryId}
-              toolStates={toolStates}
-            />
-          </div>
-        </div>
+        <ChatMessages
+          entries={entries}
+          isRunning={isRunning}
+          messageEntries={messageEntries}
+          sessionId={sessionId}
+          streamingEntryId={streamingEntryId}
+          toolStates={toolStates}
+        />
       </PanelBody>
 
       <PanelFooter>
@@ -432,7 +421,6 @@ function useActiveSessionChat(activeSessionId: string) {
               providerId: submission.model.providerId,
             },
             skillIds: submission.skillIds,
-            monitoringContext: activeSession?.monitoringContext ?? undefined,
           },
         };
         await invoke("prompt", activeSessionId, appUserMessage);
@@ -441,7 +429,7 @@ function useActiveSessionChat(activeSessionId: string) {
         agentStore.getState().setSessionStatus(activeSessionId, "idle");
       }
     },
-    [activeSession?.monitoringContext, activeSession?.name, activeSessionId, entries, invoke],
+    [activeSession?.name, activeSessionId, entries, invoke],
   );
 
   const steerPrompt = useCallback(
@@ -460,7 +448,6 @@ function useActiveSessionChat(activeSessionId: string) {
               providerId: submission.model.providerId,
             },
             skillIds: submission.skillIds,
-            monitoringContext: activeSession?.monitoringContext ?? undefined,
           },
         };
         agentStore.getState().addPendingMessage(activeSessionId, appUserMessage);
@@ -470,7 +457,7 @@ function useActiveSessionChat(activeSessionId: string) {
         agentStore.getState().removePendingMessageByTimestamp(activeSessionId, timestamp);
       }
     },
-    [activeSession?.monitoringContext, activeSessionId, invoke],
+    [activeSessionId, invoke],
   );
 
   const followUpPrompt = useCallback(
@@ -489,7 +476,6 @@ function useActiveSessionChat(activeSessionId: string) {
               providerId: submission.model.providerId,
             },
             skillIds: submission.skillIds,
-            monitoringContext: activeSession?.monitoringContext ?? undefined,
           },
         };
         agentStore.getState().addPendingMessage(activeSessionId, appUserMessage);
@@ -499,7 +485,7 @@ function useActiveSessionChat(activeSessionId: string) {
         agentStore.getState().removePendingMessageByTimestamp(activeSessionId, timestamp);
       }
     },
-    [activeSession?.monitoringContext, activeSessionId, invoke],
+    [activeSessionId, invoke],
   );
 
   const stopPrompt = useCallback(async () => {

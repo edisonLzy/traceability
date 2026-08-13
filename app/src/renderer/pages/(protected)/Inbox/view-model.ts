@@ -13,7 +13,7 @@ export function inboxStateLabel(state: InboxState): string {
 
 export function activityDescription(activity: InboxActivity): string {
   if (activity.type === "created") return "Created from a new unresolved issue";
-  if (activity.type === "brief_updated") return "Agent investigation brief updated";
+  if (activity.type === "brief_updated") return "Investigation brief updated";
 
   const fromState = stringPayload(activity.payload, "fromState");
   const toState = stringPayload(activity.payload, "toState");

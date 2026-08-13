@@ -1,7 +1,16 @@
+import "@shared/agent-message";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Usage } from "@earendil-works/pi-ai";
-import type { MonitoringContext } from "@shared/agent-message";
 import type { AvailableModel } from "@shared/models-ipc";
+
+/** Context pinned by a Traceability monitor page before a prompt is sent. */
+export interface MonitoringContext {
+  projectId: string;
+  source: "general" | "issue" | "metric" | "performance";
+  issueId?: string;
+  metricName?: string;
+  hours?: 1 | 24 | 168;
+}
 
 /** Renderer view of the persisted session contract supplied by the main process. */
 export interface Session {
@@ -40,4 +49,3 @@ export interface AgentMessageMetadata {
 }
 
 export type { AgentMessage };
-export type { MonitoringContext };

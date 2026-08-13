@@ -1,24 +1,6 @@
 import type { AuthTokens } from "@shared/auth-ipc";
 import { createStore } from "zustand/vanilla";
 
-const browserSessionKey = "traceability:auth-session";
-
-function getElectronAPI() {
-  return window.electronAPI;
-}
-
-function readBrowserSession(): AuthTokens | null {
-  const persisted = window.sessionStorage.getItem(browserSessionKey);
-  if (!persisted) return null;
-
-  try {
-    return JSON.parse(persisted) as AuthTokens;
-  } catch {
-    window.sessionStorage.removeItem(browserSessionKey);
-    return null;
-  }
-}
-
 export type AuthState = "checking" | "authenticated" | "unauthenticated";
 
 export interface AuthStoreState {
@@ -47,31 +29,18 @@ export const authStore = createStore<AuthStoreState>()((set) => ({
   refreshToken: null,
 
   async loadPersistedSession(): Promise<AuthTokens | null> {
-    const electronAPI = getElectronAPI();
-    return electronAPI
-      ? electronAPI.invoke("getAuthSession")
-      : Promise.resolve(readBrowserSession());
+    return window.electronAPI.invoke("getAuthSession");
   },
 
   async completeLogin(tokens: AuthTokens) {
     set({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken });
-    const electronAPI = getElectronAPI();
-    if (electronAPI) {
-      await electronAPI.invoke("saveAuthSession", tokens);
-    } else {
-      window.sessionStorage.setItem(browserSessionKey, JSON.stringify(tokens));
-    }
+    await window.electronAPI.invoke("saveAuthSession", tokens);
     set({ state: "authenticated" });
   },
 
   async logout() {
     set({ accessToken: null, refreshToken: null });
-    const electronAPI = getElectronAPI();
-    if (electronAPI) {
-      await electronAPI.invoke("clearAuthSession");
-    } else {
-      window.sessionStorage.removeItem(browserSessionKey);
-    }
+    await window.electronAPI.invoke("clearAuthSession");
     set({ state: "unauthenticated" });
   },
 }));

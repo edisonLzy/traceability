@@ -12,31 +12,29 @@
 
 ## Capture setup
 
-- Master reference and final detail capture: 1440 × 900 CSS px, light theme, same project and Agent split.
+- Master reference and final detail capture: 1440 × 900 CSS px, light theme, same project and workspace shell.
 - Compact validation: 900 × 700 CSS px, light theme.
 - Reference and implementation show different product screens, so the comparison evaluates the shared visual system rather than pixel-identical content.
 
 ## Findings and fixes
 
-- [P1] After the master fast-forward, the protected shell and Agent panel inherited the new style but the Inbox queue and detail remained flat, opaque, and visually disconnected.
+- [P1] After the master fast-forward, the protected shell inherited the new style but the Inbox queue and detail remained flat, opaque, and visually disconnected.
   - Fix: Converted the queue, detail surface, and detail modules to the master `glass-panel` primitives with matching 18/16 px radii, translucent layers, hairlines, shadows, and inset scrolling.
 - [P1] Search, status tabs, selected rows, and state actions still used the previous neutral control treatment.
   - Fix: Adopted `glass-control`, the master blue primary/focus treatment, glow shadow, and compact control heights. Selected queue rows now use the same blue-tinted emphasis as current navigation and issue controls.
 - [P2] Inbox typography and spacing were denser than the redesigned Issues screen.
   - Fix: Aligned title scale, module headings, metadata, action spacing, and content padding to the current Issues detail modules.
-- [P2] The Agent monitoring context card used the legacy flat border style.
-  - Fix: Restyled the card with the shared glass control, blue-tinted icon tile, current radii, and typography while preserving its existing behavior.
 - No actionable P0, P1, or P2 findings remain after the final comparison.
 
 ## Scope decisions
 
 - `Investigate` remains excluded from the Inbox MVP as explicitly requested.
-- Open and Done, search, item selection, Resolve, Ignore, Reopen, and Agent context pinning remain unchanged functionally.
-- The master branch's current 50/50 resizable workspace-to-Agent split remains authoritative.
+- Open and Done, search, item selection, Resolve, Ignore, and Reopen remain unchanged functionally.
+- Agent Panel integration is explicitly outside this Inbox renderer scope; selecting an item does not change Agent state or message context.
 
 ## Interaction and responsive validation
 
-- Searched the Open queue for `OAuth`, cleared the query, and verified the filtered count and Agent context.
+- Searched the Open queue for `OAuth`, cleared the query, and verified the filtered count.
 - Switched between Open and Done and verified the seeded completed outcomes.
 - Resolved an Open item, verified it moved to Done, reopened it, and verified it returned to Open.
 - At 900 × 700, verified queue → detail → queue navigation, readable wrapping, reachable actions, and no horizontal overflow.
