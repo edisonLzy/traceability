@@ -7,6 +7,7 @@ import { createApp } from "../../../app.js";
 import { loadRuntimeConfig } from "../../../config/index.js";
 import { createAccessToken } from "../../../helper/auth.js";
 import { createDatabase, type Database } from "../../../infrastructure/database/client.js";
+import { inboxActivities, inboxItems } from "../../../modules/inbox/schema.js";
 import { events, issues } from "../../../modules/issues/schema.js";
 import { ProcessingRepository } from "../../../modules/processing/repository.js";
 import { ProcessingService } from "../../../modules/processing/service.js";
@@ -102,8 +103,70 @@ describeIntegration("PostgreSQL ingest integration", () => {
 
     const storedEvents = await database.db.select().from(events).where(eq(events.eventId, eventId));
     const storedIssues = await database.db.select().from(issues);
+    const storedInboxItems = await database.db.select().from(inboxItems);
+    const storedInboxActivities = await database.db.select().from(inboxActivities);
     expect(storedEvents).toHaveLength(1);
     expect(storedIssues).toHaveLength(1);
     expect(storedIssues[0]?.eventCount).toBe(1);
+    expect(storedInboxItems).toHaveLength(1);
+    expect(storedInboxItems[0]).toMatchObject({
+      issueId: storedIssues[0]?.id,
+      state: "open",
+      triggerReason: "New unresolved issue",
+    });
+    expect(storedInboxActivities).toHaveLength(1);
+    expect(storedInboxActivities[0]).toMatchObject({
+      inboxItemId: storedInboxItems[0]?.id,
+      type: "created",
+      actorType: "system",
+    });
+
+    const resolved = await app.inject({
+      method: "POST",
+      url: "/api/trpc/inbox.resolve",
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+      payload: JSON.stringify(storedInboxItems[0]!.id),
+    });
+    expect(resolved.statusCode).toBe(200);
+    expect(resolved.json().result.data).toMatchObject({
+      item: { state: "done" },
+      issue: { status: "resolved" },
+    });
+
+    const recurringEventId = randomUUID().replaceAll("-", "");
+    const acceptedRecurring = await app.inject({
+      method: "POST",
+      url: `/api/${created.project.sentryProjectId}/envelope/`,
+      headers: { "content-type": "application/x-sentry-envelope" },
+      payload: envelope.replaceAll(eventId, recurringEventId),
+    });
+    expect(acceptedRecurring.statusCode).toBe(200);
+    const [recurringItem] = await database.db
+      .select()
+      .from(ingestItems)
+      .where(eq(ingestItems.eventId, recurringEventId));
+    await processing.processEventItem(recurringItem!.id);
+
+    const [regressedIssue] = await database.db.select().from(issues);
+    const [regressedInboxItem] = await database.db.select().from(inboxItems);
+    const activitiesAfterRegression = await database.db.select().from(inboxActivities);
+    expect(regressedIssue).toMatchObject({ status: "unresolved", eventCount: 2 });
+    expect(regressedInboxItem).toMatchObject({
+      state: "open",
+      triggerReason: "Issue recurred after being resolved",
+    });
+    expect(activitiesAfterRegression).toHaveLength(3);
+    expect(activitiesAfterRegression).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "state_changed",
+          actorType: "system",
+          payload: expect.objectContaining({ reason: "issue_regressed" }),
+        }),
+      ]),
+    );
   });
 });

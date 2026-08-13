@@ -54,6 +54,14 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
     listEvents: vi.fn().mockResolvedValue([]),
     updateIssue: vi.fn().mockResolvedValue({ id: "issue-1", status: "resolved" }),
   };
+  const inbox = {
+    listForProject: vi.fn().mockResolvedValue({ data: [], nextCursor: null }),
+    getItem: vi.fn().mockResolvedValue({ id: "inbox-1" }),
+    resolve: vi.fn().mockResolvedValue({ item: { id: "inbox-1", state: "done" } }),
+    dismiss: vi.fn().mockResolvedValue({ item: { id: "inbox-1", state: "dismissed" } }),
+    reopen: vi.fn().mockResolvedValue({ item: { id: "inbox-1", state: "open" } }),
+    saveBrief: vi.fn().mockResolvedValue({ id: "inbox-1" }),
+  } as unknown as Context["container"]["inbox"];
   const ingest = {} as Context["container"]["ingest"];
   const processing = {
     listFailures: vi.fn().mockResolvedValue([]),
@@ -85,6 +93,7 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
     container: {
       auth,
       projects: projects as unknown as Context["container"]["projects"],
+      inbox,
       issues: issues as unknown as Context["container"]["issues"],
       ingest,
       processing,
@@ -162,6 +171,49 @@ describe("appRouter", () => {
     });
   });
 
+  it("passes Inbox view, search, and pagination input to the Inbox service", async () => {
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
+    const projectId = "00000000-0000-4000-8000-000000000001";
+
+    await caller.inbox.list({ projectId, view: "done", query: "checkout", limit: 20 });
+
+    const inbox = ctx.container.inbox as unknown as {
+      listForProject: ReturnType<typeof vi.fn>;
+    };
+    expect(inbox.listForProject).toHaveBeenCalledWith(projectId, {
+      view: "done",
+      query: "checkout",
+      limit: 20,
+    });
+  });
+
+  it("routes Inbox actions and Agent brief writes with the authenticated actor", async () => {
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
+    const inboxItemId = "00000000-0000-4000-8000-000000000002";
+    const actorId = "00000000-0000-4000-8000-000000000001";
+
+    await caller.inbox.resolve(inboxItemId);
+    await caller.inbox.saveBrief({
+      inboxItemId,
+      summary: "Summary",
+      hypothesis: "Hypothesis",
+      nextAction: "Next action",
+    });
+
+    const inbox = ctx.container.inbox as unknown as {
+      resolve: ReturnType<typeof vi.fn>;
+      saveBrief: ReturnType<typeof vi.fn>;
+    };
+    expect(inbox.resolve).toHaveBeenCalledWith(inboxItemId, actorId);
+    expect(inbox.saveBrief).toHaveBeenCalledWith(
+      inboxItemId,
+      { summary: "Summary", hypothesis: "Hypothesis", nextAction: "Next action" },
+      actorId,
+    );
+  });
+
   it("lists minidumps associated with an issue", async () => {
     const ctx = makeContext();
     const caller = appRouter.createCaller(ctx);
@@ -175,11 +227,20 @@ describe("appRouter", () => {
   });
 
   it("restricts issue updates to the supported status values", async () => {
-    const caller = appRouter.createCaller(makeContext());
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
     const issueId = "00000000-0000-4000-8000-000000000002";
 
     await expect(caller.issues.update({ issueId, patch: { status: "resolved" } })).resolves.toEqual(
       { id: "issue-1", status: "resolved" },
+    );
+    const issues = ctx.container.issues as unknown as {
+      updateIssue: ReturnType<typeof vi.fn>;
+    };
+    expect(issues.updateIssue).toHaveBeenCalledWith(
+      issueId,
+      { status: "resolved" },
+      "00000000-0000-4000-8000-000000000001",
     );
     await expect(
       caller.issues.update({ issueId, patch: { status: "fixed" as never } }),

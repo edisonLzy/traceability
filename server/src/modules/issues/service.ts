@@ -1,10 +1,14 @@
 import { ZodError } from "zod";
 
+import type { InboxService } from "../inbox/service.js";
 import type { IssueCursor, IssueRepository } from "./repository.js";
 import type { ListEventsInput, ListIssuesInput, UpdateIssueInput } from "./types.js";
 
 export class IssueService {
-  public constructor(private readonly repository: IssueRepository) {}
+  public constructor(
+    private readonly repository: IssueRepository,
+    private readonly inbox: InboxService,
+  ) {}
 
   async listForProject(projectId: string, query: ListIssuesInput) {
     const rows = await this.repository.listForProject(
@@ -29,8 +33,11 @@ export class IssueService {
     return this.repository.listEvents(issueId, query.limit);
   }
 
-  updateIssue(issueId: string, input: UpdateIssueInput) {
-    return this.repository.updateStatus(issueId, input.status);
+  async updateIssue(issueId: string, input: UpdateIssueInput, actorId: string) {
+    const state =
+      input.status === "resolved" ? "done" : input.status === "ignored" ? "dismissed" : "open";
+    const result = await this.inbox.syncIssueState(issueId, state, actorId);
+    return result?.issue ?? null;
   }
 }
 

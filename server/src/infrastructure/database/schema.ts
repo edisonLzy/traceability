@@ -1,5 +1,6 @@
 export * from "../../modules/ingest/schema.js";
 export * from "../../modules/auth/schema.js";
+export * from "../../modules/inbox/schema.js";
 export * from "../../modules/issues/schema.js";
 export * from "../../modules/metrics/schema.js";
 export * from "../../modules/minidumps/schema.js";

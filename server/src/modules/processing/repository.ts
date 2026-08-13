@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 
 import type { Database } from "../../infrastructure/database/client.js";
+import { inboxActivities, inboxItems } from "../inbox/schema.js";
 import { ingestEnvelopes, ingestItems } from "../ingest/schema.js";
 import { events, issues } from "../issues/schema.js";
 import { processingFailures } from "./schema.js";
@@ -120,14 +121,84 @@ export class ProcessingRepository {
         return;
       }
 
+      const now = new Date();
+      const nextIssueStatus = issue.status === "ignored" ? "ignored" : "unresolved";
       await transaction
         .update(issues)
         .set({
           eventCount: sql`${issues.eventCount} + 1`,
           lastSeen: fields.timestamp,
-          updatedAt: new Date(),
+          status: nextIssueStatus,
+          updatedAt: now,
         })
         .where(eq(issues.id, issue.id));
+
+      const [currentInboxItem] = await transaction
+        .select()
+        .from(inboxItems)
+        .where(eq(inboxItems.issueId, issue.id))
+        .limit(1);
+      const targetInboxState = issue.status === "ignored" ? "dismissed" : "open";
+      const priority = fields.level === "fatal" ? "p1" : "p2";
+
+      if (!currentInboxItem) {
+        const [createdInboxItem] = await transaction
+          .insert(inboxItems)
+          .values({
+            projectId: issue.projectId,
+            issueId: issue.id,
+            state: targetInboxState,
+            priority,
+            triggerReason:
+              issue.status === "ignored"
+                ? "Ignored issue received an event"
+                : "New unresolved issue",
+            completedAt: targetInboxState === "open" ? null : now,
+            lastActivityAt: now,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .returning();
+        if (!createdInboxItem) throw new Error("inbox item insert did not return a row");
+        await transaction.insert(inboxActivities).values({
+          inboxItemId: createdInboxItem.id,
+          type: "created",
+          actorType: "system",
+          payload: { state: targetInboxState, reason: "issue_created" },
+          createdAt: now,
+        });
+      } else {
+        const regressed = issue.status === "resolved";
+        const nextPriority = currentInboxItem.priority === "p1" ? "p1" : priority;
+        await transaction
+          .update(inboxItems)
+          .set({
+            state: targetInboxState,
+            priority: nextPriority,
+            triggerReason: regressed
+              ? "Issue recurred after being resolved"
+              : currentInboxItem.triggerReason,
+            completedAt: targetInboxState === "open" ? null : currentInboxItem.completedAt,
+            lastActivityAt: now,
+            updatedAt: now,
+          })
+          .where(eq(inboxItems.id, currentInboxItem.id));
+
+        if (currentInboxItem.state !== targetInboxState) {
+          await transaction.insert(inboxActivities).values({
+            inboxItemId: currentInboxItem.id,
+            type: "state_changed",
+            actorType: "system",
+            payload: {
+              fromState: currentInboxItem.state,
+              toState: targetInboxState,
+              reason: regressed ? "issue_regressed" : "issue_status_synchronized",
+            },
+            createdAt: now,
+          });
+        }
+      }
+
       await transaction
         .update(ingestItems)
         .set({

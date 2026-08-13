@@ -240,6 +240,7 @@ export function useAppLayout() {
 
   const getMainPanelProps = useCallback(
     (): PanelProps => ({
+      className: "overflow-hidden rounded-[18px]",
       id: CONTENT_PANEL_ID,
       maxSize: isSplitMode ? `${MAX_CONTENT_SHARE}%` : isFloatingAgentMode ? "100%" : "0%",
       minSize: isSplitMode ? `${MIN_CONTENT_SHARE}%` : "0%",
@@ -249,7 +250,10 @@ export function useAppLayout() {
 
   const getAgentPanelProps = useCallback(
     (): PanelProps => ({
-      className: cn(isFloatingAgentMode && "!overflow-visible"),
+      className: cn(
+        "rounded-[18px]",
+        isFloatingAgentMode ? "!overflow-visible" : "overflow-hidden",
+      ),
       collapsedSize: "0%",
       collapsible: true,
       id: AGENT_PANEL_ID,
@@ -264,7 +268,7 @@ export function useAppLayout() {
       "aria-label": "Resize content and Agent panels",
       className: cn(
         isSplitMode
-          ? "z-10 !w-2 bg-canvas/70 backdrop-blur-xl after:!bg-transparent focus-visible:outline-none"
+          ? "z-10 !w-2 bg-transparent after:!bg-transparent focus-visible:outline-none"
           : "pointer-events-none invisible !w-0 bg-transparent after:!bg-transparent",
       ),
       disabled: !isSplitMode,
