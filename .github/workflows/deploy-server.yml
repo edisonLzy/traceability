@@ -59,7 +59,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Create source archive
         run: |
+          mkdir -p .traceability-artifacts
           tar --exclude-vcs \
+            --exclude='.traceability-artifacts' \
             --exclude='node_modules' \
             --exclude='*/node_modules' \
             --exclude='dist' \
@@ -70,7 +72,8 @@ jobs:
             --exclude='*/.turbo' \
             --exclude='server/data' \
             --exclude='*.env' \
-            -czf traceability-source.tar.gz .
+            -czf .traceability-artifacts/traceability-source.tar.gz .
+          cp .traceability-artifacts/traceability-source.tar.gz traceability-source.tar.gz
       - name: Upload source archive
         uses: appleboy/scp-action@v0.1.7
         with:
