@@ -1,8 +1,9 @@
 import { AGENT_BLOCK_LANGUAGE, parseAssistantBlockPayload } from "@extensions/core/common";
-import { useAssistantBlock } from "@extensions/core/renderer";
 import { useMemo } from "react";
 import type { CustomRendererProps, PluginConfig } from "streamdown";
 import { Streamdown } from "streamdown";
+
+import { AssistantBlockFailure, AssistantBlockView } from "./AssistantBlockView";
 
 interface AssistantResponseMessageProps {
   text: string;
@@ -37,8 +38,6 @@ export function AssistantResponseMessage({ text, isStreaming }: AssistantRespons
  */
 function AgentBlockRenderer({ code, isIncomplete }: CustomRendererProps) {
   const result = parseAssistantBlockPayload(code, isIncomplete);
-  // Called unconditionally so hooks rules hold (type is "" until parsed).
-  const registration = useAssistantBlock(result.status === "ready" ? result.payload.type : "");
 
   if (result.status === "pending") {
     return (
@@ -50,20 +49,12 @@ function AgentBlockRenderer({ code, isIncomplete }: CustomRendererProps) {
 
   if (result.status === "invalid") {
     return (
-      <div className="my-2 rounded-md border border-hairline bg-overlay px-2 py-1.5 text-[10px] text-tertiary">
-        Unsupported assistant block
-      </div>
+      <AssistantBlockFailure
+        block={{ type: "invalid agent-block", props: result.raw }}
+        reasons={["The agent-block payload is not valid JSON with a string type."]}
+      />
     );
   }
 
-  const Block = registration?.render;
-  if (!Block) {
-    return (
-      <div className="my-2 rounded-md border border-hairline bg-overlay px-2 py-1.5 text-[10px] text-tertiary">
-        Unsupported assistant block: <span className="font-mono">{result.payload.type}</span>
-      </div>
-    );
-  }
-
-  return <Block props={result.payload.props} raw={result.payload.raw} />;
+  return <AssistantBlockView block={result.payload} raw={result.payload.raw} />;
 }

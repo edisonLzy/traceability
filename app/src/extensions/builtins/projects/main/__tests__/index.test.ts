@@ -17,13 +17,17 @@ import extension from "../index.js";
 describe("projects main extension", () => {
   it("registers a tool backed by projects.list", async () => {
     const tools: Array<{ execute: (...args: any[]) => Promise<any> }> = [];
+    const blocks: Array<{ type: string }> = [];
     extension.setup({
+      assistantBlocks: { register: (block: any) => blocks.push(block) },
       systemPrompt: { register: vi.fn() },
       tools: { register: (tool: any) => tools.push(tool) },
     } as any);
 
     const result = await tools[0]!.execute("tool-call", {});
     expect(list).toHaveBeenCalledOnce();
-    expect(result.details.assistantBlock.props.projects[0].slug).toBe("checkout-web");
+    expect(blocks[0]?.type).toBe("projects.list");
+    expect(result.details).toEqual({});
+    expect(result.content[0].text).toContain("Checkout Web");
   });
 });

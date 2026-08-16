@@ -1,25 +1,39 @@
 import { Card } from "@renderer/components/ui/card";
-import { cn, relativeTime, statusLabel } from "@renderer/lib/utils";
+import { useIssues } from "@renderer/hooks/use-issues";
+import { cn, relativeTime, statusGroup, statusLabel } from "@renderer/lib/utils";
+import { projectStore } from "@renderer/store/project";
 import { useNavigate } from "react-router-dom";
+import { useStore } from "zustand";
 
-import type { Issue } from "../../../../shared/trpc-types.js";
-import { defineRendererExtension } from "../../../core/renderer";
+import { defineRendererExtension, type AssistantBlockRenderProps } from "../../../core/renderer";
 import { ISSUES_EXTENSION } from "../common/extension";
-import { ISSUES_LIST_BLOCK_TYPE, type IssuesListBlockProps } from "../common/types";
+import { ISSUES_LIST_BLOCK, type IssuesListBlockProps } from "../common/types";
 
-function IssuesListBlock({ props }: { props: Record<string, unknown> }) {
+export function IssuesListBlock({ props }: AssistantBlockRenderProps<IssuesListBlockProps>) {
   const navigate = useNavigate();
-  const block = parseIssuesProps(props);
-  if (!block) return null;
+  const currentProjectId = useStore(projectStore, (state) => state.currentProject?.id ?? "");
+  const projectId = props.projectId ?? currentProjectId;
+  const { data, error, isLoading } = useIssues({ projectId, limit: props.limit });
+  const issues = (data?.data ?? []).filter(
+    (issue) => props.status === "all" || statusGroup(issue.status) === props.status,
+  );
 
   return (
     <Card className="not-prose my-2 bg-surface-glass text-card-foreground">
       <div className="flex min-h-8 items-center justify-between gap-2 px-2.5 py-2 text-[10px] text-muted">
         <span className="font-[620]">Issues</span>
-        <span className="text-tertiary">{block.issues.length}</span>
+        <span className="text-tertiary">{isLoading ? "…" : issues.length}</span>
       </div>
       <div className="border-t border-hairline p-1">
-        {block.issues.map((issue) => (
+        {!projectId ? <BlockState tone="error">No current project is available.</BlockState> : null}
+        {isLoading ? <BlockState>Loading issues…</BlockState> : null}
+        {error ? (
+          <BlockState tone="error">Could not load issues: {error.message}</BlockState>
+        ) : null}
+        {projectId && !isLoading && !error && issues.length === 0 ? (
+          <BlockState>No issues match these filters.</BlockState>
+        ) : null}
+        {issues.map((issue) => (
           <button
             key={issue.id}
             type="button"
@@ -53,45 +67,26 @@ function IssuesListBlock({ props }: { props: Record<string, unknown> }) {
 export default defineRendererExtension({
   ...ISSUES_EXTENSION,
   setup(ctx) {
-    ctx.assistantBlocks.register({ type: ISSUES_LIST_BLOCK_TYPE, render: IssuesListBlock });
+    ctx.assistantBlocks.register({ definition: ISSUES_LIST_BLOCK, render: IssuesListBlock });
   },
 });
 
-function parseIssuesProps(value: Record<string, unknown>): IssuesListBlockProps | null {
-  if (!Array.isArray(value.issues) || typeof value.projectId !== "string") return null;
-  return {
-    projectId: value.projectId,
-    nextCursor: typeof value.nextCursor === "string" ? value.nextCursor : null,
-    issues: value.issues.filter(isRecord).flatMap((item) => {
-      if (
-        typeof item.id !== "string" ||
-        typeof item.projectId !== "string" ||
-        typeof item.title !== "string" ||
-        typeof item.type !== "string" ||
-        typeof item.status !== "string"
-      ) {
-        return [];
+function BlockState({
+  children,
+  tone = "muted",
+}: {
+  children: React.ReactNode;
+  tone?: "error" | "muted";
+}) {
+  return (
+    <div
+      className={
+        tone === "error"
+          ? "px-2 py-3 text-[10px] text-danger"
+          : "px-2 py-3 text-[10px] text-tertiary"
       }
-      return [
-        {
-          id: item.id,
-          projectId: item.projectId,
-          fingerprint: typeof item.fingerprint === "string" ? item.fingerprint : "",
-          groupingVersion: typeof item.groupingVersion === "number" ? item.groupingVersion : 1,
-          title: item.title,
-          type: item.type,
-          status: item.status,
-          firstSeen: typeof item.firstSeen === "string" ? item.firstSeen : "",
-          lastSeen: typeof item.lastSeen === "string" ? item.lastSeen : "",
-          eventCount: typeof item.eventCount === "number" ? item.eventCount : 0,
-          createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
-          updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : "",
-        } as Issue,
-      ];
-    }),
-  };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+    >
+      {children}
+    </div>
+  );
 }

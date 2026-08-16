@@ -1,5 +1,6 @@
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { AssistantMessage } from "@earendil-works/pi-ai";
+import type { AppAssistantBlockMessage } from "@shared/agent-message";
 import { describe, expect, it } from "vitest";
 import { createStore } from "zustand/vanilla";
 
@@ -62,5 +63,22 @@ describe("agent entries slice", () => {
         { type: "text", text: "Streaming update." },
       ]);
     }
+  });
+
+  it("deduplicates durable assistant blocks by tool call id", () => {
+    const store = createEntriesStore();
+    const message: AppAssistantBlockMessage = {
+      role: "assistantBlock",
+      block: { type: "issues.list", props: { status: "unresolved" } },
+      timestamp: 3,
+      toolCallId: "render-1",
+      toolName: "render_ui",
+    };
+
+    const firstId = store.getState().appendAssistantBlockEntry("session-a", message);
+    const secondId = store.getState().appendAssistantBlockEntry("session-a", message);
+
+    expect(secondId).toBe(firstId);
+    expect(store.getState().getEntryState("session-a").entries).toHaveLength(1);
   });
 });

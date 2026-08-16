@@ -1,7 +1,9 @@
 import type { AssistantMessage } from "@earendil-works/pi-ai";
 import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
 import { agentStore, EntryStatus, type SessionEntry } from "@renderer/store/agent";
+import type { AppAssistantBlockMessage } from "@shared/agent-message";
 import type { AskUserQuestionRequest } from "@shared/ask-user-question-ipc";
+import { getAssistantBlockDescriptor, RENDER_UI_TOOL_NAME } from "@shared/assistant-block";
 import { metrics } from "@tracerability/monitor/electron-renderer";
 import { useRef } from "react";
 
@@ -237,10 +239,33 @@ export function useAgentMessages(): void {
           details: result?.details ?? existing?.details,
           output,
         });
+
+        if (!isError && toolName === RENDER_UI_TOOL_NAME) {
+          appendDurableAssistantBlock(sessionId, toolCallId, toolName, result?.details);
+        }
       },
     },
     { shouldHandleEvent: (event) => event.scope === "main" },
   );
+}
+
+function appendDurableAssistantBlock(
+  sessionId: string,
+  toolCallId: string,
+  toolName: string,
+  details: unknown,
+): void {
+  const block = getAssistantBlockDescriptor(details);
+  if (!block) return;
+
+  const message: AppAssistantBlockMessage = {
+    role: "assistantBlock",
+    block,
+    timestamp: Date.now(),
+    toolCallId,
+    toolName,
+  };
+  agentStore.getState().appendAssistantBlockEntry(sessionId, message);
 }
 
 function extractToolResultText(content: { type?: string; text?: string }[]): string {

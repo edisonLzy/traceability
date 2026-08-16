@@ -19,7 +19,6 @@ describe("AssistantMessage", () => {
         completedAt: 1,
         isStreaming: false,
         message,
-        sessionId: "session-1",
         startedAt: 1,
         toolStates: new Map(),
       }),
@@ -29,5 +28,32 @@ describe("AssistantMessage", () => {
     expect(markup).toContain("whitespace-pre-wrap");
     expect(markup).toContain("[overflow-wrap:anywhere]");
     expect(markup).toContain("&lt;!DOCTYPE html&gt;");
+  });
+
+  it("does not render render_ui as tool activity", () => {
+    const message = {
+      role: "assistant",
+      content: [
+        {
+          type: "toolCall",
+          id: "tool-1",
+          name: "render_ui",
+          arguments: { type: "projects.list", props: {} },
+        },
+      ],
+      stopReason: "stop",
+    } as unknown as AssistantMessageType;
+
+    const markup = renderToStaticMarkup(
+      createElement(AssistantMessage, {
+        completedAt: 1,
+        isStreaming: false,
+        message,
+        startedAt: 1,
+        toolStates: new Map(),
+      }),
+    );
+
+    expect(markup).toBe("");
   });
 });

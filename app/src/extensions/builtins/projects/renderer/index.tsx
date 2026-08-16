@@ -1,21 +1,34 @@
 import { Card } from "@renderer/components/ui/card";
+import { trpc } from "@renderer/lib/trpc";
 
-import { defineRendererExtension } from "../../../core/renderer";
+import { defineRendererExtension, type AssistantBlockRenderProps } from "../../../core/renderer";
 import { PROJECTS_EXTENSION } from "../common/extension";
-import { PROJECTS_LIST_BLOCK_TYPE, type ProjectsListBlockProps } from "../common/types";
+import { PROJECTS_LIST_BLOCK, type ProjectsListBlockProps } from "../common/types";
 
-function ProjectsListBlock({ props }: { props: Record<string, unknown> }) {
-  const block = parseProjectsProps(props);
-  if (!block) return null;
+export function ProjectsListBlock(_props: AssistantBlockRenderProps<ProjectsListBlockProps>) {
+  const {
+    data: projects = [],
+    error,
+    isLoading,
+  } = trpc.projects.list.useQuery(undefined, {
+    staleTime: 30_000,
+  });
 
   return (
     <Card className="not-prose my-2 bg-surface-glass text-card-foreground">
       <div className="flex min-h-8 items-center justify-between gap-2 px-2.5 py-2 text-[10px] text-muted">
         <span className="font-[620]">Projects</span>
-        <span className="text-tertiary">{block.projects.length}</span>
+        <span className="text-tertiary">{isLoading ? "…" : projects.length}</span>
       </div>
       <div className="border-t border-hairline p-1">
-        {block.projects.map((project) => (
+        {isLoading ? <BlockState>Loading projects…</BlockState> : null}
+        {error ? (
+          <BlockState tone="error">Could not load projects: {error.message}</BlockState>
+        ) : null}
+        {!isLoading && !error && projects.length === 0 ? (
+          <BlockState>No Traceability projects found.</BlockState>
+        ) : null}
+        {projects.map((project) => (
           <div
             key={project.id}
             className="flex w-full items-center gap-2 rounded-[7px] px-1.5 py-1.5 text-left"
@@ -36,39 +49,26 @@ function ProjectsListBlock({ props }: { props: Record<string, unknown> }) {
 export default defineRendererExtension({
   ...PROJECTS_EXTENSION,
   setup(ctx) {
-    ctx.assistantBlocks.register({ type: PROJECTS_LIST_BLOCK_TYPE, render: ProjectsListBlock });
+    ctx.assistantBlocks.register({ definition: PROJECTS_LIST_BLOCK, render: ProjectsListBlock });
   },
 });
 
-function parseProjectsProps(value: Record<string, unknown>): ProjectsListBlockProps | null {
-  if (!Array.isArray(value.projects)) return null;
-  return {
-    projects: value.projects.filter(isRecord).flatMap((item) => {
-      if (
-        typeof item.id !== "string" ||
-        typeof item.name !== "string" ||
-        typeof item.slug !== "string" ||
-        typeof item.platform !== "string"
-      ) {
-        return [];
+function BlockState({
+  children,
+  tone = "muted",
+}: {
+  children: React.ReactNode;
+  tone?: "error" | "muted";
+}) {
+  return (
+    <div
+      className={
+        tone === "error"
+          ? "px-2 py-3 text-[10px] text-danger"
+          : "px-2 py-3 text-[10px] text-tertiary"
       }
-      return [
-        {
-          id: item.id,
-          organizationId: typeof item.organizationId === "string" ? item.organizationId : "",
-          sentryProjectId: typeof item.sentryProjectId === "number" ? item.sentryProjectId : 0,
-          slug: item.slug,
-          name: item.name,
-          platform: item.platform,
-          enabled: item.enabled !== false,
-          createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
-          updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : "",
-        },
-      ];
-    }),
-  };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+    >
+      {children}
+    </div>
+  );
 }

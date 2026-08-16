@@ -11,6 +11,11 @@ import type {
 } from "../../extensions/core/main/index.js";
 import type { SystemPromptBuilder } from "../prompt/index.js";
 import type { AppTool } from "../tools/index.js";
+import {
+  buildGenerativeUiSystemPrompt,
+  createRenderUiTool,
+  shouldAddRenderUiTool,
+} from "./generative-ui.js";
 import { installedMainExtensions } from "./installed-extensions.js";
 import { ExtensionRuntimeService } from "./runtime-service.js";
 
@@ -43,7 +48,12 @@ export class ExtensionService extends MainExtensionBridge implements SystemPromp
   }
 
   buildSystemPrompt(raw: string): string {
-    const prompts = this.getSystemPrompts().join("\n\n");
+    const prompts = [
+      ...this.getSystemPrompts(),
+      buildGenerativeUiSystemPrompt(this.getAssistantBlockDefinitions()),
+    ]
+      .filter(Boolean)
+      .join("\n\n");
     if (!prompts) return raw;
     return prompts + "\n\n" + raw;
   }
@@ -58,9 +68,18 @@ export class ExtensionService extends MainExtensionBridge implements SystemPromp
 
     const excluded = new Set(options.excludeToolNames ?? []);
 
-    return this.getTools()
-      .filter((tool) => !excluded.has(tool.name))
-      .map((tool) => this.bindToolToRuntimeContext(tool as AppTool, context));
+    const tools = this.getTools().filter((tool) => !excluded.has(tool.name));
+    if (
+      shouldAddRenderUiTool(
+        tools.map((tool) => tool.name),
+        this.getAssistantBlockDefinitions(),
+        excluded,
+      )
+    ) {
+      tools.push(createRenderUiTool());
+    }
+
+    return tools.map((tool) => this.bindToolToRuntimeContext(tool as AppTool, context));
   }
 
   private bindToolToRuntimeContext(tool: AppTool, context: ExtensionToolRuntimeContext): AppTool {

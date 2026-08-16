@@ -3,7 +3,7 @@ export interface ParsedExtensionPart {
   text?: string;
   payload?: {
     type: string;
-    props: Record<string, unknown>;
+    props: unknown;
     raw: string;
   };
 }
@@ -55,15 +55,11 @@ function parsePayload(raw: string): ParsedExtensionPart | null {
       kind: "block",
       payload: {
         type: parsed.type,
-        props: isRecord(parsed.props) ? parsed.props : {},
+        props: "props" in parsed ? parsed.props : {},
         raw,
       },
     };
   } catch {
     return null;
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -1,8 +1,11 @@
 import type { Components as StreamdownComponents } from "streamdown";
+import type { ZodType } from "zod";
 
 import type { ExtensionMetadata } from "../common/ipc/index";
 import type {
   AssistantBlockRegistration,
+  DefinedAssistantBlockRegistration,
+  LegacyAssistantBlockRegistration,
   RendererSlashCommand,
   StreamdownComponent,
   StreamdownComponentComposerMap,
@@ -11,6 +14,10 @@ import type {
   TipTapExtensionRegistration,
 } from "./define";
 
+export type StoredAssistantBlockRegistration =
+  | DefinedAssistantBlockRegistration<ZodType>
+  | LegacyAssistantBlockRegistration;
+
 type StreamdownComponentRegistration = {
   components: StreamdownComponentComposerMap;
 };
@@ -18,7 +25,7 @@ type StreamdownComponentRegistration = {
 export class RendererExtensionRegistry {
   private extensions = new Map<string, ExtensionMetadata>();
   private slashCommands: RendererSlashCommand[] = [];
-  private assistantBlocks = new Map<string, AssistantBlockRegistration>();
+  private assistantBlocks = new Map<string, StoredAssistantBlockRegistration>();
   private streamdownComponents: StreamdownComponentRegistration[] = [];
   private streamdownRehypePluginComposers: StreamdownRehypePluginComposer[] = [];
   private tipTapExtensions: TipTapExtensionRegistration[] = [];
@@ -36,7 +43,11 @@ export class RendererExtensionRegistry {
   }
 
   registerAssistantBlock(block: AssistantBlockRegistration) {
-    this.assistantBlocks.set(block.type, block);
+    const type = "definition" in block ? block.definition.type : block.type;
+    if (this.assistantBlocks.has(type)) {
+      throw new Error(`Duplicate assistant block type: ${type}`);
+    }
+    this.assistantBlocks.set(type, block as StoredAssistantBlockRegistration);
   }
 
   registerStreamdownComponents(components: StreamdownComponentComposerMap) {

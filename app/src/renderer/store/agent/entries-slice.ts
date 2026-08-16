@@ -1,4 +1,5 @@
 import type { AssistantMessage } from "@earendil-works/pi-ai";
+import type { AppAssistantBlockMessage } from "@shared/agent-message";
 import { v4 as uuidv4 } from "uuid";
 import type { StateCreator } from "zustand/vanilla";
 
@@ -52,6 +53,7 @@ export interface EntriesSlice {
 
   getEntryState: (sessionId: string) => EntryState;
   appendMessageEntry: (sessionId: string, message: AgentMessage) => string;
+  appendAssistantBlockEntry: (sessionId: string, message: AppAssistantBlockMessage) => string;
   updateMessageEntry: (sessionId: string, entryId: string, message: AssistantMessage) => void;
   setMessageEntryTokenUsage: (sessionId: string, entryId: string, tokenUsage: TokenUsage) => void;
   setEntryStatus: (sessionId: string, entryIds: string[], status: EntryStatus) => void;
@@ -104,6 +106,19 @@ export const createEntriesSlice: StateCreator<EntriesSlice, [], [], EntriesSlice
     });
 
     return entryId;
+  },
+
+  appendAssistantBlockEntry: (sessionId, message) => {
+    const existing = get()
+      .getEntryState(sessionId)
+      .entries.find(
+        (entry) =>
+          entry.type === "message" &&
+          entry.data.role === "assistantBlock" &&
+          entry.data.toolCallId === message.toolCallId,
+      );
+    if (existing) return existing.id;
+    return get().appendMessageEntry(sessionId, message);
   },
 
   updateMessageEntry: (sessionId, entryId, message) => {

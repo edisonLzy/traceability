@@ -2,6 +2,7 @@ import type { AgentEvent, AgentTool, AppUserMessage } from "@earendil-works/pi-a
 import type { TSchema } from "@earendil-works/pi-ai";
 import type { BrowserWindow } from "electron";
 
+import type { AssistantBlockDefinition } from "../../../shared/assistant-block.js";
 import type { AskUserQuestionInput, AskUserQuestionResult } from "../common/human-in-the-loop.js";
 import type {
   AnyExtensionIPCFunction,
@@ -75,6 +76,9 @@ export interface MainExtensionContext<
   readonly ipc: MainExtensionIPC<AllowedRenderInvokeEvents, AllowedMainExposeEvents>;
   readonly systemPrompt: {
     register(prompt: MainSystemPromptRegistration): void;
+  };
+  readonly assistantBlocks: {
+    register(definition: AssistantBlockDefinition): void;
   };
   readonly tools: {
     register<TParams extends TSchema = TSchema>(tool: AgentTool<TParams>): void;

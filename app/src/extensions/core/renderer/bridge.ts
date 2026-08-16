@@ -1,4 +1,8 @@
-import type { RendererExtensionDefinition } from "./define";
+import type {
+  AssistantBlockRegistrar,
+  AssistantBlockRegistration,
+  RendererExtensionDefinition,
+} from "./define";
 import { RendererExtensionRegistry } from "./registry";
 
 export class RendererExtensionBridge {
@@ -19,8 +23,9 @@ export class RendererExtensionBridge {
           register: (command) => this.registry.registerSlashCommand(command),
         },
         assistantBlocks: {
-          register: (block) => this.registry.registerAssistantBlock(block),
-        },
+          register: (block: AssistantBlockRegistration) =>
+            this.registry.registerAssistantBlock(block),
+        } as AssistantBlockRegistrar,
         streamdown: {
           registerComponents: (components) =>
             this.registry.registerStreamdownComponents(components),

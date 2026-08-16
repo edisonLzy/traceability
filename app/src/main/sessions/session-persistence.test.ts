@@ -86,6 +86,25 @@ describe("SessionPersistence JSONL store", () => {
     ]);
   });
 
+  it("round-trips durable assistant-block messages", async () => {
+    const persistence = createPersistence();
+    const session = await persistence.createSession("agent");
+    const block = {
+      role: "assistantBlock",
+      block: { type: "issues.list", props: { status: "unresolved", limit: 20 } },
+      timestamp: 3,
+      toolCallId: "render-1",
+      toolName: "render_ui",
+    };
+
+    await persistence.appendSessionEntries(session.id, [entry("ui-1", session.id, null, block)]);
+
+    persistence.destroyAll();
+    persistences.splice(persistences.indexOf(persistence), 1);
+    const restored = createPersistence();
+    expect((await restored.getBranch(session.id))[0]?.data).toEqual(block);
+  });
+
   it("keeps all history while resolving the active branch and context", async () => {
     const persistence = createPersistence();
     const session = await persistence.createSession("agent");
