@@ -14,6 +14,7 @@ const config: RuntimeConfig = {
   publicIngestUrl: "http://127.0.0.1:3000",
   jwtSecret: "traceability-development-jwt-secret-change-me",
   jwtAccessTokenTtlSeconds: 900,
+  realtimeTicketTtlSeconds: 60,
   ingestMaxCompressedBytes: 1_048_576,
   ingestMaxDecompressedBytes: 5_242_880,
   ingestMaxItems: 20,

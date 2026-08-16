@@ -18,6 +18,7 @@ function makeConfig(secret: string): RuntimeConfig {
     publicIngestUrl: "http://x",
     jwtSecret: secret,
     jwtAccessTokenTtlSeconds: 900,
+    realtimeTicketTtlSeconds: 60,
     ingestMaxCompressedBytes: 1024,
     ingestMaxDecompressedBytes: 1024,
     ingestMaxItems: 1,

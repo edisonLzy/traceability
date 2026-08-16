@@ -1,5 +1,6 @@
 import "dotenv/config";
 import cors from "@fastify/cors";
+import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { type FastifyInstance } from "fastify";
 
 import { loadRuntimeConfig } from "./config/index.js";
@@ -7,6 +8,7 @@ import { isMainModule } from "./helper/isMainModule.js";
 import type { Database } from "./infrastructure/database/client.js";
 import { ingestRouter } from "./modules/ingest/router.js";
 import { minidumpDownloadRoute, minidumpUploadRoute } from "./modules/minidumps/index.js";
+import { realtimeGateway } from "./modules/realtime/index.js";
 import { sourcemapsUploadRoute } from "./modules/sourcemaps/route.js";
 import { configPlugin } from "./plugins/config.js";
 import { containerPlugin } from "./plugins/container.js";
@@ -60,6 +62,8 @@ export async function createApp(deps: AppDependencies): Promise<FastifyInstance>
   await app.register(minidumpDownloadRoute);
   await app.register(sourcemapsUploadRoute);
   await app.register(trpcPlugin);
+  await app.register(fastifyWebsocket);
+  await app.register(realtimeGateway);
 
   return app;
 }

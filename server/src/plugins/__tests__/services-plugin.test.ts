@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import fastifyPlugin from "fastify-plugin";
+import type IORedis from "ioredis";
 import { describe, expect, it, vi } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
@@ -24,6 +25,13 @@ const stubObjectStoragePlugin = fastifyPlugin(
   { name: "object-storage" },
 );
 
+const stubRedisPlugin = fastifyPlugin(
+  async (app) => {
+    app.decorate("redis", { quit: vi.fn(async () => undefined) } as unknown as IORedis);
+  },
+  { name: "redis" },
+);
+
 describe("application container plugin", () => {
   it("creates one immutable container for the API process", async () => {
     const app = Fastify();
@@ -45,11 +53,13 @@ describe("application container plugin", () => {
     await app.register(configPlugin, { config });
     await app.register(databasePlugin, { database });
     await app.register(stubObjectStoragePlugin);
+    await app.register(stubRedisPlugin);
     await app.register(containerPlugin);
     await app.ready();
 
     expect(Object.keys(app.container).sort()).toEqual([
       "auth",
+      "graphs",
       "inbox",
       "ingest",
       "issues",
@@ -57,6 +67,7 @@ describe("application container plugin", () => {
       "minidumps",
       "processing",
       "projects",
+      "realtime",
       "replays",
       "sourcemaps",
       "traces",

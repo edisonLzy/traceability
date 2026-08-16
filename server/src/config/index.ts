@@ -13,6 +13,7 @@ const EnvironmentSchema = z.object({
   PUBLIC_INGEST_URL: z.string().url().default("http://127.0.0.1:3000"),
   JWT_SECRET: z.string().min(32).optional(),
   JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(86_400).default(900),
+  REALTIME_TICKET_TTL_SECONDS: z.coerce.number().int().min(10).max(3600).default(60),
   INGEST_MAX_COMPRESSED_BYTES: z.coerce
     .number()
     .int()
@@ -70,6 +71,7 @@ export interface RuntimeConfig {
   publicIngestUrl: string;
   jwtSecret: string;
   jwtAccessTokenTtlSeconds: number;
+  realtimeTicketTtlSeconds: number;
   ingestMaxCompressedBytes: number;
   ingestMaxDecompressedBytes: number;
   ingestMaxItems: number;
@@ -103,6 +105,7 @@ export function loadRuntimeConfig(environment: NodeJS.ProcessEnv = process.env):
     publicIngestUrl: parsed.PUBLIC_INGEST_URL,
     jwtSecret: parsed.JWT_SECRET ?? "traceability-development-jwt-secret-change-me",
     jwtAccessTokenTtlSeconds: parsed.JWT_ACCESS_TOKEN_TTL_SECONDS,
+    realtimeTicketTtlSeconds: parsed.REALTIME_TICKET_TTL_SECONDS,
     ingestMaxCompressedBytes: parsed.INGEST_MAX_COMPRESSED_BYTES,
     ingestMaxDecompressedBytes: parsed.INGEST_MAX_DECOMPRESSED_BYTES,
     ingestMaxItems: parsed.INGEST_MAX_ITEMS,
