@@ -1,0 +1,1350 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Traceability · Explorer Graph MVP prototype</title>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.js" defer></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --canvas: #f3f7fd;
+        --surface-1: rgba(255, 255, 255, 0.78);
+        --surface-2: rgba(249, 252, 255, 0.82);
+        --surface-3: rgba(230, 238, 251, 0.76);
+        --hairline: rgba(86, 119, 174, 0.16);
+        --hairline-strong: rgba(76, 109, 164, 0.25);
+        --ink: #102047;
+        --ink-muted: #42547b;
+        --subtle: #617196;
+        --tertiary: #7b89a8;
+        --primary: #4f77ff;
+        --primary-hover: #3562f4;
+        --info: #3f82e9;
+        --success: #2fb795;
+        --warning: #b3832f;
+        --danger: #d85568;
+        --surface-glass: rgba(249, 252, 255, 0.62);
+        --surface-elevated: rgba(255, 255, 255, 0.92);
+        --overlay: rgba(70, 105, 168, 0.055);
+        --overlay-strong: rgba(67, 103, 170, 0.1);
+        --glow: rgba(94, 132, 255, 0.16);
+        --glow-strong: rgba(106, 95, 255, 0.22);
+        --code-bg: #15213b;
+        --code-text: #dbe6ff;
+        --radius: 12px;
+        --font-sans: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+        --shadow-glass: 0 22px 60px rgba(73, 102, 153, 0.1), 0 2px 10px rgba(73, 102, 153, 0.055), inset 0 1px rgba(255, 255, 255, 0.86);
+        --shadow-sm: 0 10px 28px rgba(73, 102, 153, 0.085), inset 0 1px rgba(255, 255, 255, 0.72);
+      }
+
+      [data-theme="dark"] {
+        color-scheme: dark;
+        --canvas: #080d19;
+        --surface-1: rgba(17, 25, 42, 0.82);
+        --surface-2: rgba(20, 30, 50, 0.84);
+        --surface-3: rgba(30, 43, 69, 0.78);
+        --hairline: rgba(155, 180, 229, 0.12);
+        --hairline-strong: rgba(165, 188, 235, 0.2);
+        --ink: #edf3ff;
+        --ink-muted: #abb9d5;
+        --subtle: #8f9dbb;
+        --tertiary: #72819f;
+        --primary: #7292ff;
+        --primary-hover: #9aafff;
+        --info: #6fb9ff;
+        --success: #54d4b2;
+        --warning: #e0b55e;
+        --danger: #f18192;
+        --surface-glass: rgba(13, 21, 36, 0.68);
+        --surface-elevated: rgba(23, 34, 56, 0.92);
+        --overlay: rgba(177, 198, 239, 0.05);
+        --overlay-strong: rgba(177, 198, 239, 0.1);
+        --glow: rgba(92, 132, 255, 0.18);
+        --glow-strong: rgba(123, 105, 255, 0.25);
+        --code-bg: #050a14;
+        --code-text: #cbd7ef;
+        --shadow-glass: 0 26px 70px rgba(0, 3, 10, 0.34), 0 2px 12px rgba(0, 3, 10, 0.25), inset 0 1px rgba(255, 255, 255, 0.055);
+        --shadow-sm: 0 12px 32px rgba(0, 3, 10, 0.26), inset 0 1px rgba(255, 255, 255, 0.045);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      body {
+        color: var(--ink);
+        background:
+          radial-gradient(ellipse at 14% 6%, var(--glow), transparent 36%),
+          radial-gradient(ellipse at 88% 0%, var(--glow-strong), transparent 34%),
+          radial-gradient(ellipse at 52% 104%, var(--glow), transparent 42%),
+          var(--canvas);
+        font: 13px/1.45 var(--font-sans);
+        letter-spacing: -0.01em;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      button, input, textarea, select { font: inherit; }
+      button { border: 0; color: inherit; cursor: pointer; }
+      button:focus-visible, input:focus-visible, textarea:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+      }
+      .icon { width: 15px; height: 15px; stroke-width: 1.8; pointer-events: none; }
+      [data-lucide] > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+      [data-lucide][data-fallback] { display: inline-flex; align-items: center; justify-content: center; }
+      .mono { font-family: var(--font-mono); }
+      .muted { color: var(--subtle); }
+      .eyebrow {
+        color: var(--tertiary);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .11em;
+        text-transform: uppercase;
+      }
+      .glass {
+        border: 1px solid var(--hairline);
+        background: var(--surface-glass);
+        box-shadow: var(--shadow-glass);
+        backdrop-filter: blur(26px) saturate(1.22);
+      }
+      .glass-control {
+        border: 1px solid var(--hairline);
+        background: var(--surface-1);
+        box-shadow: var(--shadow-sm);
+        backdrop-filter: blur(18px) saturate(1.18);
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 30px;
+        padding: 0 11px;
+        border: 1px solid var(--hairline);
+        border-radius: 8px;
+        background: var(--surface-1);
+        color: var(--ink-muted);
+        font-size: 11px;
+        font-weight: 620;
+        transition: 150ms ease;
+      }
+      .button:hover { border-color: var(--hairline-strong); background: var(--overlay-strong); color: var(--ink); }
+      .button.primary {
+        border-color: color-mix(in srgb, var(--primary) 38%, var(--hairline));
+        background: linear-gradient(145deg, color-mix(in srgb, var(--primary) 88%, white), var(--primary));
+        color: white;
+        box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 24%, transparent);
+      }
+      .button.primary:hover { background: var(--primary-hover); }
+      .button.ghost { border-color: transparent; background: transparent; color: var(--subtle); box-shadow: none; }
+      .button.ghost:hover { border-color: var(--hairline); background: var(--overlay); color: var(--ink); }
+      .button.danger { color: var(--danger); }
+      .button.small { min-height: 26px; padding: 0 8px; font-size: 10px; }
+
+      .titlebar {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 40;
+        display: flex;
+        height: 32px;
+        align-items: center;
+        gap: 7px;
+        border-bottom: 1px solid var(--hairline);
+        background: var(--surface-glass);
+        padding: 0 14px 0 86px;
+        color: var(--tertiary);
+        backdrop-filter: blur(24px);
+      }
+      .titlebar strong { color: var(--ink-muted); font-size: 12px; font-weight: 620; }
+      .titlebar .caption { margin-left: auto; font-size: 10px; }
+      .brand-mark {
+        display: grid;
+        width: 17px;
+        height: 17px;
+        place-items: center;
+        border: 1px solid color-mix(in srgb, var(--primary) 50%, var(--hairline));
+        border-radius: 5px;
+        color: var(--primary-hover);
+        background: color-mix(in srgb, var(--primary) 11%, transparent);
+      }
+
+      .app-shell {
+        display: flex;
+        height: 100%;
+        padding: 42px 10px 10px;
+        gap: 8px;
+      }
+      .sidebar {
+        display: flex;
+        width: 56px;
+        flex: 0 0 56px;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px 8px;
+        border: 1px solid var(--hairline);
+        border-radius: 18px;
+        background: var(--surface-glass);
+        box-shadow: var(--shadow-glass);
+        backdrop-filter: blur(26px) saturate(1.22);
+      }
+      .sidebar-brand {
+        display: grid;
+        width: 32px;
+        height: 28px;
+        place-items: center;
+        color: var(--primary-hover);
+      }
+      .sidebar-nav { display: flex; flex: 1; flex-direction: column; gap: 10px; padding-top: 18px; }
+      .nav-icon, .theme-toggle {
+        position: relative;
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--tertiary);
+        transition: 150ms ease;
+      }
+      .nav-icon:hover, .nav-icon.active, .theme-toggle:hover {
+        border-color: var(--hairline);
+        background: var(--overlay-strong);
+        color: var(--ink);
+      }
+      .nav-icon.active { border-color: color-mix(in srgb, var(--primary) 20%, var(--hairline)); color: var(--primary-hover); background: color-mix(in srgb, var(--primary) 10%, transparent); box-shadow: var(--shadow-sm); }
+      .nav-badge {
+        position: absolute;
+        top: -4px;
+        right: -5px;
+        min-width: 15px;
+        height: 15px;
+        padding: 0 3px;
+        border: 2px solid var(--surface-1);
+        border-radius: 999px;
+        background: var(--danger);
+        color: white;
+        font-size: 8px;
+        font-weight: 700;
+        line-height: 11px;
+        text-align: center;
+      }
+      .sidebar-footer { border-top: 1px solid var(--hairline); padding-top: 10px; }
+
+      .main-region {
+        display: flex;
+        min-width: 0;
+        flex: 1;
+        gap: 8px;
+        overflow: hidden;
+      }
+      .content-panel {
+        display: flex;
+        min-width: 0;
+        flex: 1 1 65%;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--hairline);
+        border-radius: 18px;
+        background: var(--surface-glass);
+        box-shadow: var(--shadow-glass);
+        backdrop-filter: blur(26px) saturate(1.22);
+        transition: flex-basis 220ms ease;
+      }
+      .main-region.content-focus .content-panel { flex-basis: 100%; }
+      .workspace-header {
+        display: flex;
+        height: 48px;
+        flex: 0 0 48px;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid var(--hairline);
+        padding: 0 18px;
+        background: color-mix(in srgb, var(--surface-glass) 86%, transparent);
+        backdrop-filter: blur(24px);
+      }
+      .breadcrumbs { display: flex; min-width: 0; align-items: center; gap: 7px; color: var(--tertiary); font-size: 11px; }
+      .breadcrumbs .project { max-width: 135px; overflow: hidden; color: var(--ink-muted); font-weight: 620; text-overflow: ellipsis; white-space: nowrap; }
+      .breadcrumbs .current { overflow: hidden; max-width: 250px; color: var(--ink); font-weight: 620; text-overflow: ellipsis; white-space: nowrap; }
+      .header-actions { display: flex; align-items: center; gap: 7px; margin-left: auto; }
+      .live-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 24px;
+        padding: 0 8px;
+        border: 1px solid color-mix(in srgb, var(--success) 18%, var(--hairline));
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--success) 7%, transparent);
+        color: var(--success);
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      .live-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 14%, transparent); }
+      .live-status.offline { border-color: color-mix(in srgb, var(--warning) 25%, var(--hairline)); background: color-mix(in srgb, var(--warning) 8%, transparent); color: var(--warning); }
+      .icon-button { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--tertiary); }
+      .icon-button:hover { border-color: var(--hairline); background: var(--overlay); color: var(--ink); }
+      .content-scroll { min-height: 0; flex: 1; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--hairline-strong) transparent; }
+      .content-scroll::-webkit-scrollbar { width: 9px; }
+      .content-scroll::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: var(--hairline-strong); background-clip: content-box; }
+      .view { min-height: 100%; }
+      .hidden { display: none !important; }
+
+      .list-page { max-width: 1080px; margin: 0 auto; padding: 34px clamp(22px, 4vw, 56px) 64px; }
+      .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
+      .page-head h1 { margin: 6px 0 7px; font-size: 25px; letter-spacing: -0.04em; line-height: 1.12; }
+      .page-head p { max-width: 580px; margin: 0; color: var(--subtle); font-size: 12px; line-height: 1.65; }
+      .project-avatar { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 9px; background: linear-gradient(145deg, #9db2ff, #5d75ee); color: #fff; font-size: 10px; font-weight: 750; box-shadow: var(--shadow-sm); }
+      .project-crumb { display: inline-flex; min-width: 0; align-items: center; gap: 6px; color: var(--ink-muted); font-weight: 620; }
+      .project-crumb .project-avatar { width: 19px; height: 19px; border-radius: 6px; font-size: 8px; box-shadow: none; }
+      .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+      .search-box { display: flex; min-width: 210px; flex: 1; height: 32px; align-items: center; gap: 7px; padding: 0 10px; border-radius: 9px; color: var(--tertiary); }
+      .search-box input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 11px; }
+      .search-box input::placeholder { color: var(--tertiary); }
+      .select-box { position: relative; }
+      .select-trigger { display: inline-flex; height: 32px; align-items: center; gap: 7px; padding: 0 10px; border-radius: 9px; color: var(--ink-muted); font-size: 11px; }
+      .select-menu { position: absolute; top: 37px; right: 0; z-index: 15; display: none; width: 145px; padding: 5px; border-radius: 11px; background: var(--surface-elevated); box-shadow: var(--shadow-glass); }
+      .select-menu.open { display: block; }
+      .select-item { display: flex; width: 100%; align-items: center; justify-content: space-between; padding: 8px; border-radius: 7px; background: transparent; color: var(--ink-muted); font-size: 11px; text-align: left; }
+      .select-item:hover, .select-item.selected { background: var(--overlay-strong); color: var(--ink); }
+      .graph-count { margin-left: auto; color: var(--tertiary); font-size: 10px; }
+      .graph-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+      .graph-card {
+        position: relative;
+        min-height: 178px;
+        padding: 16px;
+        border: 1px solid var(--hairline);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+        box-shadow: var(--shadow-sm);
+        transition: 160ms ease;
+        cursor: pointer;
+      }
+      .graph-card:hover { border-color: color-mix(in srgb, var(--primary) 27%, var(--hairline)); transform: translateY(-1px); box-shadow: 0 16px 35px color-mix(in srgb, var(--primary) 11%, transparent); }
+      .graph-card.archived { opacity: .68; }
+      .graph-card-top { display: flex; align-items: flex-start; gap: 10px; }
+      .graph-orb { display: grid; width: 34px; height: 34px; flex: 0 0 34px; place-items: center; border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--hairline)); border-radius: 10px; color: var(--primary); background: color-mix(in srgb, var(--primary) 9%, transparent); }
+      .graph-card h3 { overflow: hidden; margin: 0; font-size: 13px; font-weight: 680; text-overflow: ellipsis; white-space: nowrap; }
+      .graph-card .subline { margin-top: 3px; color: var(--subtle); font-size: 10px; }
+      .card-menu-trigger { display: grid; width: 25px; height: 25px; flex: 0 0 25px; place-items: center; margin-left: auto; border-radius: 7px; background: transparent; color: var(--tertiary); }
+      .card-menu-trigger:hover { background: var(--overlay-strong); color: var(--ink); }
+      .graph-card .description { min-height: 35px; margin: 17px 0 14px; color: var(--ink-muted); font-size: 11px; line-height: 1.55; }
+      .card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 11px; border-top: 1px solid var(--hairline); color: var(--tertiary); font-size: 10px; }
+      .node-counts { display: flex; align-items: center; gap: 8px; }
+      .node-count { display: inline-flex; align-items: center; gap: 3px; }
+      .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--overlay); color: var(--subtle); font-size: 9px; font-weight: 680; }
+      .status-pill.active { border-color: color-mix(in srgb, var(--success) 25%, var(--hairline)); background: color-mix(in srgb, var(--success) 8%, transparent); color: var(--success); }
+      .status-pill.archived { color: var(--tertiary); }
+      .status-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+      .empty-results { padding: 56px 20px; border: 1px dashed var(--hairline-strong); border-radius: 14px; color: var(--tertiary); text-align: center; }
+
+      .detail-page { position: relative; display: flex; height: 100%; min-height: 680px; flex-direction: column; }
+      .detail-canvas-wrap { min-height: 0; flex: 1; padding: 12px; background: color-mix(in srgb, var(--canvas) 80%, transparent); }
+      .canvas-shell { position: relative; height: 100%; min-height: 570px; overflow: hidden; border: 1px solid var(--hairline); border-radius: 14px; background-color: color-mix(in srgb, var(--surface-1) 80%, transparent); background-image: radial-gradient(circle, color-mix(in srgb, var(--primary) 17%, transparent) 1px, transparent 1px); background-size: 22px 22px; box-shadow: inset 0 1px rgba(255,255,255,.5); }
+      .canvas-toolbar { position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; align-items: center; gap: 5px; padding: 4px; border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface-elevated); box-shadow: var(--shadow-sm); }
+      .canvas-tool { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 7px; background: transparent; color: var(--tertiary); }
+      .canvas-tool:hover, .canvas-tool.active { background: var(--overlay-strong); color: var(--primary-hover); }
+      .canvas-toolbar .divider { width: 1px; height: 18px; margin: 0 2px; background: var(--hairline); }
+      .canvas-connection {
+        position: absolute; top: 12px; right: 12px; z-index: 5; display: inline-flex; align-items: center; gap: 6px; min-height: 27px; padding: 0 8px; border: 1px solid color-mix(in srgb, var(--success) 20%, var(--hairline)); border-radius: 999px; background: color-mix(in srgb, var(--surface-elevated) 90%, transparent); color: var(--success); font-size: 10px; box-shadow: var(--shadow-sm);
+      }
+      .canvas-shell:has(.node-drawer:not(.hidden)) .canvas-connection { top: 53px; right: auto; left: 12px; }
+      .canvas-connection.offline { border-color: color-mix(in srgb, var(--warning) 25%, var(--hairline)); color: var(--warning); }
+      .canvas-banner { position: absolute; top: 53px; left: 50%; z-index: 6; display: none; align-items: center; gap: 8px; transform: translateX(-50%); padding: 8px 11px; border: 1px solid color-mix(in srgb, var(--warning) 28%, var(--hairline)); border-radius: 9px; background: color-mix(in srgb, var(--warning) 10%, var(--surface-elevated)); color: var(--warning); font-size: 10px; box-shadow: var(--shadow-sm); }
+      .canvas-banner.show { display: flex; }
+      .edge-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+      .edge-line { fill: none; stroke: color-mix(in srgb, var(--primary) 45%, var(--hairline-strong)); stroke-width: 1.6; stroke-dasharray: 5 4; marker-end: url(#arrow); }
+      .edge-label { fill: var(--subtle); font: 10px var(--font-sans); }
+      .graph-node {
+        position: absolute;
+        z-index: 3;
+        width: 150px;
+        min-height: 126px;
+        padding: 10px;
+        border: 1px solid var(--hairline-strong);
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
+        box-shadow: var(--shadow-sm);
+        cursor: grab;
+        user-select: none;
+        transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+      }
+      .graph-node:hover { border-color: color-mix(in srgb, var(--primary) 42%, var(--hairline)); box-shadow: 0 14px 32px color-mix(in srgb, var(--primary) 12%, transparent); }
+      .graph-node.selected { border-color: color-mix(in srgb, var(--primary) 65%, var(--hairline)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent), var(--shadow-sm); }
+      .graph-node:active { cursor: grabbing; }
+      .node-head { display: flex; align-items: center; gap: 7px; }
+      .node-type-icon { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 7px; color: var(--primary); background: color-mix(in srgb, var(--primary) 11%, transparent); }
+      .node-type-icon.finding { color: var(--warning); background: color-mix(in srgb, var(--warning) 11%, transparent); }
+      .node-type-icon.issue { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+      .node-head strong { overflow: hidden; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+      .node-kind { margin-left: auto; color: var(--tertiary); font-size: 8px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+      .node-handle { position: absolute; top: 50%; z-index: 4; width: 8px; height: 8px; border: 1px solid color-mix(in srgb, var(--primary) 60%, var(--hairline-strong)); border-radius: 50%; background: var(--surface-elevated); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 10%, transparent); transform: translateY(-50%); pointer-events: none; }
+      .node-handle.left { left: -5px; }
+      .node-handle.right { right: -5px; }
+      .node-description { display: -webkit-box; min-height: 53px; overflow: hidden; margin: 9px 0 0; padding: 8px 8px; border: 1px solid color-mix(in srgb, var(--primary) 43%, var(--hairline)); border-radius: 8px; background: color-mix(in srgb, var(--primary) 8%, var(--surface-elevated)); color: var(--primary-hover); font-size: 9px; line-height: 1.43; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+      .node-description.mono { color: color-mix(in srgb, var(--primary-hover) 88%, var(--ink)); font-family: var(--font-mono); font-size: 8.5px; }
+      .node-meta { display: flex; align-items: center; gap: 5px; margin-top: 8px; color: var(--tertiary); font-size: 8.5px; }
+      .node-meta .confidence { color: var(--success); }
+      .node-pulse { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 12%, transparent); }
+      .node-pulse.loading { background: var(--primary); animation: pulse 1s ease-in-out infinite; }
+      @keyframes pulse { 50% { opacity: .35; transform: scale(.8); } }
+      .minimap { position: absolute; right: 13px; bottom: 14px; z-index: 5; width: 128px; height: 75px; padding: 9px; border: 1px solid var(--hairline); border-radius: 10px; background: color-mix(in srgb, var(--surface-elevated) 87%, transparent); box-shadow: var(--shadow-sm); }
+      .minimap span { position: absolute; display: block; width: 22px; height: 10px; border: 1px solid color-mix(in srgb, var(--primary) 38%, var(--hairline)); border-radius: 3px; background: color-mix(in srgb, var(--primary) 12%, transparent); }
+      .minimap span:nth-child(1) { left: 8px; top: 34px; } .minimap span:nth-child(2) { left: 36px; top: 34px; } .minimap span:nth-child(3) { left: 64px; top: 16px; } .minimap span:nth-child(4) { left: 94px; top: 16px; } .minimap span:nth-child(5) { left: 64px; top: 51px; }
+      .minimap .viewport { position: absolute; inset: 9px 18px 12px 10px; border: 1px solid var(--primary); border-radius: 3px; background: color-mix(in srgb, var(--primary) 6%, transparent); }
+      .node-drawer { position: absolute; top: 12px; right: 12px; bottom: 12px; z-index: 12; display: flex; width: 318px; flex-direction: column; overflow: hidden; border: 1px solid var(--hairline-strong); border-radius: 14px; background: var(--surface-elevated); box-shadow: var(--shadow-glass); backdrop-filter: blur(28px); }
+      .drawer-head { display: flex; align-items: center; gap: 9px; padding: 15px 15px 12px; border-bottom: 1px solid var(--hairline); }
+      .drawer-head h3 { margin: 0; font-size: 13px; font-weight: 700; }
+      .drawer-head p { margin: 3px 0 0; color: var(--subtle); font-size: 10px; }
+      .drawer-head .icon-button { margin-left: auto; }
+      .drawer-content { min-height: 0; flex: 1; overflow: auto; padding: 15px; }
+      .drawer-section { margin-bottom: 18px; }
+      .drawer-section:last-child { margin-bottom: 0; }
+      .drawer-label { margin-bottom: 6px; color: var(--tertiary); font-size: 9px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+      .drawer-value { color: var(--ink-muted); font-size: 11px; line-height: 1.55; }
+      .source-card { display: flex; align-items: flex-start; gap: 9px; padding: 10px; border: 1px solid var(--hairline); border-radius: 10px; background: var(--overlay); }
+      .source-card .icon { flex: 0 0 auto; color: var(--primary); }
+      .source-card strong { display: block; font-size: 11px; }
+      .source-card span { display: block; margin-top: 3px; color: var(--subtle); font-size: 9px; }
+      .code-snippet { overflow: auto; margin: 0; padding: 11px; border-radius: 10px; background: var(--code-bg); color: var(--code-text); font: 10px/1.65 var(--font-mono); }
+      .drawer-footer { display: flex; gap: 6px; padding: 12px 15px; border-top: 1px solid var(--hairline); }
+      .drawer-footer .button { flex: 1; }
+
+      .agent-panel {
+        display: flex;
+        min-width: 300px;
+        flex: 0 0 35%;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--hairline);
+        border-radius: 18px;
+        background: var(--surface-glass);
+        box-shadow: var(--shadow-glass);
+        backdrop-filter: blur(26px) saturate(1.22);
+        transition: flex-basis 220ms ease, opacity 180ms ease;
+      }
+      .main-region.content-focus .agent-panel { display: none; }
+      .agent-header { display: flex; min-height: 60px; align-items: center; gap: 9px; padding: 0 15px; border-bottom: 1px solid var(--hairline); }
+      .agent-orb { display: grid; width: 29px; height: 29px; place-items: center; border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--hairline)); border-radius: 9px; color: var(--primary); background: linear-gradient(145deg, color-mix(in srgb, var(--primary) 17%, transparent), color-mix(in srgb, #9a83ff 12%, transparent)); box-shadow: var(--shadow-sm); }
+      .agent-heading strong { display: block; font-size: 12px; font-weight: 700; }
+      .agent-heading span { display: block; margin-top: 2px; color: var(--tertiary); font-size: 9px; }
+      .agent-header .icon-button { margin-left: auto; }
+      .agent-messages { min-height: 0; flex: 1; overflow: auto; padding: 16px 14px 12px; scrollbar-width: thin; scrollbar-color: var(--hairline-strong) transparent; }
+      .agent-messages::-webkit-scrollbar { width: 8px; }
+      .agent-messages::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: var(--hairline-strong); background-clip: content-box; }
+      .agent-message { display: flex; gap: 8px; margin-bottom: 15px; }
+      .agent-message.user { justify-content: flex-end; }
+      .message-avatar { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; border-radius: 8px; color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); }
+      .message-avatar.user-avatar { color: var(--ink-muted); background: var(--overlay-strong); }
+      .message-body { max-width: 86%; }
+      .message-author { margin: 0 0 4px; color: var(--tertiary); font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+      .message-copy { margin: 0; color: var(--ink-muted); font-size: 11px; line-height: 1.58; }
+      .message-copy strong { color: var(--ink); font-weight: 680; }
+      .user .message-body { padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--hairline)); border-radius: 11px 11px 3px 11px; background: color-mix(in srgb, var(--primary) 10%, var(--surface-1)); }
+      .user .message-copy { color: var(--ink); }
+      .tool-step { margin-top: 8px; padding: 8px 9px; border: 1px solid var(--hairline); border-radius: 9px; background: var(--overlay); }
+      .tool-step .tool-line { display: flex; align-items: center; gap: 6px; color: var(--ink-muted); font: 9px var(--font-mono); }
+      .tool-step .tool-line .icon { color: var(--success); width: 12px; height: 12px; }
+      .tool-step small { display: block; margin-top: 5px; color: var(--tertiary); font-size: 9px; }
+      .ask-card { margin: 9px 0 16px 32px; padding: 11px; border: 1px solid color-mix(in srgb, var(--warning) 29%, var(--hairline)); border-radius: 12px; background: color-mix(in srgb, var(--warning) 7%, var(--surface-1)); box-shadow: var(--shadow-sm); }
+      .ask-card .ask-title { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin-bottom: 10px; color: var(--warning); font-size: 10px; font-weight: 720; letter-spacing: .07em; text-transform: uppercase; }
+      .ask-card .ask-title span { color: var(--tertiary); font-size: 9px; font-weight: 400; letter-spacing: normal; text-transform: none; }
+      .ask-card h4 { margin: 0 0 8px; color: var(--ink); font-size: 11px; font-weight: 680; line-height: 1.4; }
+      .ask-option { display: flex; align-items: flex-start; gap: 7px; margin: 4px 0; padding: 7px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--ink-muted); font-size: 10px; text-align: left; }
+      .ask-option:hover, .ask-option.selected { border-color: var(--hairline); background: var(--overlay); color: var(--ink); }
+      .ask-option .radio { width: 12px; height: 12px; flex: 0 0 12px; margin-top: 1px; border: 1px solid var(--hairline-strong); border-radius: 50%; }
+      .ask-option.selected .radio { border: 3px solid var(--primary); background: var(--surface-elevated); }
+      .ask-option strong { display: block; font-size: 10px; font-weight: 680; }
+      .ask-option span { display: block; margin-top: 2px; color: var(--tertiary); font-size: 9px; }
+      .ask-actions { display: flex; gap: 6px; margin-top: 9px; }
+      .ask-actions .button { flex: 1; }
+      .preview-graph { margin-top: 10px; padding: 10px; border: 1px solid var(--hairline); border-radius: 10px; background: color-mix(in srgb, var(--surface-1) 80%, transparent); }
+      .preview-title { display: flex; align-items: center; gap: 6px; margin-bottom: 9px; color: var(--tertiary); font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+      .preview-map { position: relative; height: 80px; }
+      .preview-node { position: absolute; display: flex; align-items: center; gap: 5px; padding: 5px 7px; border: 1px solid var(--hairline-strong); border-radius: 7px; background: var(--surface-elevated); color: var(--ink-muted); font-size: 9px; box-shadow: var(--shadow-sm); }
+      .preview-node:nth-child(1) { left: 0; top: 3px; } .preview-node:nth-child(2) { left: 100px; top: 3px; } .preview-node:nth-child(3) { left: 58px; top: 51px; }
+      .preview-line { position: absolute; height: 1px; background: var(--hairline-strong); transform-origin: left; }
+      .preview-line.one { left: 66px; top: 18px; width: 35px; transform: rotate(0deg); } .preview-line.two { left: 84px; top: 28px; width: 31px; transform: rotate(120deg); }
+      .agent-composer-area { position: relative; padding: 10px 13px 12px; border-top: 1px solid var(--hairline); }
+      .composer { position: relative; border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface-1); box-shadow: 0 14px 38px color-mix(in srgb, var(--primary) 8%, transparent); }
+      .composer:focus-within { border-color: color-mix(in srgb, var(--primary) 55%, var(--hairline)); box-shadow: 0 0 0 3px var(--glow), 0 14px 38px color-mix(in srgb, var(--primary) 10%, transparent); }
+      .composer textarea { display: block; width: 100%; min-height: 59px; resize: none; border: 0; outline: 0; background: transparent; padding: 10px 11px 6px; color: var(--ink); font-size: 11px; line-height: 1.45; }
+      .composer textarea::placeholder { color: var(--tertiary); }
+      .composer-footer { display: flex; align-items: center; justify-content: space-between; padding: 5px 7px 7px; border-top: 1px solid var(--hairline); }
+      .composer-meta { display: flex; align-items: center; gap: 5px; color: var(--tertiary); font-size: 9px; }
+      .slash-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px; border: 1px solid var(--hairline); border-radius: 6px; background: var(--overlay); color: var(--ink-muted); font: 9px var(--font-mono); }
+      .send-button { display: grid; width: 27px; height: 27px; place-items: center; border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--hairline)); border-radius: 8px; background: var(--primary); color: white; }
+      .send-button:hover { background: var(--primary-hover); }
+      .send-button.stop { border-color: color-mix(in srgb, var(--danger) 35%, var(--hairline)); background: color-mix(in srgb, var(--danger) 17%, transparent); color: var(--danger); }
+      .slash-menu { position: absolute; right: 13px; bottom: 104px; left: 13px; z-index: 20; display: none; overflow: hidden; border: 1px solid var(--hairline-strong); border-radius: 12px; background: var(--surface-elevated); box-shadow: var(--shadow-glass); }
+      .slash-menu.open { display: block; }
+      .slash-menu-label { padding: 8px 10px 5px; color: var(--tertiary); font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+      .slash-command { display: flex; width: 100%; align-items: center; gap: 8px; padding: 9px 10px; background: transparent; text-align: left; }
+      .slash-command:hover { background: var(--overlay-strong); }
+      .slash-command .command-icon { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 7px; color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); }
+      .slash-command strong { display: block; color: var(--ink); font: 10px var(--font-mono); }
+      .slash-command span { display: block; margin-top: 2px; color: var(--tertiary); font-size: 9px; }
+      .agent-hint { display: flex; align-items: center; gap: 7px; margin-top: 8px; padding: 0 2px; color: var(--tertiary); font-size: 9px; }
+      .agent-hint .icon { width: 12px; height: 12px; color: var(--primary); }
+
+      .toast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 80;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        max-width: 340px;
+        padding: 10px 12px;
+        border: 1px solid var(--hairline-strong);
+        border-radius: 10px;
+        background: var(--surface-elevated);
+        box-shadow: var(--shadow-glass);
+        color: var(--ink-muted);
+        font-size: 11px;
+        opacity: 0;
+        transform: translateY(9px);
+        pointer-events: none;
+        transition: 180ms ease;
+      }
+      .toast.show { opacity: 1; transform: translateY(0); }
+      .popover {
+        position: fixed;
+        z-index: 70;
+        display: none;
+        width: 265px;
+        padding: 7px;
+        border: 1px solid var(--hairline-strong);
+        border-radius: 12px;
+        background: var(--surface-elevated);
+        box-shadow: var(--shadow-glass);
+      }
+      .popover.open { display: block; }
+      .popover .popover-search { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 9px; border-radius: 8px; color: var(--tertiary); }
+      .popover .popover-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 10px; }
+      .card-menu {
+        position: fixed;
+        z-index: 75;
+        display: none;
+        min-width: 132px;
+        padding: 5px;
+        border: 1px solid var(--hairline-strong);
+        border-radius: 10px;
+        background: var(--surface-elevated);
+        box-shadow: var(--shadow-glass);
+      }
+      .card-menu.open { display: block; }
+      .menu-item { display: flex; width: 100%; align-items: center; gap: 7px; padding: 8px; border-radius: 7px; background: transparent; color: var(--ink-muted); font-size: 10px; text-align: left; }
+      .menu-item:hover { background: var(--overlay-strong); color: var(--ink); }
+      .menu-item.danger { color: var(--danger); }
+
+      @media (max-width: 1050px) {
+        .agent-panel { flex-basis: 39%; }
+        .graph-grid { grid-template-columns: 1fr; }
+        .list-page { padding-inline: 26px; }
+      }
+      @media (max-width: 780px) {
+        .app-shell { padding-inline: 6px; }
+        .sidebar { width: 48px; flex-basis: 48px; }
+        .agent-panel { display: none; }
+        .content-panel { width: 100%; }
+        .page-head { flex-direction: column; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="titlebar" aria-label="Window titlebar">
+      <span class="brand-mark"><i data-lucide="fingerprint" class="icon"></i></span>
+      <strong>Traceability</strong>
+      <span class="caption">Explorer Graph · MVP interaction prototype</span>
+    </header>
+
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="sidebar-brand" title="Traceability"><i data-lucide="fingerprint" class="icon"></i></div>
+        <nav class="sidebar-nav">
+          <button class="nav-icon" type="button" title="Inbox" aria-label="Inbox"><i data-lucide="inbox" class="icon"></i></button>
+          <button class="nav-icon" type="button" title="Issues" aria-label="Issues"><i data-lucide="bug" class="icon"></i><span class="nav-badge">4</span></button>
+          <button class="nav-icon active" id="explorerNav" type="button" title="Explorer" aria-label="Explorer"><i data-lucide="compass" class="icon"></i></button>
+          <button class="nav-icon" type="button" title="Sourcemaps" aria-label="Sourcemaps"><i data-lucide="file-code-2" class="icon"></i></button>
+        </nav>
+        <div class="sidebar-footer">
+          <button class="theme-toggle" id="themeToggle" type="button" title="Toggle theme" aria-label="Toggle theme"><i data-lucide="sun" class="icon"></i></button>
+        </div>
+      </aside>
+
+      <main class="main-region" id="mainRegion">
+        <section class="content-panel" aria-label="Explorer content">
+          <header class="workspace-header">
+            <nav class="breadcrumbs" aria-label="Breadcrumb">
+              <span class="project-crumb">
+                <span class="project-avatar">WD</span>
+                <span class="project">Web Demo</span>
+              </span>
+              <i data-lucide="chevron-right" class="icon" style="width: 11px; height: 11px;"></i>
+              <span class="current" id="breadcrumbCurrent">Explorer</span>
+            </nav>
+            <div class="header-actions">
+              <span class="live-status" id="globalLiveStatus"><span class="live-dot"></span><span>Live updates</span></span>
+              <button class="icon-button" id="refreshButton" type="button" title="Refresh"><i data-lucide="refresh-cw" class="icon"></i></button>
+              <button class="icon-button" id="focusButton" type="button" title="Focus content"><i data-lucide="maximize-2" class="icon"></i></button>
+            </div>
+          </header>
+
+          <div class="content-scroll">
+            <section class="view" id="listView" aria-label="Explorer graph list">
+              <div class="list-page">
+                <div class="page-head">
+                  <div>
+                    <div class="eyebrow">Explorer / Evidence graph</div>
+                    <h1>Investigations that stay connected.</h1>
+                    <p>Turn an issue, a question, and the evidence around it into a graph you can return to. Start from the Agent Panel when you are ready.</p>
+                  </div>
+                  <button class="button primary" id="newGraphButton" type="button"><i data-lucide="sparkles" class="icon"></i>New graph</button>
+                </div>
+
+                <div class="toolbar">
+                  <label class="search-box glass-control" aria-label="Search graphs">
+                    <i data-lucide="search" class="icon"></i>
+                    <input id="graphSearch" type="search" placeholder="Search graphs…" />
+                  </label>
+                  <div class="select-box">
+                    <button class="select-trigger glass-control" id="statusTrigger" type="button" aria-expanded="false"><span id="statusValue">All graphs</span><i data-lucide="chevron-down" class="icon" style="width: 12px;"></i></button>
+                    <div class="select-menu" id="statusMenu">
+                      <button class="select-item selected" type="button" data-filter="all">All graphs <i data-lucide="check" class="icon" style="width: 12px;"></i></button>
+                      <button class="select-item" type="button" data-filter="active">Active</button>
+                      <button class="select-item" type="button" data-filter="archived">Archived</button>
+                    </div>
+                  </div>
+                  <span class="graph-count" id="graphCount">3 graphs</span>
+                </div>
+
+                <div class="graph-grid" id="graphGrid">
+                  <article class="graph-card" data-status="active" data-search="checkout profile failure issue root cause">
+                    <div class="graph-card-top">
+                      <span class="graph-orb"><i data-lucide="network" class="icon"></i></span>
+                      <div style="min-width:0;">
+                        <h3>Checkout profile failure</h3>
+                        <div class="subline">Updated 4 minutes ago · Agent session connected</div>
+                      </div>
+                      <button class="card-menu-trigger" data-menu="checkout" type="button" title="Graph actions"><i data-lucide="more-horizontal" class="icon"></i></button>
+                    </div>
+                    <p class="description">Why does the checkout form lose the user profile after the cached response returns?</p>
+                    <div class="card-footer">
+                      <div class="node-counts"><span class="node-count"><i data-lucide="circle-dot" class="icon" style="width: 12px;"></i>7 nodes</span><span class="node-count"><i data-lucide="git-branch" class="icon" style="width: 12px;"></i>6 edges</span></div>
+                      <span class="status-pill active"><span class="dot"></span>Active</span>
+                    </div>
+                  </article>
+                  <article class="graph-card" data-status="active" data-search="release audit deploy regression">
+                    <div class="graph-card-top">
+                      <span class="graph-orb" style="color: var(--success); background: color-mix(in srgb, var(--success) 10%, transparent);"><i data-lucide="git-compare-arrows" class="icon"></i></span>
+                      <div style="min-width:0;">
+                        <h3>Release 1.8.4 regression trail</h3>
+                        <div class="subline">Updated yesterday · 12 minutes of investigation</div>
+                      </div>
+                      <button class="card-menu-trigger" data-menu="release" type="button" title="Graph actions"><i data-lucide="more-horizontal" class="icon"></i></button>
+                    </div>
+                    <p class="description">Connect the deployment, source frames, and the event spike after the release.</p>
+                    <div class="card-footer">
+                      <div class="node-counts"><span class="node-count"><i data-lucide="circle-dot" class="icon" style="width: 12px;"></i>12 nodes</span><span class="node-count"><i data-lucide="git-branch" class="icon" style="width: 12px;"></i>14 edges</span></div>
+                      <span class="status-pill active"><span class="dot"></span>Active</span>
+                    </div>
+                  </article>
+                  <article class="graph-card archived" data-status="archived" data-search="onboarding timeout archived">
+                    <div class="graph-card-top">
+                      <span class="graph-orb" style="color: var(--tertiary); background: var(--overlay);"><i data-lucide="archive" class="icon"></i></span>
+                      <div style="min-width:0;">
+                        <h3>Onboarding timeout</h3>
+                        <div class="subline">Archived Aug 8 · Read-only snapshot</div>
+                      </div>
+                      <button class="card-menu-trigger" data-menu="onboarding" type="button" title="Graph actions"><i data-lucide="more-horizontal" class="icon"></i></button>
+                    </div>
+                    <p class="description">A resolved investigation into a delayed invitation callback.</p>
+                    <div class="card-footer">
+                      <div class="node-counts"><span class="node-count"><i data-lucide="circle-dot" class="icon" style="width: 12px;"></i>5 nodes</span><span class="node-count"><i data-lucide="git-branch" class="icon" style="width: 12px;"></i>4 edges</span></div>
+                      <span class="status-pill archived"><span class="dot"></span>Archived</span>
+                    </div>
+                  </article>
+                </div>
+                <div class="empty-results hidden" id="emptyGraphs">No graphs match this filter. Try a different search or create a new graph.</div>
+              </div>
+            </section>
+
+            <section class="view hidden" id="detailView" aria-label="Explorer graph detail">
+              <div class="detail-page">
+                <div class="detail-canvas-wrap">
+                  <div class="canvas-shell" id="canvasShell">
+                    <div class="canvas-toolbar" aria-label="Canvas tools">
+                      <button class="canvas-tool" id="backToList" type="button" title="Back to graph list"><i data-lucide="arrow-left" class="icon"></i></button>
+                      <span class="divider"></span>
+                      <button class="canvas-tool active" type="button" title="Select"><i data-lucide="mouse-pointer-2" class="icon"></i></button>
+                      <button class="canvas-tool" id="zoomIn" type="button" title="Zoom in"><i data-lucide="plus" class="icon"></i></button>
+                      <button class="canvas-tool" id="zoomOut" type="button" title="Zoom out"><i data-lucide="minus" class="icon"></i></button>
+                      <button class="canvas-tool" id="fitView" type="button" title="Fit view"><i data-lucide="scan" class="icon"></i></button>
+                      <button class="canvas-tool" id="layoutButton" type="button" title="Auto layout"><i data-lucide="wand-sparkles" class="icon"></i></button>
+                      <span class="divider"></span>
+                      <button class="canvas-tool" id="addNodeButton" type="button" title="Add node from agent"><i data-lucide="plus-circle" class="icon"></i></button>
+                    </div>
+                    <button class="canvas-connection" id="connectionButton" type="button"><span class="live-dot"></span><span id="connectionText">Connected</span></button>
+                    <div class="canvas-banner" id="canvasBanner"><i data-lucide="wifi-off" class="icon"></i><span>Realtime paused</span><button class="button small" id="resyncButton" type="button">Resync</button></div>
+                    <svg class="edge-layer" id="edgeLayer" viewBox="0 0 900 650" preserveAspectRatio="none" aria-hidden="true">
+                      <defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="currentColor"></path></marker></defs>
+                      <path class="edge-line" id="edgeQuestionFinding" d="M160 313 C165 313 165 313 175 313"></path>
+                      <path class="edge-line" id="edgeFindingIssue" d="M315 313 C320 313 320 188 325 188"></path>
+                      <path class="edge-line" id="edgeIssueEvent" d="M470 188 C475 188 475 188 480 188"></path>
+                      <path class="edge-line" id="edgeFindingCode" d="M315 313 C320 313 320 428 325 428"></path>
+                      <text class="edge-label" id="labelQuestionFinding" x="175" y="303">investigates</text>
+                      <text class="edge-label" id="labelFindingIssue" x="325" y="188">supports</text>
+                      <text class="edge-label" id="labelIssueEvent" x="494" y="188">observed in</text>
+                      <text class="edge-label" id="labelFindingCode" x="325" y="428">implemented by</text>
+                    </svg>
+                    <button class="graph-node" data-node="question" style="left: 10px; top: 245px;" type="button">
+                      <span class="node-handle right" aria-hidden="true"></span>
+                      <div class="node-head"><span class="node-type-icon"><i data-lucide="circle-help" class="icon"></i></span><strong>Why does checkout fail?</strong><span class="node-kind">Question</span></div>
+                      <div class="node-description">Why does the profile disappear after a cached response?</div>
+                      <div class="node-meta"><span class="node-pulse"></span>Confirmed intent</div>
+                    </button>
+                    <button class="graph-node" data-node="finding" style="left: 165px; top: 245px;" type="button">
+                      <span class="node-handle left" aria-hidden="true"></span><span class="node-handle right" aria-hidden="true"></span>
+                      <div class="node-head"><span class="node-type-icon finding"><i data-lucide="lightbulb" class="icon"></i></span><strong>Cache response loses profile</strong><span class="node-kind">Finding</span></div>
+                      <div class="node-description">The cached payload can resolve before the profile hydration branch.</div>
+                      <div class="node-meta"><span class="node-pulse"></span><span class="confidence">82% confidence</span></div>
+                    </button>
+                    <button class="graph-node" data-node="issue" style="left: 320px; top: 125px;" type="button">
+                      <span class="node-handle left" aria-hidden="true"></span><span class="node-handle right" aria-hidden="true"></span>
+                      <div class="node-head"><span class="node-type-icon issue"><i data-lucide="bug" class="icon"></i></span><strong>TypeError · profile</strong><span class="node-kind">Issue</span></div>
+                      <div class="node-description mono">Cannot read properties of undefined</div>
+                      <div class="node-meta"><span class="node-pulse"></span>24 occurrences · Open</div>
+                    </button>
+                    <button class="graph-node" data-node="event" style="left: 474px; top: 125px;" type="button">
+                      <span class="node-handle left" aria-hidden="true"></span>
+                      <div class="node-head"><span class="node-type-icon" style="color: var(--info); background: color-mix(in srgb, var(--info) 11%, transparent);"><i data-lucide="activity" class="icon"></i></span><strong>Latest production event</strong><span class="node-kind">Event</span></div>
+                      <div class="node-description">f9b1c28a…7da4 · production · 2m ago</div>
+                      <div class="node-meta"><span class="node-pulse"></span>Symbolicated</div>
+                    </button>
+                    <button class="graph-node" data-node="code" style="left: 320px; top: 365px;" type="button">
+                      <span class="node-handle left" aria-hidden="true"></span>
+                      <div class="node-head"><span class="node-type-icon" style="color: var(--success); background: color-mix(in srgb, var(--success) 11%, transparent);"><i data-lucide="file-code-2" class="icon"></i></span><strong>src/register.ts:378</strong><span class="node-kind">Code</span></div>
+                      <div class="node-description mono">saveProfile(response.profile, { source })</div>
+                      <div class="node-meta"><span class="node-pulse"></span>Read-only source</div>
+                    </button>
+                    <div class="minimap" aria-label="Graph minimap"><span></span><span></span><span></span><span></span><span></span><div class="viewport"></div></div>
+                    <aside class="node-drawer hidden" id="nodeDrawer" aria-label="Node detail">
+                      <div class="drawer-head">
+                        <span class="node-type-icon issue" id="drawerIcon"><i data-lucide="bug" class="icon"></i></span>
+                        <div><h3 id="drawerTitle">TypeError · profile</h3><p id="drawerSubtitle">Issue node · source from Traceability</p></div>
+                        <button class="icon-button" id="closeDrawer" type="button" title="Close detail"><i data-lucide="x" class="icon"></i></button>
+                      </div>
+                      <div class="drawer-content" id="drawerContent">
+                        <div class="drawer-section"><div class="drawer-label">Summary</div><div class="drawer-value">Cannot read properties of undefined (reading 'profile'). This issue is open and has been seen 24 times in production.</div></div>
+                        <div class="drawer-section"><div class="drawer-label">Traceability source</div><div class="source-card"><i data-lucide="bug" class="icon"></i><div><strong>Issue #checkout-profile</strong><span>Last seen 2 minutes ago · web-demo@1.8.4</span></div></div></div>
+                        <div class="drawer-section"><div class="drawer-label">Identifiers</div><div class="drawer-value mono">graph_7f2c<br />node_issue_8a31</div></div>
+                        <div class="drawer-section"><div class="drawer-label">Related evidence</div><div class="drawer-value">Supported by <strong>Cache response loses profile</strong><br />Observed in <strong>Latest production event</strong></div></div>
+                      </div>
+                      <div class="drawer-footer"><button class="button small" id="copyNodeIds" type="button"><i data-lucide="copy" class="icon" style="width: 12px;"></i>Copy IDs</button><button class="button small primary" id="continueNode" type="button"><i data-lucide="message-circle" class="icon" style="width: 12px;"></i>Continue in Agent</button></div>
+                    </aside>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <aside class="agent-panel" aria-label="Agent Panel">
+          <header class="agent-header">
+            <span class="agent-orb"><i data-lucide="sparkles" class="icon"></i></span>
+            <div class="agent-heading"><strong>Agent Panel</strong><span id="agentSubtitle">Ready for a focused investigation</span></div>
+            <button class="icon-button" id="agentFocusButton" type="button" title="Focus agent"><i data-lucide="panel-right-open" class="icon"></i></button>
+          </header>
+          <div class="agent-messages" id="agentMessages">
+            <div class="agent-message">
+              <span class="message-avatar"><i data-lucide="sparkles" class="icon" style="width: 13px;"></i></span>
+              <div class="message-body">
+                <div class="message-author">Traceability Agent</div>
+                <p class="message-copy">I can help you turn an issue or an open question into an <strong>Explorer Graph</strong>. The graph is only created after we confirm the context and preview the first nodes.</p>
+              </div>
+            </div>
+            <div class="agent-hint" id="agentHint"><i data-lucide="terminal" class="icon"></i><span>Try the registered Skill <strong>/explorer-graph-create</strong></span><button class="button ghost small" id="insertCommand" type="button">Insert</button></div>
+          </div>
+          <div class="slash-menu" id="slashMenu">
+            <div class="slash-menu-label">Skills</div>
+            <button class="slash-command" id="slashGraphCommand" type="button">
+              <span class="command-icon"><i data-lucide="network" class="icon" style="width: 13px;"></i></span>
+              <span><strong>/explorer-graph-create</strong><span>Confirm context, preview and create an evidence graph</span></span>
+            </button>
+          </div>
+          <div class="agent-composer-area">
+            <div class="composer">
+              <textarea id="agentComposer" placeholder="Ask Traceability…"></textarea>
+              <div class="composer-footer">
+                <div class="composer-meta"><span class="slash-pill">/</span><span>Skills</span><span>·</span><span>Enter to send</span></div>
+                <button class="send-button" id="sendAgentButton" type="button" aria-label="Send prompt"><i data-lucide="send" class="icon" style="width: 13px;"></i></button>
+              </div>
+            </div>
+            <div class="agent-hint"><i data-lucide="info" class="icon"></i><span>Context is user-provided. No automatic Project or Node injection.</span></div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <div class="card-menu" id="cardMenu">
+      <button class="menu-item" id="renameGraph" type="button"><i data-lucide="pencil" class="icon" style="width: 12px;"></i>Rename graph</button>
+      <button class="menu-item danger" id="archiveGraph" type="button"><i data-lucide="archive" class="icon" style="width: 12px;"></i>Archive graph</button>
+    </div>
+
+    <div class="toast" id="toast"><i data-lucide="check-circle-2" class="icon" style="color: var(--success);"></i><span id="toastText">Saved</span></div>
+
+    <script>
+      (function () {
+        var state = {
+          view: "list",
+          filter: "all",
+          graphMenu: null,
+          graphCreated: false,
+          graphArchived: false,
+          socket: true,
+          zoom: 1,
+          dragging: null,
+          selectedNode: null,
+          agentFlow: "idle",
+          project: "Web Demo",
+        };
+
+        var nodeData = {
+          question: {
+            title: "Why does checkout fail?",
+            subtitle: "Question node · confirmed intent",
+            icon: "circle-help",
+            className: "",
+            content: '<div class="drawer-section"><div class="drawer-label">Question</div><div class="drawer-value">Why does the profile disappear after a cached response?</div></div><div class="drawer-section"><div class="drawer-label">Intent</div><div class="drawer-value">Locate the root cause and connect the Issue to the responsible Code.</div></div><div class="drawer-section"><div class="drawer-label">Identifiers</div><div class="drawer-value mono">graph_7f2c<br />node_question_01</div></div>',
+          },
+          finding: {
+            title: "Cache response loses profile",
+            subtitle: "Finding node · Agent conclusion",
+            icon: "lightbulb",
+            className: "finding",
+            content: '<div class="drawer-section"><div class="drawer-label">Finding</div><div class="drawer-value">The cached payload can resolve before the profile hydration branch, leaving <span class="mono">response.profile</span> undefined.</div></div><div class="drawer-section"><div class="drawer-label">Confidence</div><div class="drawer-value"><span class="status-pill active"><span class="dot"></span>82% · supported</span></div></div><div class="drawer-section"><div class="drawer-label">Identifiers</div><div class="drawer-value mono">graph_7f2c<br />node_finding_32b0</div></div>',
+          },
+          issue: {
+            title: "TypeError · profile",
+            subtitle: "Issue node · source from Traceability",
+            icon: "bug",
+            className: "issue",
+            content: '<div class="drawer-section"><div class="drawer-label">Summary</div><div class="drawer-value">Cannot read properties of undefined (reading \'profile\'). This issue is open and has been seen 24 times in production.</div></div><div class="drawer-section"><div class="drawer-label">Traceability source</div><div class="source-card"><i data-lucide="bug" class="icon"></i><div><strong>Issue #checkout-profile</strong><span>Last seen 2 minutes ago · web-demo@1.8.4</span></div></div></div><div class="drawer-section"><div class="drawer-label">Identifiers</div><div class="drawer-value mono">graph_7f2c<br />node_issue_8a31</div></div><div class="drawer-section"><div class="drawer-label">Related evidence</div><div class="drawer-value">Supported by <strong>Cache response loses profile</strong><br />Observed in <strong>Latest production event</strong></div></div>',
+          },
+          event: {
+            title: "Latest production event",
+            subtitle: "Event node · source from Traceability",
+            icon: "activity",
+            className: "",
+            content: '<div class="drawer-section"><div class="drawer-label">Event</div><div class="drawer-value mono">f9b1c28a…7da4</div></div><div class="drawer-section"><div class="drawer-label">Context</div><div class="drawer-value">production · web-demo@1.8.4 · 2 minutes ago</div></div><div class="drawer-section"><div class="drawer-label">Identifiers</div><div class="drawer-value mono">graph_7f2c<br />node_event_11cd</div></div><div class="drawer-section"><div class="drawer-label">Replay</div><div class="source-card"><i data-lucide="play-circle" class="icon"></i><div><strong>Session replay available</strong><span>Open replay around 01:42</span></div></div></div>',
+          },
+          code: {
+            title: "src/register.ts:378",
+            subtitle: "Code node · explicit user context",
+            icon: "file-code-2",
+            className: "",
+            content: '<div class="drawer-section"><div class="drawer-label">Source</div><div class="source-card"><i data-lucide="file-code-2" class="icon"></i><div><strong>src/register.ts</strong><span>Lines 378–379 · read-only snapshot</span></div></div></div><div class="drawer-section"><div class="drawer-label">Excerpt</div><pre class="code-snippet">saveProfile(response.profile, { source });\\nshowSuccessToast(response.profile.displayName);</pre></div><div class="drawer-section"><div class="drawer-label">Identifiers</div><div class="drawer-value mono">graph_7f2c<br />node_code_4fd2</div></div>',
+          },
+        };
+
+        var fallbackPaths = {
+          "fingerprint": "M12 2a8 8 0 0 0-8 8v2m16-2a8 8 0 0 0-8-8m-5 8v3a5 5 0 0 0 10 0V9m-7 0v4a2 2 0 0 0 4 0V8",
+          "inbox": "M4 4h16v11H4zM4 15l3 4h10l3-4M9 10h6",
+          "bug": "M8 8h8v7a4 4 0 0 1-8 0zM9 4l3 4 3-4M5 11h3m8 0h3M6 16l-2 2m14-2 2 2",
+          "compass": "m12 2 8 4v12l-8 4-8-4V6zM12 7l3 5-3 5-3-5z",
+          "file-code-2": "M6 3h8l4 4v14H6zM14 3v5h5M9 13l-2 2 2 2m6-4 2 2-2 2",
+          "sun": "M12 3v2m0 14v2M3 12h2m14 0h2m-3.4-6.6-1.4 1.4M7.8 16.2l-1.4 1.4m0-11.2 1.4 1.4m9.8 8.4 1.4 1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0",
+          "moon": "M20 15.3A8.5 8.5 0 0 1 8.7 4a8.5 8.5 0 1 0 11.3 11.3z",
+          "chevron-down": "m6 9 6 6 6-6",
+          "chevron-right": "m9 18 6-6-6-6",
+          "arrow-left": "M19 12H5m7 7-7-7 7-7",
+          "refresh-cw": "M20 11a8 8 0 0 0-14.7-4L3 10m0 0V5m0 5h5M4 13a8 8 0 0 0 14.7 4L21 14m0 0v5m0-5h-5",
+          "maximize-2": "M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7",
+          "columns-2": "M12 3v18M5 3h14v18H5z",
+          "sparkles": "m12 3 1.3 5.7L19 10l-5.7 1.3L12 17l-1.3-5.7L5 10l5.7-1.3zM19 16l.6 2.4L22 19l-2.4.6L19 22l-.6-2.4L16 19l2.4-.6z",
+          "search": "m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4z",
+          "network": "M7 7h10v10H7zM3 3h4v4H3zm14 14h4v4h-4zM5 7v10m14-10v10M7 5h10m-10 14h10",
+          "git-compare-arrows": "M6 3v14a4 4 0 0 0 4 4h8m0 0-3-3m3 3-3 3M18 21V7a4 4 0 0 0-4-4H6m0 0 3-3M6 3l3 3",
+          "git-branch": "M6 3v12a3 3 0 0 0 3 3h9M6 6h6a3 3 0 0 1 3 3v2m0 0-2-2m2 2 2-2M6 3a2 2 0 1 0 0 .1M18 18a2 2 0 1 0 0 .1",
+          "circle-dot": "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8",
+          "archive": "M4 7h16v13H4zM3 4h18v3H3zm5 7h8",
+          "more-horizontal": "M5 12h.01M12 12h.01M19 12h.01",
+          "circle-help": "M9.2 9a3 3 0 1 1 5.3 1.9c-1.2 1.3-2.5 1.4-2.5 3.1m0 3h.01M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20",
+          "lightbulb": "M9 18h6m-5 3h4m-7-8a5 5 0 1 1 8 0c-1 1-1.4 2-1.4 3H10.4c0-1-.4-2-1.4-3z",
+          "activity": "m3 12 4-4 4 8 4-12 3 8h3",
+          "mouse-pointer-2": "m5 3 4 17 3-7 7-3z",
+          "plus": "M12 5v14M5 12h14",
+          "minus": "M5 12h14",
+          "scan": "M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3",
+          "plus-circle": "M12 8v8m-4-4h8M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+          "wifi-off": "m3 3 18 18M10.6 5.1A15 15 0 0 1 21 12m-4.2 4.2A8 8 0 0 0 12 14m-3.6 3.6A3 3 0 0 1 6 16M1 9a15 15 0 0 1 2.2-1.3",
+          "wand-sparkles": "m15 4 1 3 3 1-3 1-1 3-1-3-3-1 3-1zM5 5l1 3 3 1-3 1-1 3-1-3-3-1 3-1zM12 12l1.5 4.5L18 18l-4.5 1.5L12 24l-1.5-4.5L6 18l4.5-1.5z",
+          "copy": "M8 8h11v13H8zM5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1",
+          "external-link": "M14 3h7v7m0-7-9 9M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6",
+          "x": "M6 6l12 12M18 6 6 18",
+          "message-circle": "M20 11.5a8 8 0 0 1-8 8 9 9 0 0 1-4-.9L4 20l1.4-3.1A8 8 0 1 1 20 11.5z",
+          "terminal": "m4 17 5-5-5-5m7 10h8",
+          "info": "M12 16v-4m0-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+          "send": "m22 2-7 20-4-9-9-4zM22 2 11 13",
+          "check": "m5 12 4 4L19 6",
+          "check-circle-2": "m9 12 2 2 4-4M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+          "loader-circle": "M21 12a9 9 0 1 1-6.2-8.5",
+          "eye": "M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12m10-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6",
+          "play-circle": "m10 8 6 4-6 4zM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+          "pencil": "m4 16-1 5 5-1L19 9l-4-4zM14 6l4 4",
+          "zoom-in": "M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16m11 3-5-5m-6-10v6m-3-3h6",
+          "zoom-out": "M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16m11 3-5-5m-9-8h6"
+        };
+
+        function refreshIcons() {
+          if (window.lucide && window.lucide.createIcons) {
+            window.lucide.createIcons();
+            return;
+          }
+          document.querySelectorAll("[data-lucide]").forEach(function (element) {
+            var path = fallbackPaths[element.getAttribute("data-lucide")] || "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 9v5m0-8h.01";
+            element.setAttribute("data-fallback", "true");
+            element.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"></path></svg>';
+          });
+        }
+
+        function byId(id) { return document.getElementById(id); }
+
+        function toast(message, icon) {
+          var el = byId("toast");
+          byId("toastText").textContent = message;
+          el.querySelector("[data-lucide]")?.setAttribute("data-lucide", icon || "check-circle-2");
+          refreshIcons();
+          el.classList.add("show");
+          window.clearTimeout(toast.timer);
+          toast.timer = window.setTimeout(function () { el.classList.remove("show"); }, 2400);
+        }
+
+        function closePopovers() {
+          byId("statusMenu").classList.remove("open");
+          byId("cardMenu").classList.remove("open");
+          byId("slashMenu").classList.remove("open");
+        }
+
+        function setView(view) {
+          state.view = view;
+          byId("listView").classList.toggle("hidden", view !== "list");
+          byId("detailView").classList.toggle("hidden", view !== "detail");
+          byId("breadcrumbCurrent").textContent = view === "detail" ? "Checkout profile failure" : "Explorer";
+          byId("explorerNav").classList.toggle("active", true);
+          if (view === "detail") {
+            window.setTimeout(drawEdges, 60);
+          }
+          closePopovers();
+        }
+
+        function renderGraphFilter() {
+          var query = byId("graphSearch").value.trim().toLowerCase();
+          var cards = Array.prototype.slice.call(document.querySelectorAll(".graph-card"));
+          var visible = cards.filter(function (card) {
+            var matchesText = !query || card.dataset.search.indexOf(query) >= 0;
+            var matchesStatus = state.filter === "all" || card.dataset.status === state.filter;
+            card.classList.toggle("hidden", !(matchesText && matchesStatus));
+            return matchesText && matchesStatus;
+          });
+          byId("graphCount").textContent = visible.length + " graph" + (visible.length === 1 ? "" : "s");
+          byId("emptyGraphs").classList.toggle("hidden", visible.length !== 0);
+          byId("graphGrid").classList.toggle("hidden", visible.length === 0);
+        }
+
+        function showAgentMessage(text, type, withTool) {
+          var container = byId("agentMessages");
+          var row = document.createElement("div");
+          row.className = "agent-message " + (type || "");
+          if (type === "user") {
+            row.innerHTML = '<div class="message-body"><p class="message-copy"></p></div>';
+            row.querySelector(".message-copy").textContent = text;
+          } else {
+            row.innerHTML = '<span class="message-avatar"><i data-lucide="sparkles" class="icon" style="width: 13px;"></i></span><div class="message-body"><div class="message-author">Traceability Agent</div><p class="message-copy"></p></div>';
+            row.querySelector(".message-copy").innerHTML = text;
+            if (withTool) {
+              var tool = document.createElement("div");
+              tool.className = "tool-step";
+              tool.innerHTML = '<div class="tool-line"><i data-lucide="check-circle-2" class="icon"></i><span>list_issues · get_issue</span></div><small>Matched Issue #checkout-profile in Web Demo</small>';
+              row.querySelector(".message-body").appendChild(tool);
+            }
+          }
+          container.appendChild(row);
+          container.scrollTop = container.scrollHeight;
+          refreshIcons();
+        }
+
+        function setAskCard(html) {
+          var old = byId("askCard");
+          if (old) old.remove();
+          var card = document.createElement("div");
+          card.id = "askCard";
+          card.className = "ask-card";
+          card.innerHTML = html;
+          byId("agentMessages").appendChild(card);
+          byId("agentMessages").scrollTop = byId("agentMessages").scrollHeight;
+          refreshIcons();
+        }
+
+        function showContextAsk() {
+          state.agentFlow = "context";
+          byId("agentSubtitle").textContent = "Prompt paused · needs your confirmation";
+          setAskCard('<div class="ask-title"><span><i data-lucide="circle-help" class="icon" style="width: 12px; vertical-align: -2px;"></i> Agent needs your input</span><span>Step 1 of 3</span></div><h4>Is this the context and intent you want to explore?</h4><button class="ask-option selected" type="button" data-ask="confirm"><span class="radio"></span><span><strong>Use this context</strong><span>Web Demo · Issue #checkout-profile · investigate root cause</span></span></button><button class="ask-option" type="button" data-ask="modify"><span class="radio"></span><span><strong>Modify context</strong><span>Tell the Agent what should change before creating anything</span></span></button><div class="ask-actions"><button class="button primary" data-ask-action="confirm-context" type="button">Confirm context</button></div>');
+        }
+
+        function showPreviewAsk() {
+          state.agentFlow = "preview";
+          setAskCard('<div class="ask-title"><span><i data-lucide="network" class="icon" style="width: 12px; vertical-align: -2px;"></i> Exploring graph preview</span><span>Step 3 of 3</span></div><h4>Ready to create this Exploring Graph?</h4><div class="preview-graph"><div class="preview-title"><i data-lucide="eye" class="icon" style="width: 12px;"></i> Read-only preview · no data written</div><div class="preview-map"><span class="preview-line one"></span><span class="preview-line two"></span><span class="preview-node"><i data-lucide="circle-help" class="icon" style="width: 11px;"></i>Question</span><span class="preview-node"><i data-lucide="bug" class="icon" style="width: 11px;"></i>Issue</span><span class="preview-node"><i data-lucide="lightbulb" class="icon" style="width: 11px;"></i>Finding</span></div></div><div class="ask-actions"><button class="button ghost" data-ask-action="modify-preview" type="button">Modify</button><button class="button primary" data-ask-action="create-graph" type="button"><i data-lucide="check" class="icon" style="width: 12px;"></i>Confirm & create</button></div>');
+        }
+
+        function beginCreateFlow() {
+          closePopovers();
+          byId("agentComposer").value = "/explorer-graph-create 请帮我创建关于 checkout profile failure 的 graph";
+          byId("agentComposer").focus();
+          byId("slashMenu").classList.remove("open");
+          showAgentMessage("/explorer-graph-create 请帮我创建关于 checkout profile failure 的 graph", "user");
+          showAgentMessage("I found a matching Issue and will first confirm the Project, target, intent, and evidence scope. No graph data has been written.", "", true);
+          showContextAsk();
+          byId("agentComposer").value = "";
+        }
+
+        function renderCreating() {
+          state.agentFlow = "creating";
+          byId("agentSubtitle").textContent = "Creating graph · server mutation in progress";
+          setAskCard('<div class="ask-title"><span><i data-lucide="loader-circle" class="icon" style="width: 12px; vertical-align: -2px;"></i> Creating Explorer Graph</span><span>Writing to server</span></div><h4>Building the first vertical slice</h4><div class="tool-step"><div class="tool-line"><i data-lucide="loader-circle" class="icon node-pulse loading"></i><span>explorer_create_graph</span></div><small>Creating graph_7f2c for Web Demo…</small></div><div class="tool-step"><div class="tool-line"><i data-lucide="loader-circle" class="icon node-pulse loading"></i><span>explorer_create_question_node</span></div><small>Waiting for graph id…</small></div>');
+          window.setTimeout(function () {
+            state.graphCreated = true;
+            state.agentFlow = "created";
+            byId("agentSubtitle").textContent = "Graph created · 7 nodes ready to explore";
+            var card = byId("askCard");
+            if (card) card.innerHTML = '<div class="ask-title"><span><i data-lucide="check-circle-2" class="icon" style="width: 12px; vertical-align: -2px;"></i> Graph created</span><span>Version 1</span></div><h4>Your evidence graph is ready to review.</h4><div class="tool-step"><div class="tool-line"><i data-lucide="check-circle-2" class="icon"></i><span>graph_7f2c · 7 nodes · 6 edges</span></div><small>Further Node operations will appear in the Canvas as they commit.</small></div><div class="ask-actions"><button class="button primary" id="openCreatedGraph" type="button"><i data-lucide="external-link" class="icon" style="width: 12px;"></i>Open Explorer Graph</button></div>';
+            refreshIcons();
+            toast("Graph created. Open it when you are ready.");
+          }, 1300);
+        }
+
+        function sendPrompt() {
+          var input = byId("agentComposer");
+          var value = input.value.trim();
+          if (!value) return;
+          if (value.indexOf("/explorer-graph-create") === 0 || value.toLowerCase().indexOf("create graph") >= 0) {
+            showAgentMessage(value, "user");
+            input.value = "";
+            showAgentMessage("I’ll resolve the Issue and confirm the context before writing any Graph data.", "", true);
+            showContextAsk();
+          } else {
+            showAgentMessage(value, "user");
+            input.value = "";
+            showAgentMessage("I can help with that. For this prototype, start with <strong>/explorer-graph-create</strong> to create an evidence graph.", "");
+          }
+        }
+
+        function openNode(nodeKey) {
+          var data = nodeData[nodeKey];
+          if (!data) return;
+          state.selectedNode = nodeKey;
+          document.querySelectorAll(".graph-node").forEach(function (node) { node.classList.toggle("selected", node.dataset.node === nodeKey); });
+          byId("drawerTitle").textContent = data.title;
+          byId("drawerSubtitle").textContent = data.subtitle;
+          byId("drawerIcon").className = "node-type-icon " + data.className;
+          byId("drawerIcon").innerHTML = '<i data-lucide="' + data.icon + '" class="icon"></i>';
+          byId("drawerContent").innerHTML = data.content;
+          byId("nodeDrawer").classList.remove("hidden");
+          refreshIcons();
+        }
+
+        function closeDrawer() {
+          byId("nodeDrawer").classList.add("hidden");
+          document.querySelectorAll(".graph-node").forEach(function (node) { node.classList.remove("selected"); });
+          state.selectedNode = null;
+        }
+
+        function copyText(text, message) {
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(function () {});
+          toast(message || "Copied to clipboard", "copy");
+        }
+
+        function setSocket(connected) {
+          state.socket = connected;
+          var status = byId("connectionButton");
+          var text = byId("connectionText");
+          var banner = byId("canvasBanner");
+          status.classList.toggle("offline", !connected);
+          text.textContent = connected ? "Connected" : "Reconnecting";
+          banner.classList.toggle("show", !connected);
+          byId("globalLiveStatus").classList.toggle("offline", !connected);
+          byId("globalLiveStatus").querySelector("span:last-child").textContent = connected ? "Live updates" : "Reconnecting";
+          if (!connected) {
+            toast("Realtime paused. Durable writes still use the API.", "wifi-off");
+          } else {
+            toast("Graph snapshot is up to date.", "refresh-cw");
+          }
+        }
+
+        function drawEdges() {
+          var shell = byId("canvasShell");
+          var width = shell.clientWidth || 900;
+          var height = shell.clientHeight || 650;
+          var svg = byId("edgeLayer");
+          svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+          var edges = [
+            ["edgeQuestionFinding", "question", "finding", "right", "left", "labelQuestionFinding"],
+            ["edgeFindingIssue", "finding", "issue", "right", "left", "labelFindingIssue"],
+            ["edgeIssueEvent", "issue", "event", "right", "left", "labelIssueEvent"],
+            ["edgeFindingCode", "finding", "code", "right", "left", "labelFindingCode"],
+          ];
+          edges.forEach(function (edge) {
+            var path = byId(edge[0]);
+            var source = document.querySelector('[data-node="' + edge[1] + '"]');
+            var target = document.querySelector('[data-node="' + edge[2] + '"]');
+            if (!path || !source || !target) return;
+            var a = source.getBoundingClientRect();
+            var b = target.getBoundingClientRect();
+            var c = shell.getBoundingClientRect();
+            var sx = a.left - c.left + a.width / 2;
+            var sy = a.top - c.top + a.height / 2;
+            var tx = b.left - c.left + b.width / 2;
+            var ty = b.top - c.top + b.height / 2;
+            if (edge[3] === "right") sx = a.right - c.left;
+            if (edge[3] === "bottom") sy = a.bottom - c.top;
+            if (edge[4] === "left") tx = b.left - c.left;
+            if (edge[4] === "top") ty = b.top - c.top;
+            var dx = Math.abs(tx - sx);
+            var dy = Math.abs(ty - sy);
+            var curve = Math.max(40, Math.min(150, (dx + dy) * .38));
+            var d;
+            if (edge[3] === "bottom") d = "M " + sx + " " + sy + " C " + sx + " " + (sy + curve) + " " + tx + " " + (ty - curve) + " " + tx + " " + ty;
+            else d = "M " + sx + " " + sy + " C " + (sx + curve) + " " + sy + " " + (tx - curve) + " " + ty + " " + tx + " " + ty;
+            path.setAttribute("d", d);
+            var label = byId(edge[5]);
+            if (label) {
+              label.setAttribute("x", String(sx + (tx - sx) * .5));
+              label.setAttribute("y", String((sy + ty) * .5 - (Math.abs(ty - sy) > 35 ? 8 : 11)));
+            }
+          });
+        }
+
+        function autoLayout() {
+          var positions = {
+            question: [10, 245],
+            finding: [165, 245],
+            issue: [320, 125],
+            event: [474, 125],
+            code: [320, 365],
+          };
+          Object.keys(positions).forEach(function (key) {
+            var node = document.querySelector('[data-node="' + key + '"]');
+            if (node) { node.style.left = positions[key][0] + "px"; node.style.top = positions[key][1] + "px"; }
+          });
+          drawEdges();
+          toast("Layout arranged locally. Save on drag stop.", "wand-sparkles");
+        }
+
+        function startDrag(event) {
+          var node = event.currentTarget;
+          if (event.button !== 0 || state.view !== "detail") return;
+          state.dragging = { node: node, x: event.clientX, y: event.clientY, left: parseFloat(node.style.left), top: parseFloat(node.style.top), moved: false };
+          node.setPointerCapture?.(event.pointerId);
+          node.classList.add("selected");
+        }
+
+        function moveDrag(event) {
+          if (!state.dragging) return;
+          var d = state.dragging;
+          var scale = state.zoom || 1;
+          var left = Math.max(8, d.left + (event.clientX - d.x) / scale);
+          var top = Math.max(70, d.top + (event.clientY - d.y) / scale);
+          d.moved = true;
+          d.node.style.left = left + "px";
+          d.node.style.top = top + "px";
+          drawEdges();
+        }
+
+        function endDrag() {
+          if (!state.dragging) return;
+          state.dragging = null;
+          if (state.dragging?.moved) toast("Node position saved on drag stop.", "check-circle-2");
+        }
+
+        function archiveFromMenu() {
+          state.graphArchived = true;
+          closePopovers();
+          var trigger = document.querySelector('.card-menu-trigger[data-menu="' + state.graphMenu + '"]');
+          var card = trigger ? trigger.closest(".graph-card") : document.querySelector('.graph-card[data-search*="checkout"]');
+          if (card) {
+            card.dataset.status = "archived";
+            card.classList.add("archived");
+            var pill = card.querySelector(".status-pill");
+            pill.className = "status-pill archived";
+            pill.innerHTML = '<span class="dot"></span>Archived';
+          }
+          toast("Graph archived. It remains available as a read-only snapshot.", "archive");
+          renderGraphFilter();
+          if (state.view === "detail") setView("list");
+        }
+
+        byId("newGraphButton").addEventListener("click", beginCreateFlow);
+        byId("insertCommand").addEventListener("click", function () {
+          byId("agentComposer").value = "/explorer-graph-create ";
+          byId("agentComposer").focus();
+          byId("slashMenu").classList.add("open");
+        });
+        byId("slashGraphCommand").addEventListener("click", function () {
+          byId("agentComposer").value = "/explorer-graph-create ";
+          byId("agentComposer").focus();
+          byId("slashMenu").classList.remove("open");
+        });
+        byId("agentComposer").addEventListener("focus", function () {
+          if (!byId("agentComposer").value.trim()) byId("slashMenu").classList.add("open");
+        });
+        byId("agentComposer").addEventListener("input", function () {
+          if (byId("agentComposer").value.charAt(0) === "/") byId("slashMenu").classList.add("open");
+          else byId("slashMenu").classList.remove("open");
+        });
+        byId("agentComposer").addEventListener("keydown", function (event) {
+          if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendPrompt(); }
+          if (event.key === "Escape") closePopovers();
+        });
+        byId("sendAgentButton").addEventListener("click", sendPrompt);
+
+        byId("agentMessages").addEventListener("click", function (event) {
+          var option = event.target.closest("[data-ask]");
+          if (option) {
+            byId("agentMessages").querySelectorAll(".ask-option").forEach(function (item) { item.classList.remove("selected"); });
+            option.classList.add("selected");
+            if (option.dataset.ask === "modify") {
+              byId("agentComposer").value = "Please modify the Project, Issue, intent, or evidence scope: ";
+              byId("agentComposer").focus();
+            }
+          }
+          var action = event.target.closest("[data-ask-action]");
+          if (!action) return;
+          if (action.dataset.askAction === "confirm-context") {
+            showAgentMessage("Context confirmed: Web Demo · Issue #checkout-profile · root-cause investigation.", "", false);
+            showAgentMessage("I’ll prepare a read-only preview with Question, Issue, Finding, Event, and Code nodes.", "", true);
+            showPreviewAsk();
+          }
+          if (action.dataset.askAction === "modify-preview") {
+            byId("agentComposer").value = "Please adjust the graph context: ";
+            byId("agentComposer").focus();
+            toast("Nothing has been written. Update the prompt and send it again.", "pencil");
+          }
+          if (action.dataset.askAction === "create-graph") {
+            showAgentMessage("Confirmed. I’m creating the graph and will stream committed operations into the Canvas.", "");
+            renderCreating();
+          }
+        });
+        byId("agentMessages").addEventListener("click", function (event) {
+          if (event.target.closest("#openCreatedGraph")) setView("detail");
+        });
+
+        document.querySelectorAll(".graph-card").forEach(function (card) {
+          card.addEventListener("click", function () { setView("detail"); });
+        });
+        document.querySelectorAll(".card-menu-trigger").forEach(function (button) {
+          button.addEventListener("click", function (event) {
+            event.stopPropagation();
+            var menu = byId("cardMenu");
+            var rect = button.getBoundingClientRect();
+            menu.style.left = Math.max(12, rect.right - 132) + "px";
+            menu.style.top = rect.bottom + 6 + "px";
+            state.graphMenu = button.dataset.menu;
+            menu.classList.toggle("open");
+          });
+        });
+        byId("archiveGraph").addEventListener("click", archiveFromMenu);
+        byId("renameGraph").addEventListener("click", function () {
+          closePopovers();
+          toast("Rename is ready for the next mutation step.", "pencil");
+        });
+
+        byId("backToList").addEventListener("click", function () { closeDrawer(); setView("list"); });
+        byId("copyNodeIds").addEventListener("click", function () { copyText("graph_7f2c / node_" + (state.selectedNode || "issue") + "_8a31", "Graph and Node IDs copied"); });
+        byId("continueNode").addEventListener("click", function () {
+          var node = state.selectedNode || "issue";
+          byId("agentComposer").value = "/explorer-graph-create Continue from graph_7f2c / node_" + node + "_8a31";
+          byId("agentComposer").focus();
+          toast("IDs added to your prompt. Review before sending.", "message-circle");
+        });
+        byId("closeDrawer").addEventListener("click", closeDrawer);
+        document.querySelectorAll(".graph-node").forEach(function (node) {
+          node.addEventListener("click", function () { if (!state.dragging) openNode(node.dataset.node); });
+          node.addEventListener("pointerdown", startDrag);
+          node.addEventListener("pointermove", moveDrag);
+          node.addEventListener("pointerup", endDrag);
+          node.addEventListener("pointercancel", endDrag);
+        });
+        byId("layoutButton").addEventListener("click", autoLayout);
+        byId("fitView").addEventListener("click", function () { state.zoom = 1; byId("canvasShell").style.transform = "scale(1)"; toast("Fit view", "scan"); drawEdges(); });
+        byId("zoomIn").addEventListener("click", function () { state.zoom = Math.min(1.35, state.zoom + .1); toast("Zoom " + Math.round(state.zoom * 100) + "%", "zoom-in"); });
+        byId("zoomOut").addEventListener("click", function () { state.zoom = Math.max(.75, state.zoom - .1); toast("Zoom " + Math.round(state.zoom * 100) + "%", "zoom-out"); });
+        byId("addNodeButton").addEventListener("click", function () {
+          byId("agentComposer").value = "/explorer-graph-create Add evidence to graph_7f2c";
+          byId("agentComposer").focus();
+          toast("Describe the evidence you want to add, then send the prompt.", "plus-circle");
+        });
+        byId("connectionButton").addEventListener("click", function () { setSocket(!state.socket); });
+        byId("resyncButton").addEventListener("click", function () { setSocket(true); });
+        byId("refreshButton").addEventListener("click", function () { toast(state.view === "detail" ? "Graph snapshot refreshed." : "Graph list refreshed.", "refresh-cw"); });
+
+        byId("focusButton").addEventListener("click", function () {
+          var active = byId("mainRegion").classList.toggle("content-focus");
+          byId("focusButton").title = active ? "Restore split view" : "Focus content";
+          byId("focusButton").innerHTML = '<i data-lucide="' + (active ? "columns-2" : "maximize-2") + '" class="icon"></i>';
+          refreshIcons();
+          window.setTimeout(drawEdges, 250);
+        });
+        byId("agentFocusButton").addEventListener("click", function () {
+          var active = byId("mainRegion").classList.toggle("content-focus");
+          byId("focusButton").title = active ? "Restore split view" : "Focus content";
+          byId("focusButton").innerHTML = '<i data-lucide="' + (active ? "columns-2" : "maximize-2") + '" class="icon"></i>';
+          refreshIcons();
+          window.setTimeout(drawEdges, 250);
+        });
+
+        byId("statusTrigger").addEventListener("click", function () {
+          byId("statusMenu").classList.toggle("open");
+          byId("statusTrigger").setAttribute("aria-expanded", byId("statusMenu").classList.contains("open"));
+        });
+        document.querySelectorAll(".select-item").forEach(function (item) {
+          item.addEventListener("click", function () {
+            state.filter = item.dataset.filter;
+            byId("statusValue").textContent = item.textContent.trim();
+            document.querySelectorAll(".select-item").forEach(function (candidate) { candidate.classList.toggle("selected", candidate === item); });
+            closePopovers();
+            renderGraphFilter();
+          });
+        });
+        byId("graphSearch").addEventListener("input", renderGraphFilter);
+        byId("themeToggle").addEventListener("click", function () {
+          document.body.dataset.theme = document.body.dataset.theme === "dark" ? "light" : "dark";
+          byId("themeToggle").innerHTML = '<i data-lucide="' + (document.body.dataset.theme === "dark" ? "moon" : "sun") + '" class="icon"></i>';
+          refreshIcons();
+        });
+
+        document.addEventListener("click", function (event) {
+          if (!event.target.closest("#cardMenu") && !event.target.closest(".card-menu-trigger")) byId("cardMenu").classList.remove("open");
+          if (!event.target.closest("#statusMenu") && !event.target.closest("#statusTrigger")) byId("statusMenu").classList.remove("open");
+        });
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") { closePopovers(); closeDrawer(); }
+        });
+        window.addEventListener("resize", drawEdges);
+        refreshIcons();
+        renderGraphFilter();
+      }());
+    </script>
+  </body>
+</html>
