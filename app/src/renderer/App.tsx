@@ -1,3 +1,4 @@
+import explorerExtension from "@extensions/builtins/explorer/renderer";
 import issuesExtension from "@extensions/builtins/issues/renderer";
 import projectsExtension from "@extensions/builtins/projects/renderer";
 import subagentsExtension from "@extensions/builtins/subagents/renderer";
@@ -36,6 +37,7 @@ const installedRendererExtensions: RendererExtensionDefinition[] = [
   subagentsExtension,
   projectsExtension,
   issuesExtension,
+  explorerExtension,
 ];
 
 export function App() {

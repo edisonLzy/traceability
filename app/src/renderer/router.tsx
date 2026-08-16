@@ -1,5 +1,6 @@
 import { Layout } from "@renderer/pages/(protected)/_layout";
 import { ExplorerPage } from "@renderer/pages/(protected)/Explorer";
+import { ExplorerGraphDetailPage } from "@renderer/pages/(protected)/Explorer/detail";
 import { InboxPage } from "@renderer/pages/(protected)/Inbox";
 import { IssuesPage } from "@renderer/pages/(protected)/monitor/Issues";
 import { IssueDetailPage } from "@renderer/pages/(protected)/monitor/Issues/detail";
@@ -31,6 +32,7 @@ export const appRoutes: RouteObject[] = [
             ],
           },
           { path: "explorer", element: <ExplorerPage /> },
+          { path: "explorer/:graphId", element: <ExplorerGraphDetailPage /> },
         ],
       },
     ],
