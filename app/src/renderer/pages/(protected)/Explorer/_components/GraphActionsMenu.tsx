@@ -15,11 +15,12 @@ import {
   DropdownMenuTrigger,
 } from "@renderer/components/ui/dropdown-menu";
 import { Input } from "@renderer/components/ui/input";
-import type { ExplorerGraphSummary } from "@renderer/lib/explorer-types";
 import { trpc } from "@renderer/lib/trpc";
 import { Archive, LoaderCircle, MoreHorizontal, Pencil } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+
+import type { ExplorerGraphSummary } from "../types";
 
 /** Owns graph row actions, including the rename dialog and archive mutation. */
 export function GraphActionsMenu({

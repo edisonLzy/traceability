@@ -7,7 +7,6 @@ import {
   TableHeader,
   TableRow,
 } from "@renderer/components/ui/table";
-import type { ExplorerGraphSummary } from "@renderer/lib/explorer-types";
 import { trpc } from "@renderer/lib/trpc";
 import { cn } from "@renderer/lib/utils";
 import { projectStore } from "@renderer/store/project";
@@ -18,6 +17,7 @@ import { useStore } from "zustand";
 
 import { GraphActionsMenu } from "./_components/GraphActionsMenu";
 import { GraphCreateButton } from "./_components/GraphCreateButton";
+import type { ExplorerGraphSummary } from "./types";
 
 export function ExplorerPage() {
   const project = useStore(projectStore, (state) => state.currentProject);
