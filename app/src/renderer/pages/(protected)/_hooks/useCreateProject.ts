@@ -13,5 +13,12 @@ export function useCreateProject(): UseMutationResult<
   CreateProjectInput,
   unknown
 > {
-  return trpc.projects.create.useMutation();
+  const utils = trpc.useUtils();
+  return trpc.projects.create.useMutation({
+    // 创建成功后使项目列表缓存失效：onboarding 依赖 projects.list 的长度决定
+    // 是否退出引导，modal 依赖它刷新下拉列表，两者都要立即看到新项目。
+    onSuccess: () => {
+      void utils.projects.list.invalidate();
+    },
+  });
 }

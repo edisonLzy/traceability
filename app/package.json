@@ -5,8 +5,10 @@
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {
-    "build": "node ./scripts/run-electron-vite.mjs build",
-    "dev": "node ./scripts/run-electron-vite.mjs dev --inspect --sourcemap",
+    "build": "node ./scripts/run-electron-vite.mjs build --mode production",
+    "build:test": "node ./scripts/run-electron-vite.mjs build --mode test",
+    "dev": "node ./scripts/run-electron-vite.mjs dev --inspect --sourcemap --mode development",
+    "dev:test": "node ./scripts/run-electron-vite.mjs dev --inspect --sourcemap --mode test",
     "package": "pnpm build && electron-builder",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.node.json"

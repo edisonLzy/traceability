@@ -7,7 +7,9 @@
   "scripts": {
     "build": "turbo run build",
     "build:app": "turbo run build --filter=@tracerability/app",
+    "build:app:test": "pnpm --filter ./app build:test",
     "dev:app": "pnpm --filter ./app dev",
+    "dev:app:test": "pnpm --filter ./app dev:test",
     "test": "turbo run test",
     "type-check": "turbo run typecheck",
     "prepare": "husky",
