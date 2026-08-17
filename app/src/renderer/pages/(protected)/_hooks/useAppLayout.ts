@@ -1,4 +1,4 @@
-import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react-dom";
+import { autoUpdate, flip, offset, shift, size, useFloating } from "@floating-ui/react-dom";
 import { cn } from "@renderer/lib/utils";
 import {
   useCallback,
@@ -80,6 +80,7 @@ const CONTENT_PANEL_ID = "workspace-content";
 const AGENT_PANEL_ID = "workspace-agent";
 const FLOATING_AGENT_GAP = 12;
 const FLOATING_AGENT_PADDING = 18;
+const FLOATING_AGENT_MAX_WIDTH = 560;
 
 const DEFAULT_WORKSPACE_PANEL_LAYOUT = {
   [CONTENT_PANEL_ID]: INITIAL_APP_LAYOUT_STATE.contentShare,
@@ -131,6 +132,16 @@ export function useAppLayout() {
     elements: { reference: floatingLauncherElement },
     middleware: [
       offset(FLOATING_AGENT_GAP),
+      size({
+        boundary: floatingBoundary,
+        padding: FLOATING_AGENT_PADDING,
+        apply({ availableHeight, availableWidth, elements }) {
+          Object.assign(elements.floating.style, {
+            width: `${Math.min(FLOATING_AGENT_MAX_WIDTH, availableWidth)}px`,
+            height: `${availableHeight}px`,
+          });
+        },
+      }),
       flip({ boundary: floatingBoundary, padding: FLOATING_AGENT_PADDING }),
       shift({ boundary: floatingBoundary, padding: FLOATING_AGENT_PADDING }),
     ],
@@ -286,7 +297,7 @@ export function useAppLayout() {
       className: cn(
         "min-w-0",
         isFloatingAgentMode
-          ? "glass-panel-raised z-50 h-[min(580px,calc(100%_-_36px))] w-[min(390px,calc(100%_-_36px))] overflow-hidden rounded-[18px] transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none"
+          ? "glass-panel-raised z-50 overflow-hidden rounded-[18px] transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none"
           : "relative h-full",
         isFloatingAgentMode &&
           (isFloatingAgentVisible
