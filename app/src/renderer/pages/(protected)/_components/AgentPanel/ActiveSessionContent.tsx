@@ -222,7 +222,7 @@ function SessionMenu({ activeSessionId, onClose, onSelect, sessions }: SessionMe
       />
       <div
         aria-label="Conversations"
-        className="absolute top-[calc(100%+8px)] right-0 z-40 w-[min(320px,calc(100vw-24px))] overflow-hidden rounded-[10px] border border-hairline-strong bg-surface-glass-elevated shadow-[0_18px_50px_rgba(0,0,0,0.38)] backdrop-blur-2xl"
+        className="absolute top-[calc(100%+8px)] right-0 z-40 w-[min(320px,calc(100vw-24px))] overflow-hidden rounded-[10px] border border-hairline-strong bg-background shadow-[0_18px_50px_rgba(0,0,0,0.38)]"
         role="menu"
       >
         <div className="border-b border-hairline px-2.5 py-2 text-[10px] font-[650] uppercase tracking-[0.07em] text-tertiary">
