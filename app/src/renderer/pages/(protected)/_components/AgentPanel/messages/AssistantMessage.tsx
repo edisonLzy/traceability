@@ -53,6 +53,9 @@ export function AssistantMessage({
   );
 
   const assistantResponseText = textContent.map((block) => block.text).join("\n");
+  const thinking = processingContent
+    .filter((block): block is ThinkingContent => block.type === "thinking")
+    .map((block) => block.thinking);
 
   const [isProcessingOpen, setIsProcessingOpen] = useState(true);
 
@@ -84,28 +87,16 @@ export function AssistantMessage({
             </CollapsibleTrigger>
 
             <CollapsibleContent className="flex flex-col gap-2">
-              {processingContent.map((block, index) => {
-                if (block.type === "thinking") {
-                  return (
-                    <AssistantThinkingMessage
-                      key={`thinking-${index}`}
-                      thinking={[block.thinking]}
-                    />
-                  );
-                }
-
-                if (block.type === "toolCall") {
-                  return (
-                    <AssistantToolMessage
-                      key={block.id}
-                      sessionId={sessionId}
-                      toolState={toolStates.get(block.id)}
-                    />
-                  );
-                }
-
-                return null;
-              })}
+              {thinking.length > 0 ? <AssistantThinkingMessage thinking={thinking} /> : null}
+              {processingContent.map((block) =>
+                block.type === "toolCall" ? (
+                  <AssistantToolMessage
+                    key={block.id}
+                    sessionId={sessionId}
+                    toolState={toolStates.get(block.id)}
+                  />
+                ) : null,
+              )}
             </CollapsibleContent>
           </Collapsible>
         ) : null}

@@ -101,7 +101,7 @@ export function ChatMessages({
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
-                <div className="mx-auto w-full max-w-[720px] min-w-0">
+                <div className="mx-auto w-full max-w-[960px] min-w-0">
                   {isUserMessage(message) ? (
                     <UserMessage
                       message={message}

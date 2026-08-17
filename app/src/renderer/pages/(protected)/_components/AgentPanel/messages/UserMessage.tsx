@@ -60,7 +60,7 @@ export function StickyUserMessage({ message, onJump }: StickyUserMessageProps) {
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-2">
-      <div className="mx-auto w-full max-w-[720px]">
+      <div className="mx-auto w-full max-w-[960px]">
         <div className="pointer-events-auto grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[9px] border border-hairline-strong bg-surface-glass-elevated px-3 py-2 text-[12px] text-ink shadow-[0_14px_38px_rgba(0,0,0,0.34)]">
           <div className="pm-readonly min-w-0 overflow-hidden text-[12px] leading-[1.55] text-ink [&_.ProseMirror]:overflow-hidden [&_.ProseMirror]:text-ellipsis [&_.ProseMirror]:!whitespace-nowrap [&_.ProseMirror_p]:overflow-hidden [&_.ProseMirror_p]:text-ellipsis [&_.ProseMirror_p]:!whitespace-nowrap">
             <EditorContent editor={readOnlyEditor} className="prompt-editor max-w-none min-w-0" />

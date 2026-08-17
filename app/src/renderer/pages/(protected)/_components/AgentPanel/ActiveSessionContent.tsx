@@ -83,7 +83,7 @@ export function ActiveSessionContent({ sessionId }: { sessionId: string }) {
       </PanelBody>
 
       <PanelFooter>
-        <div className="mx-auto w-full max-w-[720px]">
+        <div className="mx-auto w-full max-w-[960px]">
           <PendingMessages sessionId={sessionId} />
           {pendingHumanInTheLoopRequest ? (
             <AskUserQuestionPanel request={pendingHumanInTheLoopRequest} sessionId={sessionId} />
