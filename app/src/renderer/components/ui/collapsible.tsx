@@ -16,7 +16,7 @@ function CollapsibleContent({ className, children, ...props }: CollapsiblePrimit
     <CollapsiblePrimitive.Panel
       data-slot="collapsible-content"
       className={cn(
-        "overflow-hidden [--radix-collapsible-content-height:var(--collapsible-panel-height)]",
+        "overflow-hidden [--radix-collapsible-content-height:var(--collapsible-panel-height)] data-open:animate-collapsible-down data-closed:animate-collapsible-up",
         className,
       )}
       {...props}

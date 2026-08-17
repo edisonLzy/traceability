@@ -1,17 +1,13 @@
 interface AssistantThinkingMessageProps {
-  thinking: string[];
+  content: string;
 }
 
-export function AssistantThinkingMessage({ thinking }: AssistantThinkingMessageProps) {
-  if (thinking.length === 0) return null;
+export function AssistantThinkingMessage({ content }: AssistantThinkingMessageProps) {
+  if (!content) return null;
+
   return (
-    <details className="mb-2 overflow-hidden rounded-[10px] border border-hairline bg-overlay text-[10px] text-tertiary">
-      <summary className="cursor-pointer px-2.5 py-2 select-none transition-colors hover:bg-overlay-strong hover:text-muted">
-        Reasoning
-      </summary>
-      <pre className="m-0 border-t border-hairline px-2.5 py-2 font-sans leading-[1.6] whitespace-pre-wrap break-words">
-        {thinking.join("\n")}
-      </pre>
-    </details>
+    <pre className="m-0 max-w-full overflow-x-auto font-sans text-[13px] leading-6 whitespace-pre-wrap break-words text-muted-foreground">
+      {content}
+    </pre>
   );
 }

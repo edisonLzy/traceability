@@ -61,11 +61,11 @@ export function StickyUserMessage({ message, onJump }: StickyUserMessageProps) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-2">
       <div className="mx-auto w-full max-w-[960px]">
-        <div className="pointer-events-auto grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[9px] border border-hairline-strong bg-surface-glass-elevated px-3 py-2 text-[12px] text-ink shadow-[0_14px_38px_rgba(0,0,0,0.34)]">
-          <div className="pm-readonly min-w-0 overflow-hidden text-[12px] leading-[1.55] text-ink [&_.ProseMirror]:overflow-hidden [&_.ProseMirror]:text-ellipsis [&_.ProseMirror]:!whitespace-nowrap [&_.ProseMirror_p]:overflow-hidden [&_.ProseMirror_p]:text-ellipsis [&_.ProseMirror_p]:!whitespace-nowrap">
+        <div className="pointer-events-auto grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border-2 border-ink bg-background px-3 py-2.5 text-sm text-foreground shadow-[var(--hard-shadow)]">
+          <div className="pm-readonly min-w-0 overflow-hidden text-[14px] leading-6 text-foreground [&_.ProseMirror]:overflow-hidden [&_.ProseMirror]:text-ellipsis [&_.ProseMirror]:!whitespace-nowrap [&_.ProseMirror_p]:overflow-hidden [&_.ProseMirror_p]:text-ellipsis [&_.ProseMirror_p]:!whitespace-nowrap">
             <EditorContent editor={readOnlyEditor} className="prompt-editor max-w-none min-w-0" />
           </div>
-          <Button className="h-6 text-[10px]" size="sm" variant="ghost" onClick={onJump}>
+          <Button size="sm" onClick={onJump}>
             Click to jump
           </Button>
         </div>
@@ -162,17 +162,22 @@ function ReadonlyUserMessage({ message, isRunning, onStartEdit }: ReadonlyUserMe
   const plainText = typeof message.content === "string" ? message.content : "unsupported content";
 
   return (
-    <article className="mb-4 flex justify-end pl-10">
-      <div className="flex max-w-[92%] min-w-0 flex-col items-end gap-1">
-        <div className="rounded-[15px_15px_5px_15px] border border-primary/20 bg-[linear-gradient(135deg,rgba(115,146,255,0.17),rgba(139,111,255,0.1))] px-3 py-2.5 text-primary-soft shadow-glass-sm backdrop-blur-xl">
-          <div className="pm-readonly min-w-0 text-[12px] leading-[1.55]">
-            <EditorContent editor={readOnlyEditor} className="prompt-editor max-w-none min-w-0" />
+    <article className="mb-5 flex justify-end pl-10">
+      <div className="grid max-w-[95%] min-w-0 grid-cols-[minmax(0,1fr)_34px] items-start gap-3">
+        <div className="flex min-w-0 flex-col items-end gap-1">
+          <div className="rounded-md border-2 border-ink bg-card px-4 py-2.5 text-[14px] leading-6 text-card-foreground shadow-[var(--hard-shadow-sm)]">
+            <div className="pm-readonly min-w-0 text-[14px] leading-6 text-card-foreground">
+              <EditorContent editor={readOnlyEditor} className="prompt-editor max-w-none min-w-0" />
+            </div>
           </div>
+          <MessageToolbar align="end">
+            <CopyMessageButton text={plainText} />
+            <EditMessageButton isRunning={isRunning} onEdit={onStartEdit} />
+          </MessageToolbar>
         </div>
-        <MessageToolbar align="end">
-          <CopyMessageButton text={plainText} />
-          <EditMessageButton isRunning={isRunning} onEdit={onStartEdit} />
-        </MessageToolbar>
+        <span className="flex size-8.5 items-center justify-center rounded-sm border-2 border-ink bg-signal-yellow font-mono text-[10px] font-bold text-[#102047] shadow-[var(--hard-shadow-sm)]">
+          YOU
+        </span>
       </div>
     </article>
   );
@@ -262,7 +267,7 @@ function EditableUserMessage({
 
   return (
     <div className="ml-auto flex max-w-2xl flex-col items-end gap-1">
-      <div className="w-full rounded-[11px] border border-primary/30 bg-primary/[0.08] px-3 py-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.18)]">
+      <div className="w-full rounded-md border-2 border-ink bg-card px-4 py-2.5 shadow-[var(--hard-shadow-sm)]">
         <EditorContent editor={editor} className="prompt-editor max-w-none" />
       </div>
       <div className="flex items-center gap-2">
@@ -296,7 +301,7 @@ function useUserMessageEditor(document: AppUserMessage["jsonContent"]) {
         }).configure({
           HTMLAttributes: {
             class:
-              "mention inline-flex items-center gap-1 rounded-[5px] border border-primary/25 bg-primary/15 px-1.5 py-0.5 text-[11px] font-[620] text-primary-hover",
+              "mention inline-flex items-center gap-1 rounded-sm border border-ink bg-signal-yellow px-1.5 py-0.5 text-sm font-bold text-[#102047]",
           },
         }),
         skillNode,
@@ -305,7 +310,7 @@ function useUserMessageEditor(document: AppUserMessage["jsonContent"]) {
       editable: false,
       editorProps: {
         attributes: {
-          class: "ProseMirror min-h-0 text-[12px] leading-[1.55] outline-none",
+          class: "ProseMirror min-h-0 text-[14px] leading-6 outline-none",
         },
       },
     },

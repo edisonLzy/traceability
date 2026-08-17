@@ -4,9 +4,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@renderer/components/ui/collapsible";
+import { Separator } from "@renderer/components/ui/separator";
 import { cn } from "@renderer/lib/utils";
 import type { ToolExecutionState } from "@renderer/store/agent";
-import { ChevronRightIcon, Sparkles } from "lucide-react";
+import { ChevronRightIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AssistantResponseMessage } from "./AssistantResponseMessage";
@@ -53,10 +54,6 @@ export function AssistantMessage({
   );
 
   const assistantResponseText = textContent.map((block) => block.text).join("\n");
-  const thinking = processingContent
-    .filter((block): block is ThinkingContent => block.type === "thinking")
-    .map((block) => block.thinking);
-
   const [isProcessingOpen, setIsProcessingOpen] = useState(true);
 
   useEffect(() => {
@@ -64,39 +61,47 @@ export function AssistantMessage({
   }, [textContent.length]);
 
   return (
-    <article className="glass-control mb-5 min-w-0 max-w-full overflow-hidden rounded-[15px] p-3">
-      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-[620] text-tertiary">
-        <Sparkles
-          className={isStreaming ? "animate-pulse text-primary-hover" : "text-primary-hover"}
-          size={13}
-        />
-        Traceability Agent
-        <ProcessingTip
-          completedAt={completedAt}
-          hasError={hasError}
-          isStreaming={isStreaming}
-          startedAt={startedAt}
-        />
-      </div>
-      <div className="flex min-w-0 flex-col gap-1.5">
+    <article className="mb-5 grid min-w-0 grid-cols-[34px_minmax(0,1fr)] items-start gap-3">
+      <span className="flex size-8.5 items-center justify-center rounded-sm border-2 border-ink bg-signal-cyan font-mono text-[10px] font-bold text-[#102047] shadow-[var(--hard-shadow-sm)]">
+        AI
+      </span>
+      <div className="flex min-w-0 max-w-[95%] flex-col gap-1.5">
         {processingContent.length > 0 ? (
           <Collapsible open={isProcessingOpen} onOpenChange={(open) => setIsProcessingOpen(open)}>
-            <CollapsibleTrigger className="group/trigger flex cursor-pointer items-center gap-1.5 rounded-lg bg-overlay px-2 py-1.5 text-[10px] text-tertiary transition-colors hover:bg-overlay-strong hover:text-muted">
-              Reasoning & activity
-              <ChevronRightIcon className="size-3 text-tertiary transition-transform group-data-panel-open/trigger:rotate-90" />
-            </CollapsibleTrigger>
+            <div className="flex flex-col gap-2">
+              <CollapsibleTrigger
+                aria-label="Toggle reasoning and tool activity"
+                className="group/trigger flex w-fit cursor-pointer items-center gap-1.5"
+              >
+                <ProcessingTip
+                  completedAt={completedAt}
+                  hasError={hasError}
+                  isStreaming={isStreaming}
+                  startedAt={startedAt}
+                />
+                <ChevronRightIcon className="size-3.5 text-muted-foreground transition-transform group-data-panel-open/trigger:rotate-90 hover:text-foreground" />
+              </CollapsibleTrigger>
+              <Separator className="h-0.5 bg-ink" />
+            </div>
 
-            <CollapsibleContent className="flex flex-col gap-2">
-              {thinking.length > 0 ? <AssistantThinkingMessage thinking={thinking} /> : null}
-              {processingContent.map((block) =>
-                block.type === "toolCall" ? (
+            <CollapsibleContent className="mt-2 flex flex-col gap-2">
+              {processingContent.map((block, index) => {
+                if (block.type === "thinking") {
+                  return (
+                    <AssistantThinkingMessage key={`thinking-${index}`} content={block.thinking} />
+                  );
+                }
+
+                return (
                   <AssistantToolMessage
                     key={block.id}
+                    args={block.arguments}
                     sessionId={sessionId}
+                    toolName={block.name}
                     toolState={toolStates.get(block.id)}
                   />
-                ) : null,
-              )}
+                );
+              })}
             </CollapsibleContent>
           </Collapsible>
         ) : null}
@@ -106,7 +111,7 @@ export function AssistantMessage({
         ))}
 
         {hasError && textContent.every((block) => block.text.trim().length === 0) ? (
-          <div className="min-w-0 max-w-full overflow-hidden border-l-2 border-danger/70 bg-danger/[0.06] px-2 py-1.5 text-[10px] leading-5 whitespace-pre-wrap text-danger [overflow-wrap:anywhere]">
+          <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm leading-6 whitespace-pre-wrap text-danger [overflow-wrap:anywhere]">
             {errorMessage ||
               "Agent request failed. Please check the model/API configuration and try again."}
           </div>
@@ -152,9 +157,9 @@ function ProcessingTip({ completedAt, hasError, isStreaming, startedAt }: Proces
   return (
     <span
       className={cn(
-        "font-normal text-tertiary",
+        "text-xs font-normal text-muted-foreground",
         hasError && "text-danger",
-        isStreaming && !hasError && "animate-pulse text-primary-hover",
+        isStreaming && !hasError && "animate-pulse",
       )}
     >
       {`${hasError ? "处理失败" : isStreaming ? "正在处理" : "已处理"} ${elapsed}s`}
@@ -173,7 +178,7 @@ interface ToolCall {
   id: string;
   type: "toolCall";
   name: string;
-  arguments: string;
+  arguments: unknown;
 }
 
 interface TextContent {

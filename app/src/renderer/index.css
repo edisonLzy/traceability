@@ -55,6 +55,11 @@
   /* Lavender text that sits on primary-tinted fills (mentions, message
      bubbles, accent labels) - lighter in dark, darker in light. */
   --color-primary-soft: var(--primary-soft);
+  --color-signal-yellow: var(--signal-yellow);
+  --color-signal-pink: var(--signal-pink);
+  --color-signal-cyan: var(--signal-cyan);
+  --color-signal-green: var(--signal-green);
+  --color-signal-purple: var(--signal-purple);
 
   /* High-contrast source/stacktrace code blocks, legible in both themes. */
   --color-code-bg: var(--code-bg);
@@ -111,6 +116,11 @@
   --success: #2fb795;
   --warning: #b3832f;
   --danger: #d85568;
+  --signal-yellow: #ffd440;
+  --signal-pink: #fe7da8;
+  --signal-cyan: #27ccf3;
+  --signal-green: #a8df72;
+  --signal-purple: #bbb0e6;
   --surface-glass: rgba(249, 252, 255, 0.62);
   --surface-glass-elevated: rgba(255, 255, 255, 0.88);
   --overlay: rgba(70, 105, 168, 0.055);
@@ -128,6 +138,8 @@
     0 10px 28px rgba(73, 102, 153, 0.085), inset 0 1px rgba(255, 255, 255, 0.72);
   --ui-shadow-glow: 0 10px 30px rgba(79, 119, 255, 0.24);
   --ui-shadow-input: 0 14px 38px rgba(54, 82, 136, 0.11), 0 3px 10px rgba(54, 82, 136, 0.055);
+  --hard-shadow: 3px 3px 0 #102047;
+  --hard-shadow-sm: 2px 2px 0 #102047;
 
   --background: #f3f7fd;
   --foreground: #102047;
@@ -176,6 +188,11 @@
   --success: #54d4b2;
   --warning: #e0b55e;
   --danger: #f18192;
+  --signal-yellow: #d7ad2f;
+  --signal-pink: #dc6e98;
+  --signal-cyan: #31b6d6;
+  --signal-green: #91c866;
+  --signal-purple: #9f92d0;
   --surface-glass: rgba(13, 21, 36, 0.68);
   --surface-glass-elevated: rgba(23, 34, 56, 0.9);
   --overlay: rgba(177, 198, 239, 0.05);
@@ -192,6 +209,8 @@
   --ui-shadow-glass-sm: 0 12px 32px rgba(0, 3, 10, 0.26), inset 0 1px rgba(255, 255, 255, 0.045);
   --ui-shadow-glow: 0 12px 34px rgba(77, 111, 242, 0.28);
   --ui-shadow-input: 0 16px 44px rgba(0, 2, 9, 0.32), 0 3px 12px rgba(0, 2, 9, 0.22);
+  --hard-shadow: 3px 3px 0 #000;
+  --hard-shadow-sm: 2px 2px 0 #000;
 
   --background: #080d19;
   --foreground: #edf3ff;
