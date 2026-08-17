@@ -1,6 +1,11 @@
 import type { AgentMessage, AppUserMessage } from "@earendil-works/pi-agent-core";
-import type { AssistantMessage } from "@earendil-works/pi-ai";
-import { EntryStatus, type Entry, type SessionEntry } from "@renderer/store/agent";
+import type { AssistantMessage, ToolResultMessage } from "@earendil-works/pi-ai";
+import {
+  EntryStatus,
+  type Entry,
+  type MessageEntry,
+  type SessionEntry,
+} from "@renderer/store/agent";
 import type { AvailableModel } from "@shared/models-ipc";
 
 export function isAssistantMessage(message: AgentMessage): message is AssistantMessage {
@@ -9,6 +14,18 @@ export function isAssistantMessage(message: AgentMessage): message is AssistantM
 
 export function isUserMessage(message: AgentMessage): message is AppUserMessage {
   return message.role === "user";
+}
+
+export function isToolResultMessage(message: AgentMessage): message is ToolResultMessage {
+  return message.role === "toolResult";
+}
+
+export function isVisibleChatMessage(message: AgentMessage): boolean {
+  return isUserMessage(message) || isAssistantMessage(message);
+}
+
+export function isVisibleMessageEntry(entry: SessionEntry): entry is MessageEntry {
+  return isMessageEntry(entry) && isVisibleChatMessage(entry.data);
 }
 
 export function isFailedAssistantMessage(message: unknown): message is AssistantMessage {

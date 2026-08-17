@@ -58,10 +58,12 @@ export const createSessionsSlice: StateCreator<AgentStoreState, [], [], Sessions
       const streamingEntryIds = new Map(previous.streamingEntryIds);
       const humanInTheLoopStates = new Map(previous.humanInTheLoopStates);
       const pendingMessages = new Map(previous.pendingMessages);
+      const agentTodos = new Map(previous.agentTodos);
       entryStates.delete(sessionId);
       streamingEntryIds.delete(sessionId);
       humanInTheLoopStates.delete(sessionId);
       pendingMessages.delete(sessionId);
+      agentTodos.delete(sessionId);
       return {
         activeSessionId: previous.activeSessionId === sessionId ? null : previous.activeSessionId,
         sessions: previous.sessions.filter((session) => session.id !== sessionId),
@@ -69,6 +71,7 @@ export const createSessionsSlice: StateCreator<AgentStoreState, [], [], Sessions
         streamingEntryIds,
         humanInTheLoopStates,
         pendingMessages,
+        agentTodos,
       };
     });
   },

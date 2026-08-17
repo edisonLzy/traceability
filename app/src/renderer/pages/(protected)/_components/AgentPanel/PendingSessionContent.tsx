@@ -23,6 +23,7 @@ export function PendingSessionContent() {
     try {
       session = await invoke("createSession", "traceability");
       agentStore.getState().appendSession(session);
+      agentStore.getState().clearAgentTodo(session.id);
 
       // Auto-rename: derive title from first prompt
       const title = createSessionTitleFromPrompt(submission.content);
