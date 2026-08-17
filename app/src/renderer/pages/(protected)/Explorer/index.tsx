@@ -151,6 +151,8 @@ function ExplorerPageContent({ projectId }: { projectId: string }) {
                   <TableHead>Graph</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Version</TableHead>
+                  <TableHead>Nodes</TableHead>
+                  <TableHead>Edges</TableHead>
                   <TableHead>Updated</TableHead>
                   <TableHead>Graph ID</TableHead>
                   <TableHead className="w-12 text-right" />
@@ -196,6 +198,8 @@ function ExplorerPageContent({ projectId }: { projectId: string }) {
                       </span>
                     </TableCell>
                     <TableCell className="text-[11px] text-tertiary">v{graph.version}</TableCell>
+                    <TableCell className="text-[11px] text-tertiary">{graph.nodeCount}</TableCell>
+                    <TableCell className="text-[11px] text-tertiary">{graph.edgeCount}</TableCell>
                     <TableCell className="text-[11px] text-tertiary">
                       {formatDate(graph.updatedAt)}
                     </TableCell>

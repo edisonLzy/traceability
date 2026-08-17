@@ -102,6 +102,8 @@ export interface GraphSummary {
   title: string;
   status: GraphStatus;
   version: number;
+  nodeCount: number;
+  edgeCount: number;
   createdAt: string;
   updatedAt: string;
 }

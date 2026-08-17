@@ -30,9 +30,22 @@ export class GraphRepository {
 
   async listGraphs(projectId: string): Promise<GraphSummary[]> {
     const rows = await this.database.db
-      .select()
+      .select({
+        id: graphs.id,
+        projectId: graphs.projectId,
+        title: graphs.title,
+        status: graphs.status,
+        version: graphs.version,
+        createdAt: graphs.createdAt,
+        updatedAt: graphs.updatedAt,
+        nodeCount: sql<number>`count(distinct ${graphNodes.id})::integer`,
+        edgeCount: sql<number>`count(distinct ${graphEdges.id})::integer`,
+      })
       .from(graphs)
+      .leftJoin(graphNodes, eq(graphNodes.graphId, graphs.id))
+      .leftJoin(graphEdges, eq(graphEdges.graphId, graphs.id))
       .where(eq(graphs.projectId, projectId))
+      .groupBy(graphs.id)
       .orderBy(desc(graphs.updatedAt));
     return rows.map(toSummary);
   }
@@ -43,7 +56,7 @@ export class GraphRepository {
       .values({ projectId, title, createdBy })
       .returning();
     if (!row) throw new Error("graph insert did not return a row");
-    return toSummary(row);
+    return toSummary({ ...row, nodeCount: 0, edgeCount: 0 });
   }
 
   async findGraphById(graphId: string) {
@@ -61,7 +74,8 @@ export class GraphRepository {
       .set({ title, updatedAt: new Date() })
       .where(eq(graphs.id, graphId))
       .returning();
-    return row ? toSummary(row) : null;
+    if (!row) return null;
+    return toSummary({ ...row, ...(await this.countGraphContents(graphId)) });
   }
 
   async archiveGraph(graphId: string): Promise<GraphSummary | null> {
@@ -70,7 +84,24 @@ export class GraphRepository {
       .set({ status: "archived", updatedAt: new Date() })
       .where(eq(graphs.id, graphId))
       .returning();
-    return row ? toSummary(row) : null;
+    if (!row) return null;
+    return toSummary({ ...row, ...(await this.countGraphContents(graphId)) });
+  }
+
+  private async countGraphContents(
+    graphId: string,
+  ): Promise<{ nodeCount: number; edgeCount: number }> {
+    const [row] = await this.database.db
+      .select({
+        nodeCount: sql<number>`count(distinct ${graphNodes.id})::integer`,
+        edgeCount: sql<number>`count(distinct ${graphEdges.id})::integer`,
+      })
+      .from(graphs)
+      .leftJoin(graphNodes, eq(graphNodes.graphId, graphs.id))
+      .leftJoin(graphEdges, eq(graphEdges.graphId, graphs.id))
+      .where(eq(graphs.id, graphId))
+      .groupBy(graphs.id);
+    return { nodeCount: row?.nodeCount ?? 0, edgeCount: row?.edgeCount ?? 0 };
   }
 
   async listNodes(graphId: string): Promise<GraphNodeRecord[]> {
@@ -324,13 +355,25 @@ export class GraphRepository {
   }
 }
 
-function toSummary(row: typeof graphs.$inferSelect): GraphSummary {
+function toSummary(row: {
+  id: string;
+  projectId: string;
+  title: string;
+  status: GraphStatus;
+  version: number;
+  nodeCount: number;
+  edgeCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}): GraphSummary {
   return {
     id: row.id,
     projectId: row.projectId,
     title: row.title,
     status: row.status as GraphStatus,
     version: row.version,
+    nodeCount: row.nodeCount,
+    edgeCount: row.edgeCount,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
