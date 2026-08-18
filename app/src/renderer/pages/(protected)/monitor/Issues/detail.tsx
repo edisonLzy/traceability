@@ -6,7 +6,6 @@ import {
   useRelatedReplays,
   useUpdateIssue,
 } from "@renderer/hooks/use-issue";
-import { promptAgent } from "@renderer/lib/agent-events";
 import type { AppRouterOutputs, Event } from "@renderer/lib/trpc-types";
 import { cn, relativeTime, statusGroup } from "@renderer/lib/utils";
 import { projectStore } from "@renderer/store/project";
@@ -17,11 +16,10 @@ import {
   ChevronRight,
   CircleDot,
   CircleOff,
-  Sparkles,
   TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useStore } from "zustand";
@@ -51,14 +49,6 @@ export function IssueDetailPage() {
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? events[0];
   const relatedReplaysQuery = useRelatedReplays(issue?.projectId, selectedEvent?.eventId);
 
-  const investigate = useCallback(() => {
-    if (!issue) return;
-    promptAgent({
-      context: { projectId: issue.projectId, source: "issue", issueId: issue.id },
-      prompt: `Investigate ${issue.id}`,
-    });
-  }, [issue]);
-
   useRegisterCommands(() => {
     if (!issue) return [];
     return [
@@ -70,17 +60,8 @@ export function IssueDetailPage() {
         icon: ArrowLeft,
         action: () => navigate(-1),
       },
-      {
-        id: "issue.investigate",
-        group: { id: "issue", label: "Current issue", order: 50 },
-        title: "Investigate current issue",
-        description: issue.title,
-        icon: Sparkles,
-        keywords: [issue.id, issue.fingerprint],
-        action: investigate,
-      },
     ];
-  }, [investigate, issue, navigate]);
+  }, [issue, navigate]);
 
   const changeStatus = async (status: IssueStatus) => {
     if (!issue) return;
@@ -160,13 +141,6 @@ export function IssueDetailPage() {
               <CircleDot className="size-3.5" />
             )}
             {group === "unresolved" ? "Resolve" : "Reopen"}
-          </button>
-          <button
-            type="button"
-            onClick={investigate}
-            className="inline-flex h-8.5 items-center gap-1.5 rounded-[10px] border border-primary/60 bg-primary px-3 text-[11px] font-[620] text-primary-foreground shadow-glow transition-colors duration-150 [transition-timing-function:var(--ease-out)] hover:bg-primary-hover active:bg-primary-hover"
-          >
-            <Sparkles className="size-3.5" /> Investigate
           </button>
         </div>
       </header>

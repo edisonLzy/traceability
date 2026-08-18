@@ -87,14 +87,14 @@ export function ModalSelector({ value, onChange }: ModalSelectorProps) {
       disabled={isLoading || models.length === 0}
     >
       <SelectTrigger
-        className="h-7 w-auto max-w-50 gap-1 rounded-[8px] border border-hairline bg-overlay px-2 !text-ink shadow-none hover:border-hairline-strong hover:bg-overlay-strong data-popup-open:border-primary/55 data-popup-open:bg-overlay focus:ring-0"
+        className="h-7 w-auto max-w-50 gap-1 rounded-[8px] border border-hairline bg-overlay pl-2 pr-6 !text-ink shadow-none hover:border-hairline-strong hover:bg-overlay-strong data-popup-open:border-primary/55 data-popup-open:bg-overlay focus:ring-0"
         aria-label="Select model"
       >
         <SelectValue className="pointer-events-none min-w-0">
           {value ? (
-            <div className="flex min-w-0 items-center gap-1.5 text-left text-[10px] font-[610] !text-ink">
+            <span className="flex min-w-0 items-center gap-1.5 text-left text-[10px] font-[610] !text-ink">
               <span className="block truncate !text-ink">{value.modelName}</span>
-            </div>
+            </span>
           ) : (
             <span className="truncate text-[10px] !text-muted">
               {isLoading ? "加载中..." : "选择模型"}
@@ -135,17 +135,19 @@ export function ModalSelector({ value, onChange }: ModalSelectorProps) {
                   isSelected && "bg-overlay text-ink",
                 )}
               >
-                <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden pr-6">
+                <span className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden">
                   <span className="flex size-5 shrink-0 items-center justify-center rounded-[5px] border border-primary/20 bg-primary/10 text-primary-hover">
                     <Cpu className="size-3" />
                   </span>
-                  <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+                  <span className="flex min-w-0 flex-1 items-baseline gap-1.5 overflow-hidden">
                     <span className="block min-w-0 truncate text-[11px] font-[610] leading-none text-current">
                       {model.modelName}
                     </span>
-                    <span className="text-[9px] text-tertiary">{model.providerName}</span>
-                  </div>
-                </div>
+                    <span className="shrink-0 text-[9px] leading-none text-tertiary">
+                      {model.providerName}
+                    </span>
+                  </span>
+                </span>
               </SelectItem>
             );
           })}

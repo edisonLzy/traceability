@@ -23,6 +23,7 @@ export function PendingSessionContent() {
     try {
       session = await invoke("createSession", "traceability");
       agentStore.getState().appendSession(session);
+      agentStore.getState().clearAgentTodo(session.id);
 
       // Auto-rename: derive title from first prompt
       const title = createSessionTitleFromPrompt(submission.content);
@@ -87,7 +88,7 @@ export function PendingSessionContent() {
         </div>
       </PanelBody>
       <PanelFooter>
-        <div className="mx-auto w-full max-w-[720px]">
+        <div className="mx-auto w-full max-w-[960px]">
           <PromptInput
             disabled={isLoading}
             initialModel={null}

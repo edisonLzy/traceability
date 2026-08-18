@@ -96,6 +96,22 @@ services:
     tmpfs:
       - /tmp
 
+  realtime:
+    image: ${TRACEABILITY_SERVER_IMAGE:-traceability-server:local}
+    command: ["node", "dist/realtime-dispatcher.js"]
+    environment: *server-environment
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    tmpfs:
+      - /tmp
+
   postgres:
     image: postgres:15-alpine
     environment:

@@ -55,6 +55,11 @@
   /* Lavender text that sits on primary-tinted fills (mentions, message
      bubbles, accent labels) - lighter in dark, darker in light. */
   --color-primary-soft: var(--primary-soft);
+  --color-signal-yellow: var(--signal-yellow);
+  --color-signal-pink: var(--signal-pink);
+  --color-signal-cyan: var(--signal-cyan);
+  --color-signal-green: var(--signal-green);
+  --color-signal-purple: var(--signal-purple);
 
   /* High-contrast source/stacktrace code blocks, legible in both themes. */
   --color-code-bg: var(--code-bg);
@@ -111,6 +116,11 @@
   --success: #2fb795;
   --warning: #b3832f;
   --danger: #d85568;
+  --signal-yellow: #ffd440;
+  --signal-pink: #fe7da8;
+  --signal-cyan: #27ccf3;
+  --signal-green: #a8df72;
+  --signal-purple: #bbb0e6;
   --surface-glass: rgba(249, 252, 255, 0.62);
   --surface-glass-elevated: rgba(255, 255, 255, 0.88);
   --overlay: rgba(70, 105, 168, 0.055);
@@ -128,6 +138,8 @@
     0 10px 28px rgba(73, 102, 153, 0.085), inset 0 1px rgba(255, 255, 255, 0.72);
   --ui-shadow-glow: 0 10px 30px rgba(79, 119, 255, 0.24);
   --ui-shadow-input: 0 14px 38px rgba(54, 82, 136, 0.11), 0 3px 10px rgba(54, 82, 136, 0.055);
+  --hard-shadow: 3px 3px 0 #102047;
+  --hard-shadow-sm: 2px 2px 0 #102047;
 
   --background: #f3f7fd;
   --foreground: #102047;
@@ -176,6 +188,11 @@
   --success: #54d4b2;
   --warning: #e0b55e;
   --danger: #f18192;
+  --signal-yellow: #d7ad2f;
+  --signal-pink: #dc6e98;
+  --signal-cyan: #31b6d6;
+  --signal-green: #91c866;
+  --signal-purple: #9f92d0;
   --surface-glass: rgba(13, 21, 36, 0.68);
   --surface-glass-elevated: rgba(23, 34, 56, 0.9);
   --overlay: rgba(177, 198, 239, 0.05);
@@ -192,6 +209,8 @@
   --ui-shadow-glass-sm: 0 12px 32px rgba(0, 3, 10, 0.26), inset 0 1px rgba(255, 255, 255, 0.045);
   --ui-shadow-glow: 0 12px 34px rgba(77, 111, 242, 0.28);
   --ui-shadow-input: 0 16px 44px rgba(0, 2, 9, 0.32), 0 3px 12px rgba(0, 2, 9, 0.22);
+  --hard-shadow: 3px 3px 0 #000;
+  --hard-shadow-sm: 2px 2px 0 #000;
 
   --background: #080d19;
   --foreground: #edf3ff;
@@ -498,4 +517,211 @@
 .app-drag-region :is(button, input, textarea, select, a, [role="button"], [role="tab"]) {
   -webkit-app-region: no-drag;
   app-region: no-drag;
+}
+
+/* React Flow renders its own internal DOM classes, so these scoped selectors
+   stay together in Tailwind's utilities layer and are activated by the
+   `explorer-graph-canvas` wrapper class. */
+@layer utilities {
+  .explorer-graph-canvas {
+    isolation: isolate;
+  }
+
+  .explorer-graph-canvas .react-flow__pane {
+    cursor: grab;
+  }
+
+  .explorer-graph-canvas .react-flow__pane:active {
+    cursor: grabbing;
+  }
+
+  .explorer-graph-canvas .react-flow__edge-path {
+    stroke: color-mix(in srgb, var(--primary) 46%, var(--hairline-strong));
+    stroke-width: 1.75;
+    transition:
+      stroke 160ms var(--ease-out),
+      stroke-width 160ms var(--ease-out),
+      opacity 160ms var(--ease-out);
+  }
+
+  .explorer-graph-canvas .react-flow__edge:hover .react-flow__edge-path,
+  .explorer-graph-canvas .react-flow__edge.selected .react-flow__edge-path {
+    stroke: var(--primary);
+    stroke-width: 2.4;
+  }
+
+  .explorer-graph-canvas .react-flow__edge-text {
+    fill: var(--tertiary);
+    font-size: 9px;
+    font-weight: 650;
+    letter-spacing: 0.015em;
+  }
+
+  .explorer-graph-canvas .react-flow__edge-textbg {
+    fill: color-mix(in srgb, var(--surface-glass-elevated) 94%, transparent);
+    stroke: var(--hairline);
+    stroke-width: 1;
+  }
+
+  .explorer-graph-canvas .react-flow__handle {
+    height: 9px;
+    width: 9px;
+    border: 2px solid var(--surface-glass-elevated);
+    background: color-mix(in srgb, var(--primary) 58%, var(--surface-glass-elevated));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 35%, transparent);
+    opacity: 0;
+    transition:
+      opacity 160ms var(--ease-out),
+      transform 160ms var(--ease-out),
+      background-color 160ms var(--ease-out);
+  }
+
+  .explorer-graph-canvas .explorer-node:hover .react-flow__handle,
+  .explorer-graph-canvas .explorer-node.selected .react-flow__handle {
+    opacity: 1;
+  }
+
+  .explorer-graph-canvas .react-flow__handle:hover {
+    transform: scale(1.2);
+    background: var(--primary);
+  }
+
+  .explorer-graph-canvas .react-flow__controls {
+    overflow: hidden;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-glass-elevated) 92%, transparent);
+    box-shadow: var(--ui-shadow-glass-sm);
+    backdrop-filter: blur(18px) saturate(1.18);
+  }
+
+  .explorer-graph-canvas .react-flow__controls-button {
+    height: 30px;
+    width: 30px;
+    border: 0;
+    border-bottom: 1px solid var(--hairline);
+    background: transparent;
+    color: var(--tertiary);
+    transition:
+      background-color 160ms var(--ease-out),
+      color 160ms var(--ease-out);
+  }
+
+  .explorer-graph-canvas .react-flow__controls-button:last-child {
+    border-bottom: 0;
+  }
+
+  .explorer-graph-canvas .react-flow__controls-button:hover {
+    background: var(--overlay-strong);
+    color: var(--ink);
+  }
+
+  .explorer-graph-canvas .react-flow__controls-button svg {
+    fill: currentColor;
+    max-height: 14px;
+    max-width: 14px;
+  }
+
+  .explorer-graph-canvas .react-flow__minimap {
+    overflow: hidden;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface-glass-elevated) 90%, transparent);
+    box-shadow: var(--ui-shadow-glass-sm);
+    backdrop-filter: blur(18px) saturate(1.18);
+  }
+
+  .explorer-graph-canvas .react-flow__minimap-mask {
+    fill: color-mix(in srgb, var(--primary) 10%, transparent);
+    stroke: color-mix(in srgb, var(--primary) 50%, transparent);
+    stroke-width: 1;
+  }
+
+  .explorer-graph-canvas .react-flow__attribution {
+    display: none;
+  }
+
+  .explorer-node {
+    position: relative;
+    width: 208px;
+    overflow: visible;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--surface-glass-elevated) 94%, transparent);
+    box-shadow: var(--ui-shadow-glass-sm);
+    backdrop-filter: blur(18px) saturate(1.18);
+    transition:
+      border-color 160ms var(--ease-out),
+      box-shadow 160ms var(--ease-out),
+      transform 160ms var(--ease-out);
+  }
+
+  .explorer-node:hover {
+    border-color: color-mix(in srgb, var(--primary) 38%, var(--hairline-strong));
+    box-shadow:
+      var(--ui-shadow-glass),
+      0 0 0 3px color-mix(in srgb, var(--primary) 9%, transparent);
+    transform: translateY(-1px);
+  }
+
+  .explorer-node.selected {
+    border-color: color-mix(in srgb, var(--primary) 72%, var(--hairline-strong));
+    box-shadow:
+      var(--ui-shadow-glass),
+      0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent);
+  }
+
+  .explorer-node__accent {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    border-radius: 14px 14px 0 0;
+    background: var(--node-accent, var(--primary));
+    opacity: 0.85;
+  }
+
+  .explorer-node__icon {
+    border-color: color-mix(in srgb, var(--node-accent, var(--primary)) 28%, transparent);
+    background: color-mix(in srgb, var(--node-accent, var(--primary)) 11%, transparent);
+    color: var(--node-accent, var(--primary));
+  }
+
+  .explorer-node__status {
+    background: var(--node-accent, var(--success));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--node-accent, var(--success)) 13%, transparent);
+  }
+
+  .explorer-node[data-node-type="question"] {
+    --node-accent: var(--primary);
+  }
+
+  .explorer-node[data-node-type="finding"] {
+    --node-accent: var(--success);
+  }
+
+  .explorer-node[data-node-type="issue"] {
+    --node-accent: var(--danger);
+  }
+
+  .explorer-node[data-node-type="event"] {
+    --node-accent: var(--info);
+  }
+
+  .explorer-node[data-node-type="replay"] {
+    --node-accent: var(--primary-hover);
+  }
+
+  .explorer-node[data-node-type="code"] {
+    --node-accent: var(--primary-hover);
+  }
+
+  .explorer-node[data-node-type="document"] {
+    --node-accent: var(--warning);
+  }
+
+  .explorer-node__description {
+    border: 1px solid color-mix(in srgb, var(--node-accent, var(--primary)) 32%, transparent);
+    background: color-mix(in srgb, var(--node-accent, var(--primary)) 8%, transparent);
+    color: color-mix(in srgb, var(--node-accent, var(--primary)) 72%, var(--ink));
+  }
 }

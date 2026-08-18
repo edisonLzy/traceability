@@ -1,12 +1,14 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
 import { authRouter } from "../modules/auth/router.js";
+import { graphsRouter } from "../modules/graphs/router.js";
 import { inboxRouter } from "../modules/inbox/router.js";
 import { issuesRouter } from "../modules/issues/router.js";
 import { metricsRouter } from "../modules/metrics/router.js";
 import { minidumpsRouter } from "../modules/minidumps/index.js";
 import { processingRouter } from "../modules/processing/index.js";
 import { projectsRouter } from "../modules/projects/router.js";
+import { realtimeRouter } from "../modules/realtime/router.js";
 import { replaysRouter } from "../modules/replays/router.js";
 import { sourcemapsRouter } from "../modules/sourcemaps/router.js";
 import { tracesRouter } from "../modules/traces/router.js";
@@ -23,6 +25,8 @@ export const appRouter = t.router({
   metrics: metricsRouter,
   minidumps: minidumpsRouter,
   traces: tracesRouter,
+  graphs: graphsRouter,
+  realtime: realtimeRouter,
 });
 
 export type AppRouter = typeof appRouter;

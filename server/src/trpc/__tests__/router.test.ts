@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import fastifyPlugin from "fastify-plugin";
+import type IORedis from "ioredis";
 import { describe, expect, it, vi } from "vitest";
 
 import type { RuntimeConfig } from "../../config/index.js";
@@ -33,6 +34,13 @@ const stubObjectStoragePlugin = fastifyPlugin(
     app.decorate("objectStorage", stubObjectStorage);
   },
   { name: "object-storage" },
+);
+
+const stubRedisPlugin = fastifyPlugin(
+  async (app) => {
+    app.decorate("redis", { quit: vi.fn(async () => undefined) } as unknown as IORedis);
+  },
+  { name: "redis" },
 );
 
 function makeContext(overrides: Partial<Context["container"]> = {}): RequestContext {
@@ -86,6 +94,34 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
     listForEvent: vi.fn().mockResolvedValue([]),
   } as unknown as Context["container"]["minidumps"];
   const traces = {} as Context["container"]["traces"];
+  const graphs = {
+    listGraphs: vi.fn().mockResolvedValue([]),
+    createGraph: vi.fn().mockResolvedValue({
+      id: "graph-1",
+      projectId: "project-1",
+      title: "T",
+      status: "active",
+      version: 0,
+      createdAt: "",
+      updatedAt: "",
+    }),
+    getGraph: vi.fn().mockResolvedValue(null),
+    renameGraph: vi.fn().mockResolvedValue({ id: "graph-1" }),
+    archiveGraph: vi.fn().mockResolvedValue({ id: "graph-1" }),
+    getOperations: vi.fn().mockResolvedValue([]),
+    applyOperations: vi
+      .fn()
+      .mockResolvedValue({
+        graphId: "graph-1",
+        version: 1,
+        alreadyApplied: false,
+        idMappings: {},
+        applied: [],
+      }),
+  } as unknown as Context["container"]["graphs"];
+  const realtime = {
+    createTicket: vi.fn().mockResolvedValue({ ticket: "ticket", expiresIn: 60 }),
+  } as unknown as Context["container"]["realtime"];
 
   return {
     config: { jwtSecret, jwtAccessTokenTtlSeconds: 900 } as unknown as RuntimeConfig,
@@ -102,6 +138,8 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
       metrics,
       minidumps,
       traces,
+      graphs,
+      realtime,
       ...overrides,
     },
     req: {
@@ -261,6 +299,7 @@ describe("appRouter", () => {
     await app.register(configPlugin, { config: dependencies.config });
     await app.register(databasePlugin, { database: dependencies.database });
     await app.register(stubObjectStoragePlugin);
+    await app.register(stubRedisPlugin);
     await app.register(containerPlugin);
     await app.register(trpcPlugin);
 
@@ -283,5 +322,88 @@ describe("appRouter", () => {
     });
     expect(authorized.statusCode).toBe(200);
     await app.close();
+  });
+
+  it("routes graphs list through the graphs service", async () => {
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
+    const projectId = "00000000-0000-4000-8000-000000000001";
+
+    await caller.graphs.list({ projectId });
+
+    const graphs = ctx.container.graphs as unknown as { listGraphs: ReturnType<typeof vi.fn> };
+    expect(graphs.listGraphs).toHaveBeenCalledWith(projectId);
+  });
+
+  it("derives the actor id for graphs mutations from the JWT", async () => {
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
+    const projectId = "00000000-0000-4000-8000-000000000001";
+
+    await caller.graphs.create({ projectId, title: "T" });
+
+    const graphs = ctx.container.graphs as unknown as { createGraph: ReturnType<typeof vi.fn> };
+    expect(graphs.createGraph).toHaveBeenCalledWith(
+      projectId,
+      "T",
+      "00000000-0000-4000-8000-000000000001",
+    );
+  });
+
+  it("strips projectId before delegating applyOperations", async () => {
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
+    const projectId = "00000000-0000-4000-8000-000000000001";
+    const graphId = "00000000-0000-4000-8000-000000000002";
+    const operationId = "00000000-0000-4000-8000-000000000003";
+    const operations = [
+      {
+        op: "createNode" as const,
+        id: "q1",
+        type: "question" as const,
+        position: { x: 0, y: 0 },
+        data: { kind: "question" as const, prompt: "why?" },
+      },
+    ];
+
+    await caller.graphs.applyOperations({
+      projectId,
+      operationId,
+      graphId,
+      baseVersion: 0,
+      actor: { type: "agent" },
+      operations,
+    });
+
+    const graphs = ctx.container.graphs as unknown as { applyOperations: ReturnType<typeof vi.fn> };
+    expect(graphs.applyOperations).toHaveBeenCalledWith(
+      projectId,
+      { operationId, graphId, baseVersion: 0, actor: { type: "agent" }, operations },
+      "00000000-0000-4000-8000-000000000001",
+    );
+  });
+
+  it("routes realtime ticket creation through the realtime service", async () => {
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.realtime.createTicket()).resolves.toEqual({
+      ticket: "ticket",
+      expiresIn: 60,
+    });
+
+    const realtime = ctx.container.realtime as unknown as {
+      createTicket: ReturnType<typeof vi.fn>;
+    };
+    expect(realtime.createTicket).toHaveBeenCalledWith("00000000-0000-4000-8000-000000000001");
+  });
+
+  it("rejects graphs mutations with an invalid project id", async () => {
+    const ctx = makeContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.graphs.create({ projectId: "not-a-uuid", title: "T" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 });

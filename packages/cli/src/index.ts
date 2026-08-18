@@ -7,6 +7,7 @@ import { Command, CommanderError } from "commander";
 
 import { authCommand } from "./commands/auth.js";
 import { configCommand } from "./commands/config.js";
+import { graphCommand } from "./commands/graph.js";
 import { issueCommand } from "./commands/issue.js";
 import { metricCommand } from "./commands/metric.js";
 import { projectCommand } from "./commands/project.js";
@@ -47,6 +48,7 @@ export function createProgram(): Command {
   metricCommand(program);
   traceCommand(program);
   sourcemapCommand(program);
+  graphCommand(program);
   return program;
 }
 

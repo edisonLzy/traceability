@@ -26,7 +26,7 @@ interface PanelHeaderProps {
 
 export function PanelHeader({ title, actions, isRunning = false, subtitle }: PanelHeaderProps) {
   return (
-    <header className="relative flex min-h-12 items-center gap-2 border-b border-hairline bg-surface-glass/70 px-3 backdrop-blur-2xl">
+    <header className="relative z-40 flex min-h-12 items-center gap-2 border-b border-hairline bg-surface-glass/70 px-3 backdrop-blur-2xl">
       <span className="grid size-7 shrink-0 place-items-center rounded-[9px] border border-primary/20 bg-primary/10 text-primary-hover shadow-glass-sm">
         <Sparkles size={15} />
       </span>

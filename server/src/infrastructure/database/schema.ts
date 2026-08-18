@@ -1,3 +1,4 @@
+export * from "../../modules/graphs/schema.js";
 export * from "../../modules/ingest/schema.js";
 export * from "../../modules/auth/schema.js";
 export * from "../../modules/inbox/schema.js";

@@ -3,6 +3,7 @@ import type { AppUserMessage } from "@earendil-works/pi-agent-core";
 import { describe, expect, it } from "vitest";
 import { createStore } from "zustand/vanilla";
 
+import { createAgentTodoSlice } from "./agent-todo-slice";
 import { createEntriesSlice } from "./entries-slice";
 import { createHumanInTheLoopSlice } from "./human-in-the-loop-slice";
 import type { AgentStoreState } from "./index";
@@ -22,6 +23,7 @@ function createMessage(timestamp: number): AppUserMessage {
 function createTestStore() {
   return createStore<AgentStoreState>()((...args) => ({
     ...createEntriesSlice(...args),
+    ...createAgentTodoSlice(...args),
     ...createHumanInTheLoopSlice(...args),
     ...createPendingMessagesSlice(...args),
     ...createSessionsSlice(...args),

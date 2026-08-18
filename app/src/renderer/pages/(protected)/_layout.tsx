@@ -271,6 +271,12 @@ function HeaderBreadcrumb() {
     const { pathname } = location;
     if (pathname === "/inbox") return [{ label: "Inbox" }];
     if (pathname === "/explorer") return [{ label: "Explorer" }];
+    const explorerGraphMatch = pathname.match(/^\/explorer\/(.+)$/);
+    if (explorerGraphMatch)
+      return [
+        { label: "Explorer", to: "/explorer" },
+        { label: explorerGraphMatch[1] ?? "", mono: true },
+      ];
     if (pathname === "/monitor/sourcemaps") return [{ label: "Monitor" }, { label: "Sourcemaps" }];
     const issueMatch = pathname.match(/^\/monitor\/issues\/(.+)$/);
     if (issueMatch)

@@ -79,6 +79,7 @@ export class ExtensionRuntimeService
     const model = input.model ?? inheritedModel;
     const runtime = new AgentRuntime(this.modelRegistry, this.skillService, this.extensionService, {
       extensionTools: input.tools,
+      includeAgentTodo: input.scope !== "side-chat",
       systemPrompt: input.systemPrompt,
     });
 

@@ -1,6 +1,7 @@
 import fastifyPlugin from "fastify-plugin";
 
 import { AuthService, AuthRepository } from "../modules/auth/index.js";
+import { GraphRepository, GraphService } from "../modules/graphs/index.js";
 import { InboxRepository, InboxService } from "../modules/inbox/index.js";
 import { IngestRepository, IngestService } from "../modules/ingest/index.js";
 import { IssueRepository, IssueService } from "../modules/issues/index.js";
@@ -8,6 +9,7 @@ import { MetricsRepository, MetricsService } from "../modules/metrics/index.js";
 import { MinidumpRepository, MinidumpService } from "../modules/minidumps/index.js";
 import { ProcessingRepository, ProcessingService } from "../modules/processing/index.js";
 import { ProjectRepository, ProjectService } from "../modules/projects/index.js";
+import { RealtimeTicketService } from "../modules/realtime/index.js";
 import { ReplayRepository, ReplayService } from "../modules/replays/index.js";
 import { SourcemapRepository, SourcemapService } from "../modules/sourcemaps/index.js";
 import { TraceRepository, TraceService } from "../modules/traces/index.js";
@@ -24,6 +26,8 @@ export interface Container {
   metrics: MetricsService;
   minidumps: MinidumpService;
   traces: TraceService;
+  graphs: GraphService;
+  realtime: RealtimeTicketService;
 }
 
 declare module "fastify" {
@@ -61,6 +65,8 @@ export const containerPlugin = fastifyPlugin(
       new SourcemapRepository(app.database),
       app.objectStorage,
     );
+    const graphs = new GraphService(new GraphRepository(app.database));
+    const realtime = new RealtimeTicketService(app.config, app.redis);
     // NOTE: symbolication runs in the worker, not in the API process — the API
     // container carries `processing` for read APIs only, so we don't need to
     // inject `sourcemaps` into it here.
@@ -79,11 +85,13 @@ export const containerPlugin = fastifyPlugin(
         metrics,
         minidumps,
         traces,
+        graphs,
+        realtime,
       }),
     );
   },
   {
     name: "container",
-    dependencies: ["config", "database", "object-storage"],
+    dependencies: ["config", "database", "object-storage", "redis"],
   },
 );
