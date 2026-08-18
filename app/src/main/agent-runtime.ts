@@ -14,6 +14,7 @@ import type { AgentSessionScope, AllowedMainExposeEvents } from "../shared/event
 import type { AgentModelsIPC } from "../shared/models-ipc.js";
 import type { AgentSessionIPC } from "../shared/session-ipc.js";
 import type { AgentSkillsIPC } from "../shared/skills-ipc.js";
+import { agentTodoPromptBuilder, agentTodoTool } from "./agent-todo/index.js";
 import type { ExtensionService } from "./extensions/index.js";
 import { AskUserQuestionService } from "./human-in-the-loop/ask-user-question-service.js";
 import { ModelRegistry } from "./models/index.js";
@@ -64,6 +65,7 @@ export type AgentRuntimeDelegate = {
 
 export interface AgentRuntimeOptions {
   extensionTools?: ExtensionAgentToolOptions;
+  includeAgentTodo?: boolean;
   systemPrompt?: string;
 }
 
@@ -98,6 +100,9 @@ export class AgentRuntime extends Emittery<AgentRuntimeEvents> implements AgentR
     this.systemPromptService = new SystemPromptService();
     this.systemPromptService.addBuilder(this.skillService);
     this.systemPromptService.addBuilder(this.extensionService);
+    if (this.options.includeAgentTodo !== false) {
+      this.systemPromptService.addBuilder(agentTodoPromptBuilder);
+    }
 
     this.agent = this.createInternalAgent();
   }
@@ -108,9 +113,11 @@ export class AgentRuntime extends Emittery<AgentRuntimeEvents> implements AgentR
     // internally (see `evaluateReadonlyCommand`), so no permission gating is
     // needed for this phase.
     const excludedToolNames = new Set(this.options.extensionTools?.excludeToolNames ?? []);
-    const builtinTools = [fsReadTextFileTool, terminalCreateTool].filter(
-      (tool) => !excludedToolNames.has(tool.name),
-    );
+    const builtinTools = [
+      ...(this.options.includeAgentTodo === false ? [] : [agentTodoTool]),
+      fsReadTextFileTool,
+      terminalCreateTool,
+    ].filter((tool) => !excludedToolNames.has(tool.name));
 
     this.askUserQuestionService.on("human-in-the-loop", ({ data: request }) => {
       this.emit("ask_user_question_requested", {

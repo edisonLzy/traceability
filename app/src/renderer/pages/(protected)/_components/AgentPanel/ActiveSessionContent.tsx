@@ -8,9 +8,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useStore } from "zustand";
 
+import { AgentTodo } from "./AgentTodo";
+import { findLatestAgentTodoSnapshot } from "./agentTodoProjection";
 import { AskUserQuestionPanel } from "./AskUserQuestionPanel";
 import { ChatMessages } from "./messages";
-import { getSelectedModel, isMessageEntry, isUserMessage, toSessionEntry } from "./messages/types";
+import {
+  getSelectedModel,
+  isMessageEntry,
+  isUserMessage,
+  isVisibleMessageEntry,
+  toSessionEntry,
+} from "./messages/types";
 import { PanelBody, PanelFooter, PanelHeader, PanelLayout } from "./PanelLayout";
 import { PendingMessages } from "./PendingMessages";
 import { PromptInput, type PromptInputProps } from "./prompt-input";
@@ -84,6 +92,7 @@ export function ActiveSessionContent({ sessionId }: { sessionId: string }) {
 
       <PanelFooter>
         <div className="mx-auto w-full max-w-[960px]">
+          <AgentTodo sessionId={sessionId} />
           <PendingMessages sessionId={sessionId} />
           {pendingHumanInTheLoopRequest ? (
             <AskUserQuestionPanel request={pendingHumanInTheLoopRequest} sessionId={sessionId} />
@@ -299,6 +308,9 @@ function useAgentSession() {
         );
         const hydratedEntries = [...sessionEntries, ...unsyncedEntries];
         agentStore.getState().setSessionEntries(session.id, hydratedEntries);
+        agentStore
+          .getState()
+          .hydrateAgentTodo(session.id, findLatestAgentTodoSnapshot(hydratedEntries));
 
         await invoke("setSessionId", session.id);
         await invoke("setSessionScope", session.id, "main");
@@ -385,13 +397,14 @@ function useActiveSessionChat(activeSessionId: string) {
     state.streamingEntryIds.get(activeSessionId),
   );
   const entries = entryState.entries;
-  const messageEntries = entries.filter(isMessageEntry);
+  const messageEntries = entries.filter(isVisibleMessageEntry);
   const toolStates = entryState.toolStates;
   const isRunning = entryState.status === "running";
 
   const submitPrompt = useCallback(
     async (submission: PromptSubmission) => {
       agentStore.getState().setSessionStatus(activeSessionId, "running");
+      agentStore.getState().clearAgentTodo(activeSessionId);
       agentStore.getState().setModel(activeSessionId, submission.model);
       const submissionText = submission.content;
       const shouldRename =

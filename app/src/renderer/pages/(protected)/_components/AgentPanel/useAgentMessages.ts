@@ -1,6 +1,7 @@
 import type { AssistantMessage } from "@earendil-works/pi-ai";
 import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
 import { agentStore, EntryStatus, type SessionEntry } from "@renderer/store/agent";
+import { AGENT_TODO_TOOL_NAME, parseAgentTodoDetails } from "@shared/agent-todo";
 import type { AskUserQuestionRequest } from "@shared/ask-user-question-ipc";
 import { metrics } from "@tracerability/monitor/electron-renderer";
 import { useRef } from "react";
@@ -9,6 +10,7 @@ import {
   isAssistantMessage,
   isFailedAssistantMessage,
   isMessageEntry,
+  isToolResultMessage,
   isUserMessage,
 } from "./messages/types";
 import { useSubscribeAgentEvents } from "./useSubscribeAgentEvents";
@@ -154,6 +156,10 @@ export function useAgentMessages(): void {
           store.removePendingMessageByTimestamp(event.sessionId, event.message.timestamp);
           if (event.message.kind === "steering") return;
 
+          if (event.message.kind === "prompt") {
+            store.clearAgentTodo(event.sessionId);
+          }
+
           // A follow-up starts a new visible assistant turn. Close the previous
           // streaming entry before adding the real user message to the timeline.
           if (event.message.kind === "follow-up") {
@@ -181,12 +187,18 @@ export function useAgentMessages(): void {
       },
 
       message_end: (event) => {
-        if (!isAssistantMessage(event.message)) return;
-        updateStreamingAssistant(
-          event.sessionId,
-          event.message,
-          turnContentStartIndicesRef.current[event.sessionId] ?? 0,
-        );
+        if (isAssistantMessage(event.message)) {
+          updateStreamingAssistant(
+            event.sessionId,
+            event.message,
+            turnContentStartIndicesRef.current[event.sessionId] ?? 0,
+          );
+          return;
+        }
+
+        if (isToolResultMessage(event.message)) {
+          agentStore.getState().appendMessageEntry(event.sessionId, event.message);
+        }
       },
 
       ask_user_question_requested: (event) => {
@@ -237,6 +249,15 @@ export function useAgentMessages(): void {
           details: result?.details ?? existing?.details,
           output,
         });
+
+        if (toolName === AGENT_TODO_TOOL_NAME && !isError) {
+          const snapshot = parseAgentTodoDetails(result?.details);
+          if (snapshot) {
+            agentStore.getState().setAgentTodo(sessionId, snapshot, {
+              sourceToolCallId: toolCallId,
+            });
+          }
+        }
       },
     },
     { shouldHandleEvent: (event) => event.scope === "main" },
