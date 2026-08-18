@@ -9,6 +9,7 @@ import {
 import {
   Sidebar as SidebarRoot,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
@@ -18,7 +19,7 @@ import {
 import { useIssues } from "@renderer/hooks/use-issues";
 import { cn } from "@renderer/lib/utils";
 import { projectStore } from "@renderer/store/project";
-import { Activity, Bug, Compass, FileCode2, Inbox, type LucideIcon } from "lucide-react";
+import { Activity, Bug, Compass, FileCode2, Inbox, Settings, type LucideIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "zustand";
 
@@ -58,6 +59,12 @@ export function Sidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="items-center pb-1">
+        <SidebarMenu className="items-center">
+          <SidebarNavLink to="/settings" icon={Settings} label="Settings" />
+        </SidebarMenu>
+      </SidebarFooter>
     </SidebarRoot>
   );
 }
