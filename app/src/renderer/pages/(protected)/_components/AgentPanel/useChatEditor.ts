@@ -1,16 +1,24 @@
 import { usePluginPromptInputExtensions, usePluginSlashCommands } from "@extensions/core/renderer";
+import {
+  type HashCommandSelection,
+  useHashCommandsExtension,
+} from "@renderer/components/richtext/extensions/hash-commands";
 import { promptGhostSuggestionExtension } from "@renderer/components/richtext/extensions/prompt-ghost-suggestion";
 import {
   type SlashCommandSelection,
   useSlashCommandsExtension,
 } from "@renderer/components/richtext/extensions/slash-commands";
+import { insertIssueNode, issueNode } from "@renderer/components/richtext/inline/issue-node";
 import { insertSkillNode, skillNode } from "@renderer/components/richtext/inline/skill-node";
 import type { CommandItem } from "@renderer/components/richtext/types";
+import { useIssues } from "@renderer/hooks/use-issues";
+import { projectStore } from "@renderer/store/project";
 import type { EditorOptions, JSONContent } from "@tiptap/core";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useState } from "react";
+import { useStore } from "zustand";
 
 import { useAgentSkills } from "./useAgentSkills";
 
@@ -36,6 +44,7 @@ export function useChatEditor({
   const [hasContent, setHasContent] = useState(false);
 
   const skillItems = useSkillsCommandItems();
+  const issueItems = useIssueCommandItems();
   const pluginCommands = usePluginSlashCommands();
   const pluginPromptInputExtensions = usePluginPromptInputExtensions();
   const pluginItems = useMemo(
@@ -69,14 +78,27 @@ export function useChatEditor({
     void pluginCommand.run({ editor, range });
   };
 
+  const handleSelectIssue = ({ command, editor, range }: HashCommandSelection) => {
+    insertIssueNode({
+      editor,
+      range,
+      issue: { id: command.id, label: command.name },
+    });
+  };
+
   const slashCommandsExtension = useSlashCommandsExtension({
     commands: slashCommands,
     getFloatingReference,
     onSelectCommand: handleSelectCommand,
   });
+  const hashCommandsExtension = useHashCommandsExtension({
+    issues: issueItems,
+    getFloatingReference,
+    onSelectIssue: handleSelectIssue,
+  });
   const extensions = useMemo(
-    () => [slashCommandsExtension, promptGhostSuggestionExtension],
-    [slashCommandsExtension],
+    () => [slashCommandsExtension, hashCommandsExtension, promptGhostSuggestionExtension],
+    [slashCommandsExtension, hashCommandsExtension],
   );
 
   const editor = useEditor(
@@ -94,6 +116,7 @@ export function useChatEditor({
         ...extensions,
         ...pluginPromptInputExtensions,
         skillNode,
+        issueNode,
       ],
       content,
       editorProps: {
@@ -141,5 +164,22 @@ function useSkillsCommandItems() {
           extra: skill.scope === "user" ? "个人" : skill.scope === "project" ? "项目" : "系统",
         })),
     [skills],
+  );
+}
+
+function useIssueCommandItems() {
+  const projectId = useStore(projectStore, (s) => s.currentProject?.id ?? "");
+  const { data } = useIssues({ projectId, limit: 50 });
+
+  return useMemo<CommandItem[]>(
+    () =>
+      (data?.data ?? []).map((issue) => ({
+        id: issue.id,
+        group: "Issues",
+        name: issue.title,
+        description: issue.fingerprint,
+        extra: issue.status,
+      })),
+    [data],
   );
 }
