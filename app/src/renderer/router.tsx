@@ -7,6 +7,8 @@ import { IssueDetailPage } from "@renderer/pages/(protected)/monitor/Issues/deta
 import { SourcemapsPage } from "@renderer/pages/(protected)/monitor/Sourcemaps";
 import { AuthGuard, GuestGuard } from "@renderer/pages/_auth";
 import { LoginPage } from "@renderer/pages/Login";
+import { SettingsPage } from "@renderer/pages/settings";
+import { SettingsModelsPage } from "@renderer/pages/settings/models";
 import { createMemoryRouter, Navigate, type RouteObject } from "react-router-dom";
 
 export const appRoutes: RouteObject[] = [
@@ -33,6 +35,14 @@ export const appRoutes: RouteObject[] = [
           },
           { path: "explorer", element: <ExplorerPage /> },
           { path: "explorer/:graphId", element: <ExplorerGraphDetailPage /> },
+        ],
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
+        children: [
+          { index: true, element: <Navigate to="models" replace /> },
+          { path: "models", element: <SettingsModelsPage /> },
         ],
       },
     ],
