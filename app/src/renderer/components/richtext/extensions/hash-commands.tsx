@@ -11,52 +11,52 @@ import type { SuggestionKeyDownProps, SuggestionOptions } from "@tiptap/suggesti
 import { PluginKey } from "prosemirror-state";
 import { useMemo } from "react";
 
-export const slashCommandSuggestionPluginKey = new PluginKey("slashCommandSuggestion");
+export const hashCommandSuggestionPluginKey = new PluginKey("hashCommandSuggestion");
 
-export interface SlashCommandSelection {
+export interface HashCommandSelection {
   command: CommandItem;
   editor: Editor;
   range: Range;
 }
 
-interface UseSlashCommandsExtensionOptions {
-  commands: CommandItem[];
+interface UseHashCommandsExtensionOptions {
+  issues: CommandItem[];
   getFloatingReference?: () => Element | VirtualElement | null;
-  onSelectCommand: (selection: SlashCommandSelection) => void;
+  onSelectIssue: (selection: HashCommandSelection) => void;
 }
 
-export function useSlashCommandsExtension({
-  commands,
+export function useHashCommandsExtension({
+  issues,
   getFloatingReference,
-  onSelectCommand,
-}: UseSlashCommandsExtensionOptions) {
-  const commandsRef = useLatest(commands);
-  const onSelectCommandRef = useLatest(onSelectCommand);
+  onSelectIssue,
+}: UseHashCommandsExtensionOptions) {
+  const issuesRef = useLatest(issues);
+  const onSelectIssueRef = useLatest(onSelectIssue);
 
   return useMemo(() => {
-    const SlashCommandMention = Mention.extend({
-      name: "slashCommandMention",
+    const HashCommandMention = Mention.extend({
+      name: "hashCommandMention",
     });
 
-    return SlashCommandMention.configure({
+    return HashCommandMention.configure({
       HTMLAttributes: {
         class:
           "mention inline-flex items-center gap-1 rounded-sm border border-border bg-signal-yellow px-1.5 py-0.5 text-sm font-bold text-accent-foreground",
       },
       renderText({ node, suggestion }) {
-        return `${suggestion?.char ?? "/"}${node.attrs.label ?? node.attrs.id ?? ""}`;
+        return `${suggestion?.char ?? "#"}${node.attrs.label ?? node.attrs.id ?? ""}`;
       },
       suggestion: {
-        char: "/",
-        allowSpaces: true,
+        char: "#",
+        allowSpaces: false,
         startOfLine: false,
-        pluginKey: slashCommandSuggestionPluginKey,
+        pluginKey: hashCommandSuggestionPluginKey,
         decorationClass: "file-suggestion-query",
-        decorationContent: "search slash commands",
+        decorationContent: "search issues",
         decorationEmptyClass: "is-empty",
-        items: ({ query }) => filterCommandItems(commandsRef.current, query),
+        items: ({ query }) => filterCommandItems(issuesRef.current, query),
         command: ({ editor, range, props }) => {
-          onSelectCommandRef.current({
+          onSelectIssueRef.current({
             command: props,
             editor,
             range,
@@ -145,7 +145,7 @@ export function useSlashCommandsExtension({
             const props = latestProps;
 
             component.updateProps({
-              items: commandsRef.current,
+              items: issuesRef.current,
               query: props.query,
               selectedIndex,
               onSelect: (item: CommandItem) => props.command(item),
@@ -185,7 +185,7 @@ export function useSlashCommandsExtension({
               component = new ReactRenderer(SuggestionsPanel, {
                 editor: props.editor,
                 props: {
-                  items: commandsRef.current,
+                  items: issuesRef.current,
                   query: props.query,
                   selectedIndex,
                   onSelect: (item: CommandItem) => props.command(item),
@@ -194,7 +194,7 @@ export function useSlashCommandsExtension({
                 },
               });
 
-              component.element.dataset.suggestion = "slash-commands";
+              component.element.dataset.suggestion = "hash-commands";
               document.body.appendChild(component.element);
 
               updatePopup(props);
@@ -243,45 +243,6 @@ export function useSlashCommandsExtension({
       } satisfies Omit<SuggestionOptions<CommandItem>, "editor">,
     });
   }, [getFloatingReference]);
-}
-
-export function getSelectedCommandIds(editor: Editor | null) {
-  const ids = new Set<string>();
-  const doc = editor?.getJSON();
-
-  function visit(
-    node:
-      | {
-          type?: string;
-          attrs?: { id?: unknown };
-          content?: unknown[];
-        }
-      | undefined,
-  ) {
-    if (!node) {
-      return;
-    }
-
-    if (
-      (node.type === "slashCommandMention" || node.type === "skillNode") &&
-      typeof node.attrs?.id === "string"
-    ) {
-      ids.add(node.attrs.id);
-    }
-
-    for (const child of node.content ?? []) {
-      visit(
-        child as {
-          type?: string;
-          attrs?: { id?: unknown };
-          content?: unknown[];
-        },
-      );
-    }
-  }
-
-  visit(doc);
-  return Array.from(ids);
 }
 
 interface VirtualElement {

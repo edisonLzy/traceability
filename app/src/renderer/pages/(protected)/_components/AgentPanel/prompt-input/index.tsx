@@ -1,3 +1,4 @@
+import { hashCommandSuggestionPluginKey } from "@renderer/components/richtext/extensions/hash-commands";
 import {
   getSelectedCommandIds,
   slashCommandSuggestionPluginKey,
@@ -107,6 +108,13 @@ export function PromptInput({
         | { active?: boolean }
         | undefined;
       if (suggestionState?.active) {
+        return;
+      }
+
+      const hashSuggestionState = hashCommandSuggestionPluginKey.getState(editor.state) as
+        | { active?: boolean }
+        | undefined;
+      if (hashSuggestionState?.active) {
         return;
       }
 

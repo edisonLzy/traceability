@@ -1,11 +1,26 @@
 import { cn } from "@renderer/lib/utils";
 import Fuse from "fuse.js";
-import { BoxIcon } from "lucide-react";
+import { Bug, BoxIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import type { CommandItem } from "../types";
 
 const MAX_COMMAND_RESULTS = 20;
+
+function CommandItemIcon({ item }: { item: CommandItem }) {
+  if (item.group === "Issues") {
+    return (
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-sm border-2 border-border bg-background text-danger [&_svg]:size-3.5">
+        <Bug />
+      </span>
+    );
+  }
+  return (
+    <span className="flex size-7 shrink-0 items-center justify-center rounded-sm border-2 border-border bg-background text-muted-foreground [&_svg]:size-3.5">
+      <BoxIcon />
+    </span>
+  );
+}
 
 interface SuggestionsPanelProps {
   items: CommandItem[];
@@ -114,9 +129,7 @@ export function SuggestionsPanel({
               onMouseDown={(event) => event.preventDefault()}
               onMouseEnter={() => onHighlight(index)}
             >
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-sm border-2 border-border bg-background text-muted-foreground [&_svg]:size-3.5">
-                <BoxIcon />
-              </span>
+              <CommandItemIcon item={item} />
               <span className="min-w-0 flex flex-1 items-baseline gap-1.5">
                 <span className="shrink-0 text-[13px] font-medium leading-5 text-current">
                   {item.name}
