@@ -1,11 +1,12 @@
 import type { AppUserMessage } from "@earendil-works/pi-agent-core";
+import { issueNode } from "@renderer/components/richtext/inline/issue-node";
 import { skillNode } from "@renderer/components/richtext/inline/skill-node";
 import { Button } from "@renderer/components/ui/button";
 import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
 import { agentStore } from "@renderer/store/agent";
 import type { MessageEntry, SessionEntry } from "@renderer/store/agent";
 import type { Virtualizer } from "@tanstack/react-virtual";
-import Mention from "@tiptap/extension-mention";
+import { Mention } from "@tiptap/extension-mention";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useMemo, useState, type RefObject } from "react";
@@ -305,6 +306,7 @@ function useUserMessageEditor(document: AppUserMessage["jsonContent"]) {
           },
         }),
         skillNode,
+        issueNode,
       ],
       content: document,
       editable: false,

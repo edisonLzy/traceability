@@ -222,6 +222,7 @@ export function useHashCommandsExtension({
               }
 
               if (props.event.key === "Enter" && items.length > 0) {
+                props.event.preventDefault();
                 latestProps?.command(items[selectedIndex]!);
                 return true;
               }
