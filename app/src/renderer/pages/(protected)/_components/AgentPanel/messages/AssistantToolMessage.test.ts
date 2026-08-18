@@ -10,13 +10,13 @@ vi.mock("@extensions/core/renderer", () => ({
 import { AssistantToolMessage } from "./AssistantToolMessage";
 
 describe("AssistantToolMessage", () => {
-  it("renders the Divisor-style tool status, input, and output card", () => {
+  it("renders a Codex-style shell call with its command and output", () => {
     const toolState: ToolExecutionState = {
-      args: { projectId: "project-1" },
-      output: "1 project found",
+      args: { command: "pwd && rg --files -g '!node_modules'", cwd: "/workspace" },
+      output: "src/main/index.ts",
       status: "done",
       toolCallId: "tool-1",
-      toolName: "list_projects",
+      toolName: "terminal_create",
     };
 
     const markup = renderToStaticMarkup(
@@ -29,10 +29,32 @@ describe("AssistantToolMessage", () => {
       }),
     );
 
-    expect(markup).toContain("TOOL");
-    expect(markup).toContain("已处理 list_projects");
-    expect(markup).toContain("Input");
-    expect(markup).toContain("projectId");
-    expect(markup).toContain("1 project found");
+    expect(markup).toContain("已运行命令");
+    expect(markup).toContain("Shell");
+    expect(markup).toContain("$ ");
+    expect(markup).toContain("pwd &amp;&amp; rg --files -g &#x27;!node_modules&#x27;");
+    expect(markup).toContain("src/main/index.ts");
+    expect(markup).toContain("rotate-0");
+    expect(markup).not.toContain("TOOL");
+    expect(markup).not.toContain("Input");
+  });
+
+  it("rotates the chevron toward the collapsed direction when closed", () => {
+    const markup = renderToStaticMarkup(
+      createElement(AssistantToolMessage, {
+        args: { command: "pwd" },
+        sessionId: "session-1",
+        toolName: "terminal_create",
+        toolState: {
+          args: { command: "pwd" },
+          output: "/workspace",
+          status: "done",
+          toolCallId: "tool-1",
+          toolName: "terminal_create",
+        },
+      }),
+    );
+
+    expect(markup).toContain("-rotate-90");
   });
 });
