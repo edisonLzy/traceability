@@ -107,10 +107,15 @@ export function reportError(err: unknown): void {
 
 /** 识别 Node fetch 的网络层失败(连不上/拒绝连接/DNS),区别于服务器返回的业务错误。 */
 function isNetworkError(err: unknown): boolean {
-  if (err instanceof TypeError && err.message === "fetch failed") return true;
-  if (err instanceof Error) {
-    // tRPC 把 fetch 失败包装成 TRPCClientError,message 保持原样。
-    return err.message === "fetch failed" || err.message.startsWith("Failed to parse URL");
+  if (!(err instanceof Error)) return false;
+  // tRPC 把 fetch 失败包装成 TRPCClientError,message 保持原样。
+  if (err.message === "fetch failed" || err.message.startsWith("Failed to parse URL")) return true;
+  // Node.js built-in fetch wraps low-level errors (ECONNREFUSED, ENOTFOUND,
+  // ECONNRESET) as a TypeError with a `cause` property — check that too.
+  const cause = (err as Error & { cause?: unknown }).cause;
+  if (cause instanceof Error && "code" in cause) {
+    const code = (cause as NodeJS.ErrnoException).code;
+    return code === "ECONNREFUSED" || code === "ENOTFOUND" || code === "ECONNRESET";
   }
   return false;
 }
