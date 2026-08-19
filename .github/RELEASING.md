@@ -30,6 +30,45 @@ pnpm --dir app exec electron-builder --mac --arm64 --dir --publish never
 
 The unpacked app should contain a generated `.icns` resource and display the Traceability icon.
 
+---
+
+## CLI release pipeline
+
+Every push to `master` that touches `packages/cli/src/**` or `packages/cli/package.json` runs
+`.github/workflows/publish-cli.yml`. The workflow builds the CLI package (after building its
+server type dependency via Turborepo), then runs `release-it --ci` from inside `packages/cli/`.
+
+`release-it` analyses [Conventional Commits](https://www.conventionalcommits.org/) since the last
+`@tracerability/cli@*` git tag and:
+
+- **Publishes a new version** when `feat:`, `fix:`, or `BREAKING CHANGE:` commits are found —
+  bumps `packages/cli/package.json`, prepends to `packages/cli/CHANGELOG.md`, creates a signed
+  git tag (`@tracerability/cli@x.y.z`), publishes to npm, and creates a GitHub Release.
+- **Does nothing** when only `chore:`, `docs:`, `test:`, or similar non-release commits are found.
+
+### Required secret
+
+Add `NPM_TOKEN` (a valid npm access token with publish rights for `@tracerability/cli`) in:
+**repo Settings → Secrets and variables → Actions → New repository secret**.
+
+### Local release workflow
+
+```bash
+# Preview what would be released (no side effects)
+pnpm --filter @tracerability/cli release:dry
+
+# Perform a release locally (requires NPM_TOKEN and GITHUB_TOKEN env vars)
+pnpm --filter @tracerability/cli release
+```
+
+### Tag format
+
+CLI releases use the tag pattern `@tracerability/cli@x.y.z` (prefixed with the package name) to
+avoid conflicts with the desktop app's `v*` tags. The tag is created in `packages/cli/` but pushed
+to the shared repository.
+
+---
+
 ## macOS signing and notarization
 
 Configure these GitHub Actions secrets for a signed and notarized macOS release:

@@ -18,7 +18,9 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "release": "release-it",
+    "release:dry": "release-it --dry-run"
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
@@ -26,8 +28,10 @@
     "commander": "^15.0.0"
   },
   "devDependencies": {
+    "@release-it/conventional-changelog": "^9.0.0",
     "@tracerability/server": "workspace:*",
     "@types/node": "^24.0.0",
+    "release-it": "^17.0.0",
     "tsx": "^4.0.0",
     "vitest": "catalog:"
   }

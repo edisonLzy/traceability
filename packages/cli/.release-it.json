@@ -1,0 +1,26 @@
+{
+  "git": {
+    "tagName": "@tracerability/cli@${version}",
+    "tagAnnotation": "Release @tracerability/cli v${version}",
+    "commitMessage": "chore(cli): release v${version}",
+    "requireCleanWorkingDir": false,
+    "pushArgs": ["--follow-tags"]
+  },
+  "npm": {
+    "publish": true,
+    "publishPath": "."
+  },
+  "github": {
+    "release": true,
+    "releaseName": "@tracerability/cli v${version}"
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": {
+        "name": "conventionalcommits"
+      },
+      "infile": "CHANGELOG.md",
+      "header": "# @tracerability/cli Changelog"
+    }
+  }
+}
