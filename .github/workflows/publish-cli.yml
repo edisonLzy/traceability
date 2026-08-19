@@ -54,8 +54,28 @@ jobs:
           VITE_MANAGEMENT_TOKEN: ci-placeholder
 
       - name: Release
+        id: release
         working-directory: packages/cli
         run: pnpm exec release-it --ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.release.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./packages/cli/package.json').version")
+          TAG="@tracerability/cli@${VERSION}"
+          NOTES=$(cd packages/cli && node -e "
+            const fs = require('fs');
+            const log = fs.readFileSync('CHANGELOG.md', 'utf8');
+            const match = log.match(/## [\s\S]+?(?=\n## |\$)/);
+            process.stdout.write(match ? match[0] : '');
+          ")
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "@tracerability/cli v${VERSION}" \
+            --notes "$NOTES" \
+            --target "$GITHUB_SHA"

@@ -11,8 +11,7 @@
     "publishPath": "."
   },
   "github": {
-    "release": true,
-    "releaseName": "@tracerability/cli v${version}"
+    "release": false
   },
   "plugins": {
     "@release-it/conventional-changelog": {
