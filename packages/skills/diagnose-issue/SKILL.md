@@ -15,9 +15,15 @@ traceability issue show <id> --json
 
 `issue show` returns the **issue row** (not the raw event): `id`, `projectId`, `title`, `type`, `status`, `eventCount`, `firstSeen`, `lastSeen`. The `title` is the aggregation key — for `captureMessage` events it's the message string, for exceptions it's derived from the error. There is **no** `metadata.*` / `tags.*` block in this response.
 
-> The CLI does not currently expose event payloads. To see a concrete event's stacktrace / `extra` / breadcrumbs:
-> - **Inbox UI** — open the issue; the event payloads are rendered there.
-> - **Server tRPC** — the `issues.events` procedure (`GET /api/trpc/issues.events?input=…` with the Bearer token from `~/.traceability/config.json`) returns the events with their `payload` (the original Sentry event JSON: `exception.values[].stacktrace.frames[]`, `tags`, `extra`, `breadcrumbs`). The CLI doesn't wrap it yet; if you need CLI access, add an `issue events <issueId>` command to `packages/cli/src/commands/issue.ts` (mirrors `issue show`).
+To pull the raw event payloads (stacktrace, `extra`, breadcrumbs):
+
+```bash
+traceability issue events <id> [--limit <n>] [--json]
+```
+
+Without `--json` this prints a table of up to 20 events with `eventId`, `eventTimestamp`, `receivedAt`, `level`, `environment`, and `release`. With `--json` it dumps the complete event rows including the original Sentry envelope payload (`exception.values[].stacktrace.frames[]`, `tags`, `extra`, `breadcrumbs`). Use `--limit` (1–100) to control how many events are returned.
+
+Alternatively, open the issue in the **Inbox UI** — event payloads are rendered there.
 
 ## 2. Locate the code
 
@@ -38,9 +44,10 @@ git diff > ./fix.diff
 traceability issue attach-patch <id>
 ```
 
-The current Fastify/tRPC server does not implement the fix loop yet, so the
-command returns exit code `2`. Keep the patch locally and apply it through the
-normal review workflow.
+The fix-loop commands (`fix-request`, `attach-patch`, `mark-fixed`) are not yet
+implemented on the server and exit with code `2` and the message
+`"attach-patch is not available on this server (v1)"`. Keep the patch locally
+and apply it through the normal review workflow.
 
 ## 6. Report
 
