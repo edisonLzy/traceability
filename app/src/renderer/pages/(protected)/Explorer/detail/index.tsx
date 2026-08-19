@@ -24,8 +24,8 @@ import type {
   GraphOperation,
 } from "../types";
 import { ExplorerGraphNodeCard } from "./_components/ExplorerGraphNodeCard";
-import { ExplorerGraphNodeDetail } from "./_components/ExplorerGraphNodeDetail";
 import { ExplorerGraphRealtimeStatus } from "./_components/ExplorerGraphRealtimeStatus";
+import { ExplorerNodeDetailPanel } from "./_components/ExplorerNodeDetailPanel";
 import { useApplyGraphOperations } from "./_hooks/use-apply-graph-operations";
 import { useExplorerGraphRealtime } from "./_hooks/use-explorer-graph-realtime";
 import { useExplorerGraphState } from "./_hooks/use-explorer-graph-state";
@@ -177,7 +177,7 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
         </ReactFlow>
 
         {selectedNode ? (
-          <ExplorerGraphNodeDetail
+          <ExplorerNodeDetailPanel
             graphId={graphId}
             onClose={clearSelectedNode}
             selectedNode={selectedNode}

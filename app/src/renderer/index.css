@@ -577,7 +577,9 @@
   }
 
   .explorer-graph-canvas .explorer-node:hover .react-flow__handle,
-  .explorer-graph-canvas .explorer-node.selected .react-flow__handle {
+  .explorer-graph-canvas .explorer-node.selected .react-flow__handle,
+  .explorer-graph-canvas .explorer-node-v2:hover .react-flow__handle,
+  .explorer-graph-canvas .explorer-node-v2.selected .react-flow__handle {
     opacity: 1;
   }
 
@@ -723,5 +725,80 @@
     border: 1px solid color-mix(in srgb, var(--node-accent, var(--primary)) 32%, transparent);
     background: color-mix(in srgb, var(--node-accent, var(--primary)) 8%, transparent);
     color: color-mix(in srgb, var(--node-accent, var(--primary)) 72%, var(--ink));
+  }
+
+  /* v2 cards — sibling visual language to Agent Panel user-message.
+     Hard-edge neobrutalist: 2px ink border, no-blur offset shadow, signal-color
+     monogram. Width is min/max so long titles breathe instead of clipping. */
+  .explorer-node-v2 {
+    position: relative;
+    overflow: visible;
+    min-width: 208px;
+    max-width: 240px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-md);
+    background: var(--card);
+    box-shadow: var(--hard-shadow-sm);
+    transition:
+      border-color 160ms var(--ease-out),
+      box-shadow 160ms var(--ease-out),
+      transform 160ms var(--ease-out);
+  }
+
+  .explorer-node-v2:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: var(--hard-shadow);
+  }
+
+  .explorer-node-v2.selected {
+    border-color: var(--primary);
+    box-shadow:
+      var(--hard-shadow),
+      0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+
+  .explorer-node-v2__accent {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: var(--node-accent, var(--primary));
+    opacity: 0.9;
+  }
+
+  .explorer-node-v2[data-node-type="question"] {
+    --node-accent: var(--primary);
+  }
+
+  .explorer-node-v2[data-node-type="finding"] {
+    --node-accent: var(--success);
+  }
+
+  .explorer-node-v2[data-node-type="issue"] {
+    --node-accent: var(--danger);
+  }
+
+  .explorer-node-v2[data-node-type="event"] {
+    --node-accent: var(--info);
+  }
+
+  .explorer-node-v2[data-node-type="replay"] {
+    --node-accent: var(--primary-hover);
+  }
+
+  .explorer-node-v2[data-node-type="code"] {
+    --node-accent: var(--primary-hover);
+  }
+
+  .explorer-node-v2[data-node-type="document"] {
+    --node-accent: var(--warning);
+  }
+
+  /* Detail panel uses the project's shared Dialog primitive (see
+   `@layer components` above for `[data-slot="dialog-content"]` transition).
+   This hook remains so the data-node-type accent still flows into the
+   backdrop/popup via the explorer-node-detail data attribute. */
+  [data-node-type] {
+    --node-accent: var(--primary);
   }
 }
