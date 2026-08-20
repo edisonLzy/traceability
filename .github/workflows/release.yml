@@ -55,11 +55,38 @@ jobs:
       - name: Run desktop app tests
         run: pnpm exec turbo run test --filter=@tracerability/app
 
+  prepare-release:
+    name: Prepare GitHub release
+    needs:
+      - version
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Create a published release for builder uploads
+        shell: bash
+        run: |
+          TAG="v${RELEASE_VERSION}"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --draft=false \
+              --prerelease=false
+          else
+            gh release create "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Traceability ${RELEASE_VERSION}" \
+              --generate-notes
+          fi
+
   build:
     name: Build ${{ matrix.name }}
     needs:
       - version
       - validate
+      - prepare-release
     strategy:
       fail-fast: false
       matrix:
@@ -73,6 +100,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       RELEASE_VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
       VITE_SERVER_URL: http://119.29.145.158:3000
       MAIN_VITE_SERVER_URL: http://119.29.145.158:3000
       MAIN_VITE_TRACEABILITY_DSN: ${{ secrets.TRACEABILITY_DSN }}
@@ -104,7 +132,7 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          MAC_OPTIONS=(--mac --x64 --arm64 --publish never)
+          MAC_OPTIONS=(--mac --x64 --arm64 --publish always)
 
           if [[ -z "$CSC_LINK" ]]; then
             unset CSC_LINK CSC_KEY_PASSWORD
@@ -123,7 +151,7 @@ jobs:
       - name: Package Windows
         if: runner.os == 'Windows'
         working-directory: app
-        run: pnpm exec electron-builder --win --x64 --publish never
+        run: pnpm exec electron-builder --win --x64 --publish always
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
@@ -133,6 +161,8 @@ jobs:
             app/dist/*.dmg
             app/dist/*.exe
             app/dist/*.zip
+            app/dist/latest*.yml
+            app/dist/*.blockmap
 
   release:
     name: Publish GitHub release

@@ -25,3 +25,10 @@ mac:
   artifactName: Traceability-${version}-${arch}.${ext}
 dmg:
   artifactName: Traceability-${version}-${arch}.${ext}
+publish:
+  provider: github
+  owner: edisonLzy
+  repo: traceability
+  releaseType: release
+  tagNamePrefix: v
+  publishAutoUpdate: true

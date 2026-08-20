@@ -10,6 +10,7 @@ import {
   type RendererExtensionDefinition,
 } from "@extensions/core/renderer";
 import { CommandProvider } from "@renderer/commands";
+import { AppUpdateNotifications } from "@renderer/components/AppUpdateNotifications";
 import { ThemeProvider } from "@renderer/components/Themes";
 import { TrpcErrorToaster } from "@renderer/components/TrpcErrorToaster";
 import { Toaster } from "@renderer/components/ui/sonner";
@@ -61,6 +62,7 @@ export function App() {
               <ExtensionProvider extensions={installedRendererExtensions}>
                 <ExtensionsContextAPIProvider api={extensionsContextAPI}>
                   <Titlebar />
+                  <AppUpdateNotifications />
                   <RouterProvider router={router} />
                   <TrpcErrorToaster />
                   <Toaster />
