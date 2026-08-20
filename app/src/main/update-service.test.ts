@@ -173,7 +173,7 @@ describe("AppUpdateService", () => {
     expect(mocks.updater.quitAndInstall).toHaveBeenCalledWith(false, true);
   });
 
-  it("checks desktop GitHub releases on macOS and downloads the matching ZIP", async () => {
+  it("checks the GitHub macOS manifest and downloads the matching ZIP", async () => {
     service.destroyAll();
     Object.defineProperty(process, "platform", { configurable: true, value: "darwin" });
     service = new AppUpdateService(browserWindow);
@@ -181,7 +181,6 @@ describe("AppUpdateService", () => {
     const releaseUrl = "https://github.com/edisonLzy/traceability/releases/tag/v1.1.0";
     const architecture = process.arch === "arm64" ? "arm64" : "x64";
     const assetName = `Traceability-1.1.0-${architecture}.zip`;
-    const assetUrl = `https://github.com/edisonLzy/traceability/releases/download/v1.1.0/${assetName}`;
     const fetch = vi
       .fn()
       .mockResolvedValueOnce({
@@ -189,22 +188,12 @@ describe("AppUpdateService", () => {
         status: 200,
         headers: new Headers(),
         body: null,
-        json: async () => [
-          {
-            tag_name: "v1.1.0",
-            name: "Traceability 1.1.0",
-            published_at: "2026-08-20T00:00:00.000Z",
-            body: "Manual macOS update",
-            html_url: releaseUrl,
-            assets: [
-              {
-                name: assetName,
-                browser_download_url: assetUrl,
-                digest: "sha256:c9ef77cdc211a9e6c2a32876ef36d52cfa61c7a42193d9c2198be8957d60de81",
-              },
-            ],
-          },
-        ],
+        text: async () => `version: 1.1.0
+files:
+  - url: ${assetName}
+    sha512: xPPajnoj9hIsmqk0oQi/qQjvNYV1zuKmvdqgVnvh0mgq2kT1rTukgG7NHwTe1Z5hZ0RW9Ru9SucvZUfjJXxTRw==
+releaseDate: '2026-08-20T00:00:00.000Z'
+`,
       })
       .mockResolvedValueOnce(new Response("test archive", { status: 200 }));
     vi.stubGlobal("fetch", fetch);
@@ -217,6 +206,9 @@ describe("AppUpdateService", () => {
       releaseUrl,
     });
     expect(mocks.updater.checkForUpdates).not.toHaveBeenCalled();
+    expect(fetch.mock.calls[0]?.[0]).toBe(
+      "https://github.com/edisonLzy/traceability/releases/latest/download/latest-mac.yml",
+    );
 
     const downloaded = await service.downloadAppUpdate();
 
@@ -225,5 +217,8 @@ describe("AppUpdateService", () => {
       version: "1.1.0",
     });
     expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[1]?.[0]).toBe(
+      `https://github.com/edisonLzy/traceability/releases/download/v1.1.0/${assetName}`,
+    );
   });
 });
