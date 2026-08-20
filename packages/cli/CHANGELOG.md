@@ -1,5 +1,11 @@
 # @tracerability/cli Changelog
 
+## [1.5.2](https://github.com/edisonLzy/traceability/compare/@tracerability/cli@1.5.1...@tracerability/cli@1.5.2) (2026-08-19)
+
+### Bug Fixes
+
+* **cli:** use gh release create instead of release-it github plugin ([d2f4f3f](https://github.com/edisonLzy/traceability/commit/d2f4f3f95663005749a1936c2e073979fa392452))
+
 ## 1.5.1 (2026-08-19)
 
 ### Features

@@ -4,14 +4,14 @@ Traceability is a Sentry-compatible observability toolkit that connects browser 
 
 ## Workspace
 
-| Path | Purpose |
-| --- | --- |
-| `packages/monitor` | `@tracerability/monitor`: browser, React, Electron main/renderer/preload monitoring entry points |
-| `packages/cli` | `traceability` CLI for authentication, projects, issues, metrics, traces, and source maps |
-| `packages/skills` | Reusable coding-agent skills for setup, flow instrumentation, and issue diagnosis |
-| `server` | Fastify API, PostgreSQL/Drizzle persistence, Redis/BullMQ processing, and MinIO source-map storage |
-| `app` | Electron desktop app for Monitor views and AI-assisted investigation |
-| `examples` | Browser and Electron integration examples |
+| Path               | Purpose                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| `packages/monitor` | `@tracerability/monitor`: browser, React, Electron main/renderer/preload monitoring entry points   |
+| `packages/cli`     | `traceability` CLI for authentication, projects, issues, metrics, traces, and source maps          |
+| `packages/skills`  | Reusable coding-agent skills for setup, flow instrumentation, and issue diagnosis                  |
+| `server`           | Fastify API, PostgreSQL/Drizzle persistence, Redis/BullMQ processing, and MinIO source-map storage |
+| `app`              | Electron desktop app for Monitor views and AI-assisted investigation                               |
+| `examples`         | Browser and Electron integration examples                                                          |
 
 ## Requirements
 
@@ -95,7 +95,7 @@ See [`server/README.md`](server/README.md), [`packages/cli/README.md`](packages/
 
 ## Desktop releases
 
-Every push to `master` runs the desktop release workflow. It validates the app, builds native macOS x64/arm64 and Windows x64 packages, uploads GitHub Actions artifacts, and publishes the same DMG, ZIP, and NSIS files to a versioned GitHub Release. The app icon source is `app/resources/icon.png` and is applied to both platforms by `app/electron-builder.yml`.
+Every push to `master` runs the desktop release workflow. It validates the app, builds native macOS x64/arm64 and Windows x64 packages, uploads GitHub Actions artifacts, and publishes the DMG, ZIP, NSIS installers plus `latest-mac.yml`/`latest.yml` update manifests to a versioned GitHub Release. The packaged app checks desktop releases in the main process. Windows uses `electron-updater`; macOS downloads the matching ZIP and uses a local helper to replace and restart the app, so this personal-use flow does not require Apple Developer signing or notarization. macOS may still require a one-time Gatekeeper approval. The app icon source is `app/resources/icon.png` and is applied to both platforms by `app/electron-builder.yml`.
 
 See [`.github/RELEASING.md`](.github/RELEASING.md) for versioning, signing, notarization, and artifact details.
 

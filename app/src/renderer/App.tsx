@@ -10,6 +10,7 @@ import {
   type RendererExtensionDefinition,
 } from "@extensions/core/renderer";
 import { CommandProvider } from "@renderer/commands";
+import { useAppUpdateNotifications } from "@renderer/components/AppUpdateNotifications";
 import { ThemeProvider } from "@renderer/components/Themes";
 import { TrpcErrorToaster } from "@renderer/components/TrpcErrorToaster";
 import { Toaster } from "@renderer/components/ui/sonner";
@@ -56,20 +57,28 @@ export function App() {
     <trpc.Provider client={rendererTrpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <ElectronIPCProvider>
-          <ThemeProvider>
-            <CommandProvider>
-              <ExtensionProvider extensions={installedRendererExtensions}>
-                <ExtensionsContextAPIProvider api={extensionsContextAPI}>
-                  <Titlebar />
-                  <RouterProvider router={router} />
-                  <TrpcErrorToaster />
-                  <Toaster />
-                </ExtensionsContextAPIProvider>
-              </ExtensionProvider>
-            </CommandProvider>
-          </ThemeProvider>
+          <AppContent extensionsContextAPI={extensionsContextAPI} />
         </ElectronIPCProvider>
       </QueryClientProvider>
     </trpc.Provider>
+  );
+}
+
+function AppContent({ extensionsContextAPI }: { extensionsContextAPI: ExtensionsContextAPI }) {
+  useAppUpdateNotifications();
+
+  return (
+    <ThemeProvider>
+      <CommandProvider>
+        <ExtensionProvider extensions={installedRendererExtensions}>
+          <ExtensionsContextAPIProvider api={extensionsContextAPI}>
+            <Titlebar />
+            <RouterProvider router={router} />
+            <TrpcErrorToaster />
+            <Toaster />
+          </ExtensionsContextAPIProvider>
+        </ExtensionProvider>
+      </CommandProvider>
+    </ThemeProvider>
   );
 }

@@ -7,6 +7,7 @@ import { AuthSession } from "./auth/auth-session.js";
 import { initMonitor } from "./monitor.js";
 import { SessionPersistence } from "./sessions/index.js";
 import { applyPersistedThemeSource, ThemeController } from "./theme.js";
+import { AppUpdateService } from "./update-service.js";
 import { WindowController } from "./window-controller.js";
 
 const developmentIconPath = join(__dirname, "../../resources/icon-fingerprint.png");
@@ -26,6 +27,8 @@ void app
     const authSession = new AuthSession(browserWindow);
     const themeController = new ThemeController(browserWindow);
     const windowController = new WindowController(browserWindow);
+    const appUpdateService = new AppUpdateService(browserWindow);
+    appUpdateService.start();
 
     app.on("activate", () => {
       if (!browserWindow || browserWindow.isDestroyed()) {
@@ -35,6 +38,7 @@ void app
         authSession.updateBrowserWindow(browserWindow);
         themeController.updateBrowserWindow(browserWindow);
         windowController.updateBrowserWindow(browserWindow);
+        appUpdateService.updateBrowserWindow(browserWindow);
       }
     });
 
@@ -44,6 +48,7 @@ void app
       void authSession.destroyAll();
       themeController.destroyAll();
       windowController.destroyAll();
+      appUpdateService.destroyAll();
     });
   })
   .catch((error: unknown) => {
