@@ -53,5 +53,9 @@ export function useAppUpdate() {
     await invoke("installAppUpdate");
   }, [invoke]);
 
-  return { state, checkForUpdates, downloadUpdate, installUpdate };
+  const openReleasePage = useCallback(async () => {
+    await invoke("openAppReleasePage");
+  }, [invoke]);
+
+  return { state, checkForUpdates, downloadUpdate, installUpdate, openReleasePage };
 }

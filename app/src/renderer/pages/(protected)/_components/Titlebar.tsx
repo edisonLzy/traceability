@@ -6,7 +6,6 @@ import { useEffect } from "react";
 
 export function Titlebar() {
   const { invoke, on } = useElectronIPC();
-  const { state: updateState, checkForUpdates, downloadUpdate, installUpdate } = useAppUpdate();
 
   useEffect(() => {
     const syncFullScreen = (fullScreen: boolean) => {
@@ -34,36 +33,23 @@ export function Titlebar() {
         </span>
       </div>
       <div className="app-no-drag ml-auto flex items-center gap-1 pr-[calc(var(--window-controls-right)+0.25rem)]">
-        <AppUpdateControl
-          state={updateState}
-          onCheck={checkForUpdates}
-          onDownload={downloadUpdate}
-          onInstall={installUpdate}
-        />
+        <AppUpdateControl />
         <ModeToggle />
       </div>
     </header>
   );
 }
 
-function AppUpdateControl({
-  state,
-  onCheck,
-  onDownload,
-  onInstall,
-}: {
-  state: ReturnType<typeof useAppUpdate>["state"];
-  onCheck: ReturnType<typeof useAppUpdate>["checkForUpdates"];
-  onDownload: ReturnType<typeof useAppUpdate>["downloadUpdate"];
-  onInstall: ReturnType<typeof useAppUpdate>["installUpdate"];
-}) {
+function AppUpdateControl() {
+  const { state, checkForUpdates, downloadUpdate, installUpdate } = useAppUpdate();
+
   if (state.status === "unsupported") return null;
 
   if (state.status === "available" && state.version) {
     return (
       <button
         type="button"
-        onClick={() => void onDownload()}
+        onClick={() => void downloadUpdate()}
         title={`下载 Traceability v${state.version}`}
         className="glass-control inline-flex h-7 max-w-[150px] items-center gap-1.5 rounded-lg px-2 text-[10px] text-primary-hover transition-colors hover:bg-primary/10"
       >
@@ -94,7 +80,7 @@ function AppUpdateControl({
     return (
       <button
         type="button"
-        onClick={() => void onInstall()}
+        onClick={() => void installUpdate()}
         title="重启并安装更新"
         className="glass-control inline-flex h-7 max-w-[150px] items-center gap-1.5 rounded-lg px-2 text-[10px] text-primary-hover transition-colors hover:bg-primary/10"
       >
@@ -107,7 +93,7 @@ function AppUpdateControl({
   return (
     <button
       type="button"
-      onClick={() => void onCheck()}
+      onClick={() => void checkForUpdates()}
       disabled={state.status === "checking"}
       title={state.status === "checking" ? "正在检查更新" : "检查更新"}
       className="glass-control inline-flex size-7 items-center justify-center rounded-lg text-tertiary transition-colors hover:bg-overlay-strong hover:text-ink disabled:cursor-wait disabled:opacity-60"

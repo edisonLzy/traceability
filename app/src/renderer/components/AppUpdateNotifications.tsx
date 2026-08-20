@@ -1,4 +1,4 @@
-import { useElectronIPC } from "@renderer/context/ElectronIPCProvider";
+import { useAppUpdate } from "@renderer/hooks/use-app-update";
 import type { AppUpdateState } from "@shared/update-ipc";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -6,35 +6,24 @@ import { toast } from "sonner";
 const UPDATE_TOAST_ID = "traceability-app-update";
 
 /** Turns main-process update events into non-blocking, user-actionable notices. */
-export function AppUpdateNotifications() {
-  const { invoke, on } = useElectronIPC();
+export function useAppUpdateNotifications() {
+  const { state, downloadUpdate, installUpdate, openReleasePage } = useAppUpdate();
   const previousState = useRef<AppUpdateState | null>(null);
 
   useEffect(() => {
-    const unsubscribe = on("update_state_changed", (nextState) => {
-      const previous = previousState.current;
-      previousState.current = nextState;
-      showUpdateToast(nextState, previous, invoke);
-    });
-
-    void invoke("getAppUpdateState")
-      .then((nextState) => {
-        const previous = previousState.current;
-        previousState.current = nextState;
-        showUpdateToast(nextState, previous, invoke);
-      })
-      .catch(() => undefined);
-
-    return unsubscribe;
-  }, [invoke, on]);
-
-  return null;
+    const previous = previousState.current;
+    previousState.current = state;
+    showUpdateToast(state, previous, { downloadUpdate, installUpdate, openReleasePage });
+  }, [downloadUpdate, installUpdate, openReleasePage, state]);
 }
 
 function showUpdateToast(
   state: AppUpdateState,
   previous: AppUpdateState | null,
-  invoke: Window["electronAPI"]["invoke"],
+  actions: Pick<
+    ReturnType<typeof useAppUpdate>,
+    "downloadUpdate" | "installUpdate" | "openReleasePage"
+  >,
 ): void {
   if (state.status === "available" && state.version && previous?.status !== "available") {
     toast("发现 Traceability 新版本", {
@@ -44,13 +33,13 @@ function showUpdateToast(
       action: {
         label: "下载更新",
         onClick: () => {
-          void invoke("downloadAppUpdate").catch(() => undefined);
+          void actions.downloadUpdate().catch(() => undefined);
         },
       },
       cancel: {
         label: "查看说明",
         onClick: () => {
-          void invoke("openAppReleasePage").catch(() => undefined);
+          void actions.openReleasePage().catch(() => undefined);
         },
       },
     });
@@ -75,7 +64,7 @@ function showUpdateToast(
       action: {
         label: "重启安装",
         onClick: () => {
-          void invoke("installAppUpdate").catch(() => undefined);
+          void actions.installUpdate().catch(() => undefined);
         },
       },
     });
