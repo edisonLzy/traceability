@@ -6,10 +6,23 @@ uploads the packages as GitHub Actions artifacts, and publishes the same files t
 Release. The existing `.github/workflows/ci.yml` workflow continues to run the full repository
 type-check, test, and build validation.
 
-The generated packages are:
+The generated packages and updater manifests are:
 
 - macOS x64 and arm64: DMG and ZIP
 - Windows x64: NSIS installer
+- macOS: `latest-mac.yml`
+- Windows: `latest.yml`
+
+The native build jobs publish directly to the pre-created, published GitHub Release with
+`--publish always`. The YAML manifests must be uploaded together with the exact installer/ZIP
+files they describe; Windows `electron-updater` cannot find or verify an update without them.
+macOS uses the published release API and the architecture-specific ZIP directly, then replaces
+the local app with a user-confirmed helper process. This personal-use path does not require Apple
+Developer signing or notarization, although Gatekeeper may require a manual approval.
+The macOS updater accepts only ZIP assets with a GitHub-provided SHA-256 digest and verifies the
+download before replacement; releases without a digest or a matching architecture are rejected.
+Releases must not remain Draft because neither the public provider nor the macOS release lookup
+exposes draft releases to clients.
 
 All installers use `app/resources/icon.png`, configured through
 `app/electron-builder.yml`. Keep the source PNG square, transparent, and at least
@@ -79,6 +92,9 @@ Configure these GitHub Actions secrets for a signed and notarized macOS release:
 - `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID
 - `APPLE_TEAM_ID`: Apple Developer team ID
 
-Without `MACOS_CERTIFICATE`, the workflow creates an ad-hoc signed build. It is suitable for
-internal testing, but users may need to approve it in macOS privacy and security settings.
+Without `MACOS_CERTIFICATE`, the workflow creates an ad-hoc/unsigned build. It is suitable for
+this personal-use flow, but users may need to approve it in macOS privacy and security settings.
 Windows packages are currently unsigned and can trigger a Microsoft Defender SmartScreen warning.
+Apple signing and notarization remain optional here because macOS does not use the signed
+`electron-updater` replacement path. Windows code signing is strongly recommended for a trustworthy
+installer and fewer SmartScreen warnings.

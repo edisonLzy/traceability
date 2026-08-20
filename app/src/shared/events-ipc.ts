@@ -7,6 +7,7 @@ import type { AgentSessionIPC } from "./session-ipc";
 import type { SessionPersistenceIPC } from "./session-persistence-ipc";
 import type { AgentSkillsIPC } from "./skills-ipc";
 import type { NativeThemeUpdatedEvent, ThemeIPC } from "./theme-ipc";
+import type { AppUpdateIPC, AppUpdateState } from "./update-ipc";
 import type { WindowIPC, WindowState } from "./window-ipc";
 
 export type AgentSessionScope = "main" | "side-chat";
@@ -28,6 +29,7 @@ export const ALLOWED_MAIN_EXPOSE_EVENTS = [
   "ask_user_question_requested",
   "native_theme_updated",
   "window_state_updated",
+  "update_state_changed",
 ] as const;
 
 /**
@@ -43,6 +45,7 @@ export type AgentExposeEvents = {
 export type AllowedMainExposeEvents = AgentExposeEvents & {
   native_theme_updated: NativeThemeUpdatedEvent;
   window_state_updated: WindowState;
+  update_state_changed: AppUpdateState;
 };
 
 // render -> main
@@ -53,6 +56,7 @@ export type AgentRuntimeIPC = AgentModelsIPC &
   SessionPersistenceIPC &
   AuthIPC &
   ThemeIPC &
+  AppUpdateIPC &
   WindowIPC;
 
 export const ALLOWED_RENDER_INVOKE_EVENTS: (keyof AgentRuntimeIPC)[] = [
@@ -91,6 +95,11 @@ export const ALLOWED_RENDER_INVOKE_EVENTS: (keyof AgentRuntimeIPC)[] = [
   "minimizeWindow",
   "toggleFullScreenWindow",
   "toggleMaximizeWindow",
+  "getAppUpdateState",
+  "checkForAppUpdate",
+  "downloadAppUpdate",
+  "installAppUpdate",
+  "openAppReleasePage",
 ];
 
 export type AllowedRenderInvokeEvents = (typeof ALLOWED_RENDER_INVOKE_EVENTS)[number];
