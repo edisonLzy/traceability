@@ -95,7 +95,7 @@ See [`server/README.md`](server/README.md), [`packages/cli/README.md`](packages/
 
 ## Desktop releases
 
-Every push to `master` runs the desktop release workflow. It validates the app, builds native macOS x64/arm64 and Windows x64 packages, uploads GitHub Actions artifacts, and publishes the DMG, ZIP, NSIS installers plus `latest-mac.yml`/`latest.yml` update manifests to a versioned GitHub Release. The packaged app checks desktop releases in the main process. Windows uses `electron-updater`; macOS downloads the matching ZIP and uses a local helper to replace and restart the app, so this personal-use flow does not require Apple Developer signing or notarization. macOS may still require a one-time Gatekeeper approval. The app icon source is `app/resources/icon.png` and is applied to both platforms by `app/electron-builder.yml`.
+Every push to `master` runs the desktop release workflow. It validates the app, builds native macOS x64/arm64 and Windows x64 packages, uploads GitHub Actions artifacts, and publishes the DMG, ZIP, NSIS installers plus `latest-mac.yml`/`latest.yml` update manifests to a versioned GitHub Release. The packaged app checks desktop release metadata in the main process. Windows uses `electron-updater`; macOS reads `latest-mac.yml`, downloads the matching ZIP, verifies its SHA-512, and uses a local helper to replace and restart the app, so this personal-use flow does not require Apple Developer signing or notarization. macOS may still require a one-time Gatekeeper approval. The app icon source is `app/resources/icon.png` and is applied to both platforms by `app/electron-builder.yml`.
 
 See [`.github/RELEASING.md`](.github/RELEASING.md) for versioning, signing, notarization, and artifact details.
 

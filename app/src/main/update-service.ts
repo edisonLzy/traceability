@@ -23,22 +23,22 @@ const IPC_CHANNELS: readonly (keyof AppUpdateIPC)[] = [
 
 const UPDATE_PLATFORMS = new Set<NodeJS.Platform>(["darwin", "win32"]);
 const AUTOMATIC_UPDATE_PLATFORMS = new Set<NodeJS.Platform>(["win32"]);
-const GITHUB_RELEASES_API_URL =
-  "https://api.github.com/repos/edisonLzy/traceability/releases?per_page=30";
+const GITHUB_LATEST_MAC_MANIFEST_URL =
+  "https://github.com/edisonLzy/traceability/releases/latest/download/latest-mac.yml";
 
-interface GithubReleaseAsset {
+interface MacUpdateAsset {
   name: string;
   browserDownloadUrl: string;
-  digest: string;
+  sha512: string;
 }
 
-interface GithubDesktopRelease {
+interface MacUpdateRelease {
   version: string;
   name: string | null;
   releaseDate: string | null;
   releaseNotes: string | null;
   releaseUrl: string;
-  assets: GithubReleaseAsset[];
+  assets: MacUpdateAsset[];
 }
 
 interface DownloadedMacUpdate {
@@ -63,7 +63,7 @@ export class AppUpdateService implements AppUpdateIPC {
   private activeDownloadUserInitiated = false;
   private autoCheckTimer: ReturnType<typeof setTimeout> | null = null;
   private removeUpdaterListeners: VoidFunction = () => undefined;
-  private macRelease: GithubDesktopRelease | null = null;
+  private macRelease: MacUpdateRelease | null = null;
   private downloadedMacUpdate: DownloadedMacUpdate | null = null;
 
   public constructor(browserWindow: BrowserWindow) {
@@ -280,7 +280,7 @@ export class AppUpdateService implements AppUpdateIPC {
     this.setState({ status: "checking", progress: null, error: null, userInitiated });
 
     const checkPromise = (
-      this.canAutomaticUpdate ? this.checkWithElectronUpdater() : this.checkGithubReleases()
+      this.canAutomaticUpdate ? this.checkWithElectronUpdater() : this.checkMacManifest()
     )
       .catch((error: unknown) => {
         this.setState({
@@ -316,21 +316,23 @@ export class AppUpdateService implements AppUpdateIPC {
     return this.state;
   }
 
-  private async checkGithubReleases(): Promise<AppUpdateState> {
-    const response = await fetch(GITHUB_RELEASES_API_URL, {
+  private async checkMacManifest(): Promise<AppUpdateState> {
+    const response = await fetch(GITHUB_LATEST_MAC_MANIFEST_URL, {
       headers: {
-        Accept: "application/vnd.github+json",
+        Accept: "text/yaml, text/plain;q=0.9, */*;q=0.8",
         "User-Agent": `Traceability/${app.getVersion()}`,
       },
       signal: AbortSignal.timeout(10_000),
     });
 
     if (!response.ok) {
-      throw new Error(`GitHub Releases 请求失败（HTTP ${response.status}）。`);
+      throw new Error(`GitHub Release manifest 请求失败（HTTP ${response.status}）。`);
     }
 
-    const architecture = process.arch === "arm64" ? "arm64" : "x64";
-    const release = selectLatestDesktopRelease((await response.json()) as unknown, architecture);
+    const release = parseMacUpdateManifest(
+      await response.text(),
+      process.arch === "arm64" ? "arm64" : "x64",
+    );
     if (!release) {
       this.setNotAvailable(this.activeCheckUserInitiated);
       return this.state;
@@ -405,7 +407,7 @@ export class AppUpdateService implements AppUpdateIPC {
             userInitiated: true,
           });
         },
-        asset.digest,
+        asset.sha512,
       );
       this.downloadedMacUpdate = { archivePath, stagingDirectory };
       this.setState({
@@ -517,96 +519,77 @@ function createInitialState(): AppUpdateState {
   };
 }
 
-function selectLatestDesktopRelease(
-  payload: unknown,
+function parseMacUpdateManifest(
+  payload: string,
   architecture: "arm64" | "x64",
-): GithubDesktopRelease | null {
-  if (!Array.isArray(payload)) throw new Error("GitHub Releases 返回的数据格式无效。");
+): MacUpdateRelease | null {
+  const version = normalizeVersion(readManifestValue(payload, "version"));
+  if (!version) throw new Error("GitHub Release manifest 中没有有效版本号。");
 
-  const releases = payload
-    .map(parseGithubDesktopRelease)
-    .filter((release): release is GithubDesktopRelease => release !== null)
-    .filter((release) =>
-      release.assets.some((asset) => asset.name.endsWith(`-${architecture}.zip`)),
-    )
-    .sort((left, right) => (gt(left.version, right.version) ? -1 : 1));
-
-  return releases[0] ?? null;
-}
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
-}
-
-function parseGithubDesktopRelease(value: unknown): GithubDesktopRelease | null {
-  const record = asRecord(value);
-  if (!record || record.draft === true || record.prerelease === true) return null;
-
-  const version = normalizeVersion(record.tag_name);
-  const tagName = typeof record.tag_name === "string" ? record.tag_name : "";
-  const releaseUrl = trustedGithubReleaseUrl(record.html_url, "/releases/tag/");
-  if (!version || !/^v\d+\.\d+\.\d+$/.test(tagName) || !releaseUrl) return null;
-
-  const rawAssets = Array.isArray(record.assets) ? record.assets : [];
-  const assets = rawAssets
-    .map((asset) => {
-      const assetRecord = asRecord(asset);
-      const name = typeof assetRecord?.name === "string" ? assetRecord.name : null;
-      const browserDownloadUrl = trustedGithubReleaseUrl(
-        assetRecord?.browser_download_url,
-        "/releases/download/",
-      );
-      const digest = normalizeSha256Digest(assetRecord?.digest);
-      return name && /^[A-Za-z0-9._-]+\.zip$/.test(name) && browserDownloadUrl && digest
-        ? { name, browserDownloadUrl, digest }
+  const manifestAssets = [
+    ...payload.matchAll(/^[ \t]*- url:[ \t]*([^\r\n]+)\r?\n[ \t]+sha512:[ \t]*([^\r\n]+)/gm),
+  ]
+    .map((match) => {
+      const name = parseManifestScalar(match[1] ?? "");
+      const sha512 = parseManifestScalar(match[2] ?? "");
+      return /^[A-Za-z0-9._-]+\.zip$/.test(name) && isSha512Digest(sha512)
+        ? { name, sha512 }
         : null;
     })
-    .filter((asset): asset is GithubReleaseAsset => asset !== null);
-  if (assets.length === 0) return null;
+    .filter((asset): asset is Omit<MacUpdateAsset, "browserDownloadUrl"> => asset !== null);
+
+  const assets: MacUpdateAsset[] = manifestAssets.map((asset) => ({
+    ...asset,
+    browserDownloadUrl: buildGithubReleaseDownloadUrl(version, asset.name),
+  }));
+
+  if (!assets.some((asset) => asset.name.endsWith(`-${architecture}.zip`))) return null;
+
+  const releaseDateValue = readManifestValue(payload, "releaseDate");
 
   return {
     version,
-    name: typeof record.name === "string" && record.name.trim() ? record.name : null,
-    releaseDate: typeof record.published_at === "string" ? record.published_at : null,
-    releaseNotes: typeof record.body === "string" && record.body.trim() ? record.body : null,
-    releaseUrl,
+    name: `Traceability v${version}`,
+    releaseDate: releaseDateValue ? parseManifestScalar(releaseDateValue) : null,
+    releaseNotes: null,
+    releaseUrl: `https://github.com/edisonLzy/traceability/releases/tag/v${version}`,
     assets,
   };
 }
 
-function trustedGithubReleaseUrl(value: unknown, pathPrefix: string): string | null {
-  if (typeof value !== "string") return null;
+function readManifestValue(payload: string, key: string): string {
+  return payload.match(new RegExp(`^[ \\t]*${key}:[ \\t]*([^\\r\\n]+)`, "m"))?.[1] ?? "";
+}
 
-  try {
-    const url = new URL(value);
-    if (
-      url.protocol !== "https:" ||
-      url.hostname !== "github.com" ||
-      !url.pathname.startsWith(`/edisonLzy/traceability${pathPrefix}`)
-    ) {
-      return null;
-    }
-    return url.toString();
-  } catch {
-    return null;
+function parseManifestScalar(value: string): string {
+  const trimmed = value.trim();
+  if (
+    trimmed.length >= 2 &&
+    ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+      (trimmed.startsWith('"') && trimmed.endsWith('"')))
+  ) {
+    return trimmed.slice(1, -1);
   }
+  return trimmed;
+}
+
+function isSha512Digest(value: string): boolean {
+  return /^[A-Za-z0-9+/]{86}==$/.test(value);
+}
+
+function buildGithubReleaseDownloadUrl(version: string, assetName: string): string {
+  return `https://github.com/edisonLzy/traceability/releases/download/v${encodeURIComponent(version)}/${encodeURIComponent(assetName)}`;
 }
 
 function normalizeVersion(value: unknown): string | null {
   return typeof value === "string" ? clean(value) : null;
 }
 
-function normalizeSha256Digest(value: unknown): string | null {
-  return typeof value === "string" && /^sha256:[a-f0-9]{64}$/i.test(value)
-    ? value.toLowerCase()
-    : null;
-}
-
 async function downloadFile(
   url: string,
   destinationPath: string,
   onProgress: (progress: UpdateDownloadProgress) => void,
-  expectedDigest: string | null = null,
+  expectedSha512: string | null = null,
 ): Promise<void> {
   const response = await fetch(url, {
     headers: {
@@ -623,7 +606,7 @@ async function downloadFile(
   const file = await open(destinationPath, "w", 0o600);
   const startedAt = Date.now();
   let transferred = 0;
-  const hash = expectedDigest ? createHash("sha256") : null;
+  const hash = expectedSha512 ? createHash("sha512") : null;
 
   try {
     const reader = response.body.getReader();
@@ -643,7 +626,7 @@ async function downloadFile(
       });
     }
 
-    if (hash && `sha256:${hash.digest("hex")}` !== expectedDigest) {
+    if (hash && hash.digest("base64") !== expectedSha512) {
       throw new Error("更新文件完整性校验失败，请重新检查并下载。");
     }
   } finally {

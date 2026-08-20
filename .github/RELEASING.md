@@ -16,11 +16,12 @@ The generated packages and updater manifests are:
 The native build jobs publish directly to the pre-created, published GitHub Release with
 `--publish always`. The YAML manifests must be uploaded together with the exact installer/ZIP
 files they describe; Windows `electron-updater` cannot find or verify an update without them.
-macOS uses the published release API and the architecture-specific ZIP directly, then replaces
-the local app with a user-confirmed helper process. This personal-use path does not require Apple
-Developer signing or notarization, although Gatekeeper may require a manual approval.
-The macOS updater accepts only ZIP assets with a GitHub-provided SHA-256 digest and verifies the
-download before replacement; releases without a digest or a matching architecture are rejected.
+macOS reads the published `latest-mac.yml` manifest, downloads the matching architecture ZIP, and
+then replaces the local app with a user-confirmed helper process. This personal-use path does not
+require Apple Developer signing or notarization, although Gatekeeper may require a manual approval.
+The macOS updater accepts only ZIP assets with a valid SHA-512 digest from `latest-mac.yml` and
+verifies the download before replacement; releases without a digest or a matching architecture
+are rejected. This avoids depending on GitHub's anonymous REST API rate limit for desktop checks.
 Releases must not remain Draft because neither the public provider nor the macOS release lookup
 exposes draft releases to clients.
 

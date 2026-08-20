@@ -1,6 +1,7 @@
 import { join } from "path";
 
-import { app, BrowserWindow, nativeImage, nativeTheme } from "electron";
+import { app, BrowserWindow, Menu, nativeImage, nativeTheme } from "electron";
+import type { MenuItemConstructorOptions } from "electron";
 
 import { AgentPool } from "./agent-pool.js";
 import { AuthSession } from "./auth/auth-session.js";
@@ -28,6 +29,7 @@ void app
     const themeController = new ThemeController(browserWindow);
     const windowController = new WindowController(browserWindow);
     const appUpdateService = new AppUpdateService(browserWindow);
+    createApplicationMenu(appUpdateService);
     appUpdateService.start();
 
     app.on("activate", () => {
@@ -61,6 +63,45 @@ app.on("window-all-closed", () => {
 });
 
 console.log("Traceability main process started!");
+
+function createApplicationMenu(appUpdateService: AppUpdateService): void {
+  const checkForUpdatesItem: MenuItemConstructorOptions = {
+    label: "检查更新…",
+    click: () => {
+      void appUpdateService.checkForAppUpdate();
+    },
+  };
+
+  const template: MenuItemConstructorOptions[] =
+    process.platform === "darwin"
+      ? [
+          {
+            label: "Traceability",
+            submenu: [
+              { label: "关于 Traceability", role: "about" },
+              { type: "separator" },
+              checkForUpdatesItem,
+              { type: "separator" },
+              { role: "services", submenu: [] },
+              { type: "separator" },
+              { label: "隐藏 Traceability", role: "hide" },
+              { label: "隐藏其他", role: "hideOthers" },
+              { label: "显示全部", role: "unhide" },
+              { type: "separator" },
+              { label: "退出 Traceability", role: "quit" },
+            ],
+          },
+          { label: "编辑", submenu: [{ role: "undo" }, { role: "redo" }] },
+          { label: "视图", submenu: [{ role: "reload" }, { role: "toggleDevTools" }] },
+          { role: "windowMenu" },
+        ]
+      : [
+          { label: "文件", submenu: [{ label: "退出 Traceability", role: "quit" }] },
+          { label: "帮助", submenu: [checkForUpdatesItem] },
+        ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
 
 /** Track the native theme so the titlebar overlay icon color stays legible. */
 nativeTheme.on("updated", () => {
