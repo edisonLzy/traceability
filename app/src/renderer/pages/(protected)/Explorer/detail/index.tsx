@@ -30,6 +30,7 @@ import type {
   ExplorerGraphSnapshot,
   GraphOperation,
 } from "../types";
+import { ExplorerGraphEdge } from "./_components/ExplorerGraphEdge";
 import { ExplorerGraphNodeCard } from "./_components/ExplorerGraphNodeCard";
 import { ExplorerGraphNodeDetail } from "./_components/ExplorerGraphNodeDetail";
 import { ExplorerGraphRealtimeStatus } from "./_components/ExplorerGraphRealtimeStatus";
@@ -48,6 +49,11 @@ const nodeTypes = {
   replay: ExplorerGraphNodeCard,
   code: ExplorerGraphNodeCard,
   document: ExplorerGraphNodeCard,
+};
+
+const edgeTypes = {
+  explorerEdge: ExplorerGraphEdge,
+  smoothstep: ExplorerGraphEdge,
 };
 
 export function ExplorerGraphDetailPage() {
@@ -189,6 +195,14 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
   const selectNode = useCallback((nodeId: string) => setSelectedNodeId(nodeId), []);
   const clearSelectedNode = useCallback(() => setSelectedNodeId(null), []);
 
+  const displayEdges = useMemo(() => {
+    if (!selectedNodeId) return edges;
+    return edges.map((edge) => {
+      const isConnected = edge.source === selectedNodeId || edge.target === selectedNodeId;
+      return isConnected ? { ...edge, selected: true } : edge;
+    });
+  }, [edges, selectedNodeId]);
+
   if (state.isLoading) {
     return (
       <div className="flex h-full min-h-[620px] items-center justify-center font-mono text-[11px] text-tertiary">
@@ -214,8 +228,9 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
           fitView
           fitViewOptions={{ padding: 0.2 }}
           nodes={nodes}
-          edges={edges}
+          edges={displayEdges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeClick={(_event, node) => selectNode(node.id)}
@@ -223,7 +238,7 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
           onNodeDragStop={moveNode}
           onNodesDelete={deleteNodes}
           onEdgesDelete={deleteEdges}
-          defaultEdgeOptions={{ type: "smoothstep", animated: false }}
+          defaultEdgeOptions={{ type: "explorerEdge" }}
           colorMode="system"
           deleteKeyCode={["Backspace", "Delete"]}
           nodesConnectable={false}
@@ -244,7 +259,7 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
             </Button>
             <Button
               className="border-2 border-ink bg-card text-ink shadow-[2px_2px_0_var(--ink)] hover:translate-x-px hover:translate-y-px hover:shadow-none font-mono font-bold text-[10px] uppercase tracking-wider transition-all"
-              onClick={() => fitView({ padding: 0.2, duration: 250 })}
+              onClick={() => fitView({ padding: 0.2, duration: 300 })}
               size="sm"
               title="Fit graph into view"
               type="button"
@@ -297,30 +312,13 @@ function toFlowNode(node: ExplorerGraphSnapshot["nodes"][number]): ExplorerFlowN
 function toFlowEdge(edge: ExplorerGraphSnapshot["edges"][number]): ExplorerFlowEdge {
   return {
     ...edge,
-    type: "smoothstep",
+    type: "explorerEdge",
     label: edge.data.relation.replaceAll("_", " "),
-    labelBgBorderRadius: 4,
-    labelBgPadding: [6, 3],
-    labelBgStyle: {
-      fill: "var(--card)",
-      stroke: "var(--ink)",
-      strokeWidth: 1.5,
-    },
-    labelStyle: {
-      fill: "var(--ink)",
-      fontSize: 9.5,
-      fontWeight: 700,
-      fontFamily: "var(--font-mono)",
-    },
     markerEnd: {
       type: MarkerType.ArrowClosed,
       color: "var(--ink)",
       width: 14,
       height: 14,
-    },
-    style: {
-      stroke: "var(--ink)",
-      strokeWidth: 2,
     },
   } as ExplorerFlowEdge;
 }
