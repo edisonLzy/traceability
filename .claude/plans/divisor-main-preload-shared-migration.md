@@ -5,6 +5,7 @@
 把 `/Users/evan/Desktop/coding/divisor-agent/packages/app/src` 下的 `main`、`preload`、`shared` 迁移到当前项目 `app/src` 对应目录,结构与 divisor-agent 保持一致;未迁移功能的引用从代码中干净移除。
 
 **迁移**:
+
 - `main/`:5 个功能目录(`human-in-the-loop`、`prompt`、`skills`、`models`、`tools`)+ Agent 运行时胶水(`agent-ipc.ts`、`agent-pool.ts`、`agent-runtime.ts`、`index.ts`、`env.d.ts`)。
 - `shared/`:7 个契约文件(`agent-message`、`ask-user-question-ipc`、`events-ipc`、`models-ipc`、`permissions-ipc`、`session-ipc`、`skills-ipc`)。
 - `preload/`:`index.ts` + `index.d.ts`,暴露 **`window.electronAPI`**(与 divisor 一致;renderer 后续适配)。

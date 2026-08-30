@@ -24,6 +24,7 @@ packages/skills/trace/
 ## SKILL.md 工作流
 
 Frontmatter：
+
 - `name: traceability-trace`
 - `description: Use when the user names a user flow / 链路 (登录流程, 下单流程, …) and wants it instrumented end-to-end without manually tracing the code. The agent analyzes the codebase to map the flow, finds the key positions, and auto-adds @traceability/core reporting calls.`
 
@@ -41,6 +42,7 @@ Frontmatter：
 ## references/reporting-api.md（SKILL.md 唯一依赖的 API 文档）
 
 自包含的"如何使用上报方法"，按多步链路场景组织：
+
 - **方法速查表**：`report` / `captureException` / `captureMessage` / `addBreadcrumb` / `setTag` / `setContext` / `setApp` / `reportPerformance` —— 每个一行签名 + "在链路的哪种位置用"。
 - **链路埋点模式**：入口 breadcrumb → 每步 `report` → 错误 `report(...-failed)` + `captureException` → 出口 `report` + `reportPerformance`，全部用 `setTag('flow', …)` 串起来。
 - **一个完整多步示例**（登录流程：表单提交 → 校验 → API 调用 → 存 token → 跳转，含错误分支）。
