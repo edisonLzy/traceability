@@ -4,11 +4,11 @@
 
 ## Three-process model
 
-| Process | Source | Runtime | Import convention |
-| --- | --- | --- | --- |
-| main | `src/main` | Electron main / Node | relative imports use `.js` |
-| preload | `src/preload` | isolated bridge | relative imports use `.js` |
-| renderer | `src/renderer` | browser | `@renderer`, `@shared`, `@extensions`; no `.js` suffix |
+| Process  | Source         | Runtime              | Import convention                                      |
+| -------- | -------------- | -------------------- | ------------------------------------------------------ |
+| main     | `src/main`     | Electron main / Node | relative imports use `.js`                             |
+| preload  | `src/preload`  | isolated bridge      | relative imports use `.js`                             |
+| renderer | `src/renderer` | browser              | `@renderer`, `@shared`, `@extensions`; no `.js` suffix |
 
 The renderer never imports Node APIs. It reaches main only through the allowlisted `window.electronAPI` bridge exposed by preload.
 

@@ -4,13 +4,13 @@ Traceability's capture SDK exposes Sentry-compatible monitoring for browsers, Re
 
 ## Entry points
 
-| Import | Runtime |
-| --- | --- |
-| `@tracerability/monitor` | Browser SDK and tracing/metrics helpers |
-| `@tracerability/monitor/react` | React integration |
-| `@tracerability/monitor/electron-main` | Electron main-process monitoring and resource sampling |
-| `@tracerability/monitor/electron-renderer` | Electron renderer monitoring |
-| `@tracerability/monitor/electron-preload` | Electron preload helpers |
+| Import                                     | Runtime                                                |
+| ------------------------------------------ | ------------------------------------------------------ |
+| `@tracerability/monitor`                   | Browser SDK and tracing/metrics helpers                |
+| `@tracerability/monitor/react`             | React integration                                      |
+| `@tracerability/monitor/electron-main`     | Electron main-process monitoring and resource sampling |
+| `@tracerability/monitor/electron-renderer` | Electron renderer monitoring                           |
+| `@tracerability/monitor/electron-preload`  | Electron preload helpers                               |
 
 ## Browser setup
 

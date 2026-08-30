@@ -67,13 +67,13 @@ pnpm --filter @tracerability/app dev
 
 ## Architecture
 
-| Layer              | Tech                                                             |
-| ------------------ | ---------------------------------------------------------------- |
-| **Electron App**   | Electron 39, React 19, Vite 7 (electron-vite), Tailwind CSS 4    |
-| **Server**         | Fastify + tRPC, PostgreSQL/Drizzle, Redis/BullMQ, MinIO, Pino    |
-| **Monitor SDK**    | Sentry browser/React/Electron integrations + replay and metrics  |
-| **Desktop UI**     | React 19, TanStack Query, Base UI, CodeMirror, TipTap             |
-| **Package Mgr**    | pnpm 11 workspace with a shared dependency catalog               |
+| Layer            | Tech                                                            |
+| ---------------- | --------------------------------------------------------------- |
+| **Electron App** | Electron 39, React 19, Vite 7 (electron-vite), Tailwind CSS 4   |
+| **Server**       | Fastify + tRPC, PostgreSQL/Drizzle, Redis/BullMQ, MinIO, Pino   |
+| **Monitor SDK**  | Sentry browser/React/Electron integrations + replay and metrics |
+| **Desktop UI**   | React 19, TanStack Query, Base UI, CodeMirror, TipTap           |
+| **Package Mgr**  | pnpm 11 workspace with a shared dependency catalog              |
 
 ### Key Dependencies
 

@@ -29,12 +29,12 @@ Flow:
 
 ### Environment variables
 
-| Var                      | Default                 | Meaning                                                   |
-| ------------------------ | ----------------------- | --------------------------------------------------------- |
-| `TARGET_URL`             | `http://127.0.0.1:3000` | Server base URL                                           |
-| `ACCESS_TOKEN`           | — (required)            | User access JWT for the tRPC project creation mutation    |
-| `RATE`                   | `50`                    | Requests per second                                       |
-| `DURATION`               | `15m`                   | Test duration (any k6 duration string, e.g. `30s`, `1h`)  |
+| Var            | Default                 | Meaning                                                  |
+| -------------- | ----------------------- | -------------------------------------------------------- |
+| `TARGET_URL`   | `http://127.0.0.1:3000` | Server base URL                                          |
+| `ACCESS_TOKEN` | — (required)            | User access JWT for the tRPC project creation mutation   |
+| `RATE`         | `50`                    | Requests per second                                      |
+| `DURATION`     | `15m`                   | Test duration (any k6 duration string, e.g. `30s`, `1h`) |
 
 `preAllocatedVUs` / `maxVUs` scale with `RATE` (`max(20, rate)` / `max(100, rate * 3)`) so short warmups don't starve the arrival-rate executor at higher rates.
 

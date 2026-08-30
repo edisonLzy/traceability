@@ -131,17 +131,17 @@ Lists all metric names in the catalog for a project. Filters: `--prefix` (name p
 
 Queries time-series data for a named metric. `--type` and `--unit` can be omitted when the metric resolves unambiguously in the catalog. Key options:
 
-| Option | Default | Description |
-|---|---|---|
-| `--resolution <res>` | `1h` | Bucket size: `1m`, `5m`, `1h`, `1d` |
-| `--from` / `--to` | — | Time range (relative or ISO) |
-| `--attr <k=v>` | — | Attribute equality filter (repeatable, max 10) |
-| `--group-by <attr>` | — | Group by attribute value; returns aggregate table instead of time buckets |
-| `--order-by <col>` | `count` | Sort groups by `count|sum|min|max|avg|latest|p50|p95|p99` |
-| `--order-asc` | — | Ascending order (default descending) |
-| `--limit <n>` | `50` | Max groups (group-by mode) |
-| `--readable` | — | Human-readable summary + table |
-| `--trace-id` / `--span-id` | — | Scope to a specific trace/span |
+| Option                     | Default | Description                                                               |
+| -------------------------- | ------- | ------------------------------------------------------------------------- | --- | --- | --- | --- | ------ | --- | --- | ---- |
+| `--resolution <res>`       | `1h`    | Bucket size: `1m`, `5m`, `1h`, `1d`                                       |
+| `--from` / `--to`          | —       | Time range (relative or ISO)                                              |
+| `--attr <k=v>`             | —       | Attribute equality filter (repeatable, max 10)                            |
+| `--group-by <attr>`        | —       | Group by attribute value; returns aggregate table instead of time buckets |
+| `--order-by <col>`         | `count` | Sort groups by `count                                                     | sum | min | max | avg | latest | p50 | p95 | p99` |
+| `--order-asc`              | —       | Ascending order (default descending)                                      |
+| `--limit <n>`              | `50`    | Max groups (group-by mode)                                                |
+| `--readable`               | —       | Human-readable summary + table                                            |
+| `--trace-id` / `--span-id` | —       | Scope to a specific trace/span                                            |
 
 `counter` series returns `points[{ bucket, sum }]` + `summary.sum`.  
 `gauge` returns `points[{ bucket, latest, min, max, avg }]`.  
@@ -191,15 +191,15 @@ Shows a single node and all edges connected to it.
 
 Adds a node. Node-type-specific options:
 
-| Type | Required options | Optional options |
-|---|---|---|
-| `question` | `--prompt` | `--intent` |
-| `finding` | `--summary` | `--confidence 0–1`, `--status open\|confirmed\|rejected` |
-| `issue` | `--issue-id` | — |
-| `event` | `--event-id` | — |
-| `replay` | `--replay-id` | — |
-| `code` | `--path` | `--start-line`, `--end-line`, `--language`, `--snippet` |
-| `document` | `--doc-title` | `--path`, `--excerpt` |
+| Type       | Required options | Optional options                                         |
+| ---------- | ---------------- | -------------------------------------------------------- |
+| `question` | `--prompt`       | `--intent`                                               |
+| `finding`  | `--summary`      | `--confidence 0–1`, `--status open\|confirmed\|rejected` |
+| `issue`    | `--issue-id`     | —                                                        |
+| `event`    | `--event-id`     | —                                                        |
+| `replay`   | `--replay-id`    | —                                                        |
+| `code`     | `--path`         | `--start-line`, `--end-line`, `--language`, `--snippet`  |
+| `document` | `--doc-title`    | `--path`, `--excerpt`                                    |
 
 ### `graph node remove <graphId> <nodeId> --project-id <id>`
 
