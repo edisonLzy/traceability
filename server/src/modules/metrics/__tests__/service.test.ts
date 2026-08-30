@@ -237,22 +237,20 @@ describe("MetricsService", () => {
 
   it("groups slices columns per metric type (counter)", async () => {
     const repository = {
-      groups: vi
-        .fn()
-        .mockResolvedValue([
-          {
-            value: "/x",
-            count: 2,
-            sum: 7,
-            latest: 7,
-            min: 1,
-            max: 6,
-            avg: 3.5,
-            p50: 3.5,
-            p95: 6.9,
-            p99: 6.99,
-          },
-        ]),
+      groups: vi.fn().mockResolvedValue([
+        {
+          value: "/x",
+          count: 2,
+          sum: 7,
+          latest: 7,
+          min: 1,
+          max: 6,
+          avg: 3.5,
+          p50: 3.5,
+          p95: 6.9,
+          p99: 6.99,
+        },
+      ]),
     } as unknown as MetricsRepository;
     const service = new MetricsService(repository);
 

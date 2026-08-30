@@ -2,7 +2,6 @@ import type {
   AskUserQuestionInput,
   AskUserQuestionResult,
 } from "../../shared/ask-user-question-ipc.js";
-
 import { AbstractHumanInTheLoop } from "./abstract-human-in-the-loop.js";
 
 function requireText(value: unknown, field: string): string {

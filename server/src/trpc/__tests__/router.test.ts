@@ -109,15 +109,13 @@ function makeContext(overrides: Partial<Context["container"]> = {}): RequestCont
     renameGraph: vi.fn().mockResolvedValue({ id: "graph-1" }),
     archiveGraph: vi.fn().mockResolvedValue({ id: "graph-1" }),
     getOperations: vi.fn().mockResolvedValue([]),
-    applyOperations: vi
-      .fn()
-      .mockResolvedValue({
-        graphId: "graph-1",
-        version: 1,
-        alreadyApplied: false,
-        idMappings: {},
-        applied: [],
-      }),
+    applyOperations: vi.fn().mockResolvedValue({
+      graphId: "graph-1",
+      version: 1,
+      alreadyApplied: false,
+      idMappings: {},
+      applied: [],
+    }),
   } as unknown as Context["container"]["graphs"];
   const realtime = {
     createTicket: vi.fn().mockResolvedValue({ ticket: "ticket", expiresIn: 60 }),

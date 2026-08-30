@@ -8,7 +8,13 @@
   border-radius: 10px;
   background: #fafafa;
   font-family:
-    system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif;
   color: #1f2328;
 }
 
