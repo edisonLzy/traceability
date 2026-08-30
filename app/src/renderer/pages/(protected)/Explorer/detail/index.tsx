@@ -277,8 +277,11 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
 
         {selectedNode ? (
           <ExplorerGraphNodeDetail
+            edges={edges}
             graphId={graphId}
+            nodes={nodes}
             onClose={clearSelectedNode}
+            onSelectNode={selectNode}
             selectedNode={selectedNode}
           />
         ) : null}
