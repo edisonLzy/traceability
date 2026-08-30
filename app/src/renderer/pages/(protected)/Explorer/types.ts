@@ -12,6 +12,7 @@ export type ExplorerNode = ExplorerGraphSnapshot["nodes"][number];
 export type ExplorerEdge = ExplorerGraphSnapshot["edges"][number];
 export type ExplorerNodeType = ExplorerNode["type"];
 export type ExplorerNodeData = ExplorerNode["data"];
+export type CodeNodeData = Extract<ExplorerNodeData, { kind: "code" }>;
 export type ExplorerEdgeData = ExplorerEdge["data"];
 export type ExplorerRelationship = ExplorerEdgeData["relation"];
 export type GraphOperation = AppRouterInputs["graphs"]["applyOperations"]["operations"][number];

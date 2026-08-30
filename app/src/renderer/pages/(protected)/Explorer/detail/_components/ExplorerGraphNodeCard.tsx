@@ -70,7 +70,7 @@ export function getNodeTitle(data?: ExplorerNodeData) {
     case "replay":
       return `Replay ${data.replayId ? data.replayId.slice(0, 8) : ""}`;
     case "code":
-      return data.path ?? "Code";
+      return data.symbolName ? `${data.symbolName}` : (data.path ?? "Code");
     case "document":
       return data.title ?? "Document";
     default:
@@ -104,7 +104,10 @@ export function getNodeMeta(data?: ExplorerNodeData) {
   if (!data) return "Ready";
   if (data.kind === "finding" && data.confidence !== undefined)
     return `${Math.round(data.confidence * 100)}% confidence`;
-  if (data.kind === "code" && data.language) return data.language;
+  if (data.kind === "code") {
+    if (data.symbolType) return data.symbolType;
+    if (data.language) return data.language;
+  }
   if (data.kind === "finding" && data.status) return data.status;
   return "Ready";
 }

@@ -1,12 +1,14 @@
 import { useSharedPromptEditor } from "@extensions/core/renderer";
 import { Button } from "@renderer/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@renderer/components/ui/dialog";
+import { cn } from "@renderer/lib/utils";
 import { ArrowDownRight, ArrowUpRight, Check, Copy, Sparkles, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import type { ExplorerFlowEdge, ExplorerFlowNode, ExplorerNodeData } from "../../types";
 import { getNodeDescription, getNodeTitle, nodeIcon } from "./ExplorerGraphNodeCard";
+import { CodeNodeDetailContent } from "./NodeDetailContent/CodeNodeDetailContent";
 
 export interface ExplorerGraphNodeDetailProps {
   graphId: string;
@@ -140,7 +142,12 @@ export function ExplorerGraphNodeDetail({
         {/* Modal Body: Left Detail Area + Right Inspector Sidebar */}
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {/* Main Detail Area */}
-          <div className="flex flex-1 flex-col min-w-0 border-r-2 border-ink bg-card overflow-y-auto p-5 select-text">
+          <div
+            className={cn(
+              "flex flex-1 flex-col min-w-0 border-r-2 border-ink bg-card select-text",
+              nodeType === "code" ? "overflow-hidden p-0" : "overflow-y-auto p-5 select-text",
+            )}
+          >
             <NodeDetailContent data={selectedNode.data} nodeType={nodeType} />
           </div>
 
@@ -292,53 +299,7 @@ function NodeDetailContent({ data, nodeType }: { data?: ExplorerNodeData; nodeTy
 
   switch (data.kind) {
     case "code": {
-      return (
-        <div className="flex flex-col flex-1 h-full min-h-0 space-y-4">
-          <div className="flex items-center justify-between border-b border-ink/15 pb-3 shrink-0">
-            <div className="space-y-1">
-              <div className="font-mono text-[10px] font-bold uppercase text-tertiary">
-                Code Reference
-              </div>
-              <div className="font-mono text-xs font-bold text-ink">{data.path || "Untitled"}</div>
-            </div>
-            <div className="flex items-center gap-2 font-mono text-[10px]">
-              {data.language ? (
-                <span className="rounded bg-muted px-2 py-0.5 border border-ink/20 font-bold uppercase text-ink">
-                  {data.language}
-                </span>
-              ) : null}
-              {data.startLine ? (
-                <span className="rounded bg-primary/15 px-2 py-0.5 border border-ink/20 font-bold text-primary">
-                  L{data.startLine}
-                  {data.endLine ? `-L${data.endLine}` : ""}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="flex flex-col flex-1 min-h-0">
-            <div className="mb-2 flex items-center justify-between font-mono text-[10px] font-bold uppercase text-tertiary shrink-0">
-              <span>Code Snippet</span>
-              <button
-                className="hover:text-primary transition-colors flex items-center gap-1"
-                onClick={() => {
-                  if (data.snippet) {
-                    void navigator.clipboard.writeText(data.snippet);
-                    toast.success("Code snippet copied");
-                  }
-                }}
-                type="button"
-              >
-                <Copy className="size-3" />
-                <span>Copy</span>
-              </button>
-            </div>
-            <pre className="flex-1 min-h-0 overflow-auto rounded-[6px] border-2 border-ink bg-code-bg p-4 font-mono text-[11.5px] leading-relaxed text-code-text shadow-[2px_2px_0_var(--ink)]">
-              <code>{data.snippet || "// No code snippet text available."}</code>
-            </pre>
-          </div>
-        </div>
-      );
+      return <CodeNodeDetailContent data={data} />;
     }
 
     case "finding": {

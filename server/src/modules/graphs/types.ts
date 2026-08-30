@@ -58,6 +58,17 @@ export interface CodeNodeData {
   endLine?: number;
   language?: string;
   snippet?: string;
+  symbolName?: string;
+  symbolType?: "function" | "component" | "method" | "hook" | "class" | string;
+  focusRange?: {
+    startLine: number;
+    endLine: number;
+    severity?: "error" | "warning" | "info";
+  };
+  enclosingRange?: {
+    startLine: number;
+    endLine: number;
+  };
 }
 export interface DocumentNodeData {
   kind: "document";
@@ -294,6 +305,21 @@ const codeNodeDataSchema = z.object({
   endLine: z.number().int().min(1).optional(),
   language: z.string().optional(),
   snippet: z.string().optional(),
+  symbolName: z.string().optional(),
+  symbolType: z.string().optional(),
+  focusRange: z
+    .object({
+      startLine: z.number().int().min(1),
+      endLine: z.number().int().min(1),
+      severity: z.enum(["error", "warning", "info"]).optional(),
+    })
+    .optional(),
+  enclosingRange: z
+    .object({
+      startLine: z.number().int().min(1),
+      endLine: z.number().int().min(1),
+    })
+    .optional(),
 });
 const documentNodeDataSchema = z.object({
   kind: z.literal("document"),

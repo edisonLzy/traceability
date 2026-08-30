@@ -173,6 +173,17 @@ export default defineMainExtension({
           endLine: Type.Optional(Type.Number()),
           language: Type.Optional(Type.String()),
           snippet: Type.Optional(Type.String()),
+          symbolName: Type.Optional(Type.String()),
+          symbolType: Type.Optional(Type.String()),
+          focusRange: Type.Optional(
+            Type.Object({
+              startLine: Type.Number(),
+              endLine: Type.Number(),
+              severity: Type.Optional(
+                Type.Union([Type.Literal("error"), Type.Literal("warning"), Type.Literal("info")]),
+              ),
+            }),
+          ),
           x: Type.Optional(Type.Number()),
           y: Type.Optional(Type.Number()),
         }),
@@ -183,6 +194,9 @@ export default defineMainExtension({
           ...(args.endLine !== undefined ? { endLine: args.endLine } : {}),
           ...(args.language ? { language: args.language } : {}),
           ...(args.snippet ? { snippet: args.snippet } : {}),
+          ...(args.symbolName ? { symbolName: args.symbolName } : {}),
+          ...(args.symbolType ? { symbolType: args.symbolType } : {}),
+          ...(args.focusRange ? { focusRange: args.focusRange } : {}),
         }),
         ctx,
       ),
