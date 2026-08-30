@@ -1,10 +1,13 @@
 import "@xyflow/react/dist/style.css";
+import { Button } from "@renderer/components/ui/button";
 import { projectStore } from "@renderer/store/project";
 import {
   Background,
   BackgroundVariant,
   Controls,
+  MarkerType,
   MiniMap,
+  Panel,
   ReactFlow,
   type Node,
   type OnEdgesDelete,
@@ -12,9 +15,13 @@ import {
   type OnNodesDelete,
   useEdgesState,
   useNodesState,
+  useReactFlow,
+  ReactFlowProvider,
 } from "@xyflow/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Sparkles, ZoomIn } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useStore } from "zustand";
 
 import type {
@@ -29,6 +36,7 @@ import { ExplorerGraphRealtimeStatus } from "./_components/ExplorerGraphRealtime
 import { useApplyGraphOperations } from "./_hooks/use-apply-graph-operations";
 import { useExplorerGraphRealtime } from "./_hooks/use-explorer-graph-realtime";
 import { useExplorerGraphState } from "./_hooks/use-explorer-graph-state";
+import { getHorizontalTreeLayout, isGraphOverlapping } from "./_utils/layout";
 
 const nodeTypes = {
   // Every server node type uses the same card renderer. The node type controls
@@ -47,13 +55,20 @@ export function ExplorerGraphDetailPage() {
   const project = useStore(projectStore, (state) => state.currentProject);
 
   if (!project || !graphId) {
-    return <div className="p-6 text-[12px] text-tertiary">Graph context is unavailable.</div>;
+    return (
+      <div className="p-6 font-mono text-[11px] text-tertiary">Graph context is unavailable.</div>
+    );
   }
 
-  return <ExplorerCanvas graphId={graphId} projectId={project.id} />;
+  return (
+    <ReactFlowProvider>
+      <ExplorerCanvas graphId={graphId} projectId={project.id} />
+    </ReactFlowProvider>
+  );
 }
 
 function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: string }) {
+  const { fitView } = useReactFlow();
   const state = useExplorerGraphState(projectId, graphId);
   const realtime = useExplorerGraphRealtime({
     projectId,
@@ -65,12 +80,65 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
   const [nodes, setNodes, onNodesChange] = useNodesState<ExplorerFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<ExplorerFlowEdge>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const initialAutoLayoutAppliedRef = useRef(false);
+  const applyOperationsRef = useRef(applyOperations);
+  applyOperationsRef.current = applyOperations;
 
+  // Synchronize from snapshot and auto-layout if initial nodes are overlapping
   useEffect(() => {
     if (!state.snapshot) return;
-    setNodes(state.snapshot.nodes.map(toFlowNode));
-    setEdges(state.snapshot.edges.map(toFlowEdge));
+
+    let snapshotNodes = state.snapshot.nodes.map(toFlowNode);
+    const snapshotEdges = state.snapshot.edges.map(toFlowEdge);
+
+    // Auto-organize overlapping nodes on initial load (e.g. newly created graph from agent)
+    if (
+      !initialAutoLayoutAppliedRef.current &&
+      snapshotNodes.length > 1 &&
+      isGraphOverlapping(snapshotNodes)
+    ) {
+      initialAutoLayoutAppliedRef.current = true;
+      snapshotNodes = getHorizontalTreeLayout(snapshotNodes, snapshotEdges);
+
+      // Persist the tidy tree positions back to server in background
+      const moveOps: GraphOperation[] = [
+        {
+          op: "moveNodes",
+          positions: snapshotNodes.map((n) => ({ id: n.id, position: n.position })),
+        },
+      ];
+      void applyOperationsRef.current(moveOps).catch(() => {});
+    }
+
+    setNodes(snapshotNodes);
+    setEdges(snapshotEdges);
   }, [state.snapshot, setEdges, setNodes]);
+
+  // Handle manual "Auto Layout" request
+  const handleAutoLayout = useCallback(async () => {
+    if (nodes.length === 0) return;
+
+    const layoutedNodes = getHorizontalTreeLayout(nodes, edges);
+    setNodes(layoutedNodes);
+
+    try {
+      await applyOperations([
+        {
+          op: "moveNodes",
+          positions: layoutedNodes.map((node) => ({
+            id: node.id,
+            position: node.position,
+          })),
+        },
+      ]);
+      setTimeout(() => {
+        fitView({ padding: 0.25, duration: 300 });
+      }, 50);
+      toast.success("Horizontal tree layout applied");
+    } catch {
+      toast.error("Failed to save layout positions");
+    }
+  }, [applyOperations, edges, fitView, nodes, setNodes]);
 
   const moveNode = useCallback<OnNodeDrag<ExplorerFlowNode>>(
     async (_event, node) => {
@@ -123,7 +191,7 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
 
   if (state.isLoading) {
     return (
-      <div className="flex h-full min-h-[620px] items-center justify-center text-[11px] text-tertiary">
+      <div className="flex h-full min-h-[620px] items-center justify-center font-mono text-[11px] text-tertiary">
         Loading graph…
       </div>
     );
@@ -131,7 +199,7 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
 
   if (state.error) {
     return (
-      <div className="m-5 rounded-[10px] border border-danger/20 bg-danger/5 p-3 text-[11px] text-danger">
+      <div className="m-5 rounded-[6px] border-2 border-danger/40 bg-danger/10 p-3 font-mono text-[11px] text-danger shadow-[2px_2px_0_var(--ink)]">
         Unable to load graph: {state.error.message}
       </div>
     );
@@ -139,7 +207,7 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
 
   return (
     <div className="p-2 h-full">
-      <div className="explorer-graph-canvas relative h-full overflow-hidden rounded-[14px] border border-hairline bg-canvas/70">
+      <div className="explorer-graph-canvas relative h-full overflow-hidden rounded-[8px] border-2 border-border bg-canvas/90">
         <ExplorerGraphRealtimeStatus realtime={realtime} />
 
         <ReactFlow
@@ -161,17 +229,48 @@ function ExplorerCanvas({ projectId, graphId }: { projectId: string; graphId: st
           nodesConnectable={false}
           proOptions={{ hideAttribution: true }}
         >
+          {/* Neo-Brutalist Canvas Toolbar Panel */}
+          <Panel className="m-3 flex items-center gap-2" position="top-left">
+            <Button
+              className="border-2 border-ink bg-card text-ink shadow-[2px_2px_0_var(--ink)] hover:translate-x-px hover:translate-y-px hover:shadow-none font-mono font-bold text-[10px] uppercase tracking-wider transition-all"
+              onClick={handleAutoLayout}
+              size="sm"
+              title="Organize into Left-to-Right tree layout"
+              type="button"
+              variant="default"
+            >
+              <Sparkles className="size-3.5 text-primary-hover" />
+              Auto Tree Layout
+            </Button>
+            <Button
+              className="border-2 border-ink bg-card text-ink shadow-[2px_2px_0_var(--ink)] hover:translate-x-px hover:translate-y-px hover:shadow-none font-mono font-bold text-[10px] uppercase tracking-wider transition-all"
+              onClick={() => fitView({ padding: 0.2, duration: 250 })}
+              size="sm"
+              title="Fit graph into view"
+              type="button"
+              variant="default"
+            >
+              <ZoomIn className="size-3.5" />
+              Fit
+            </Button>
+            <div className="flex items-center gap-1.5 rounded-[4px] border-2 border-ink bg-card px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground shadow-[2px_2px_0_var(--ink)]">
+              <span>{nodes.length} nodes</span>
+              <span>·</span>
+              <span>{edges.length} edges</span>
+            </div>
+          </Panel>
+
           <Background
             color="var(--hairline-strong)"
-            gap={24}
-            size={1.2}
+            gap={20}
+            size={1.5}
             variant={BackgroundVariant.Dots}
           />
           <Controls position="bottom-left" showInteractive={false} />
           <MiniMap
-            className="!border-hairline !bg-surface-glass-elevated"
+            className="!border-2 !border-ink !bg-card !rounded-[6px] !shadow-[3px_3px_0_var(--ink)]"
             nodeColor={getMiniMapNodeColor}
-            nodeStrokeColor="var(--hairline-strong)"
+            nodeStrokeColor="var(--ink)"
             position="bottom-right"
           />
         </ReactFlow>
@@ -197,35 +296,47 @@ function toFlowEdge(edge: ExplorerGraphSnapshot["edges"][number]): ExplorerFlowE
     ...edge,
     type: "smoothstep",
     label: edge.data.relation.replaceAll("_", " "),
-    labelBgBorderRadius: 6,
+    labelBgBorderRadius: 4,
     labelBgPadding: [6, 3],
     labelBgStyle: {
-      fill: "var(--surface-glass-elevated)",
-      stroke: "var(--hairline)",
-      strokeWidth: 1,
+      fill: "var(--card)",
+      stroke: "var(--ink)",
+      strokeWidth: 1.5,
     },
     labelStyle: {
-      fill: "var(--tertiary)",
-      fontSize: 9,
-      fontWeight: 650,
+      fill: "var(--ink)",
+      fontSize: 9.5,
+      fontWeight: 700,
+      fontFamily: "var(--font-mono)",
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: "var(--ink)",
+      width: 14,
+      height: 14,
     },
     style: {
-      stroke: "color-mix(in srgb, var(--primary) 46%, var(--hairline-strong))",
-      strokeWidth: 1.75,
+      stroke: "var(--ink)",
+      strokeWidth: 2,
     },
   } as ExplorerFlowEdge;
 }
 
 function getMiniMapNodeColor(node: Node) {
   switch (node.type) {
+    case "question":
+      return "var(--signal-yellow)";
     case "finding":
-      return "var(--success)";
+      return "var(--signal-green)";
     case "issue":
-      return "var(--danger)";
+      return "var(--signal-pink)";
     case "event":
-      return "var(--info)";
+      return "var(--signal-cyan)";
+    case "replay":
+    case "code":
+      return "var(--signal-purple)";
     case "document":
-      return "var(--warning)";
+      return "var(--signal-yellow)";
     default:
       return "var(--primary)";
   }

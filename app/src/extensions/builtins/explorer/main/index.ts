@@ -445,17 +445,61 @@ function createNodeTool(
     executionMode: "sequential" as const,
     parameters,
     async execute(_toolCallId: string, args: any) {
+      const nodeData = data(args);
+      const position = await calculateTreePosition(
+        args.projectId,
+        args.graphId,
+        nodeData.kind as string,
+        args.x,
+        args.y,
+      );
       const result = await apply(ctx, {
         projectId: args.projectId,
         graphId: args.graphId,
         op: "createNode",
         id: `tmp_${randomUUID()}`,
-        type: data(args).kind,
-        position: { x: args.x ?? 80, y: args.y ?? 80 },
-        data: data(args),
+        type: nodeData.kind,
+        position,
+        data: nodeData,
       });
-      return resultText(`Created ${data(args).kind} node`, result);
+      return resultText(`Created ${nodeData.kind} node`, result);
     },
+  };
+}
+
+async function calculateTreePosition(
+  projectId: string,
+  graphId: string,
+  kind: string,
+  explicitX?: number,
+  explicitY?: number,
+) {
+  if (explicitX !== undefined && explicitY !== undefined) {
+    return { x: explicitX, y: explicitY };
+  }
+  const snapshot = await client.graphs.get.query({ projectId, graphId }).catch(() => null);
+  const nodes = snapshot?.nodes ?? [];
+
+  let colIndex = 0;
+  if (kind === "question") {
+    colIndex = 0;
+  } else if (kind === "finding") {
+    colIndex = 1;
+  } else {
+    colIndex = 2;
+  }
+
+  const colX = 80 + colIndex * 340;
+  const nodesInCol = nodes.filter((n: { type: string }) => {
+    if (colIndex === 0) return n.type === "question";
+    if (colIndex === 1) return n.type === "finding";
+    return n.type !== "question" && n.type !== "finding";
+  });
+  const colY = 80 + nodesInCol.length * 160;
+
+  return {
+    x: explicitX ?? colX,
+    y: explicitY ?? colY,
   };
 }
 

@@ -45,11 +45,14 @@ export function useExplorerGraphState(
     commitSnapshot(query.data);
   }, [query.data, commitSnapshot]);
 
+  const refetchRef = useRef(query.refetch);
+  refetchRef.current = query.refetch;
+
   const resync = useCallback(async () => {
-    const result = await query.refetch();
+    const result = await refetchRef.current();
     if (result.data) commitSnapshot(result.data);
     return result.data ?? null;
-  }, [query, commitSnapshot]);
+  }, [commitSnapshot]);
 
   return {
     snapshot,

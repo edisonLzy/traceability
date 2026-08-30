@@ -1,5 +1,5 @@
 import { trpc } from "@renderer/lib/trpc";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
 import type { ApplyGraphOperationsResult, GraphOperation } from "../../types";
@@ -94,7 +94,7 @@ export function useApplyGraphOperations({
     ],
   );
 
-  return { applyOperations };
+  return useMemo(() => ({ applyOperations }), [applyOperations]);
 }
 
 function getTrpcErrorCode(cause: unknown): string | undefined {
