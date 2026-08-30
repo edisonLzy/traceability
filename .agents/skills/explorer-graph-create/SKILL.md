@@ -23,6 +23,16 @@ Use this skill only when the user explicitly asks to create an Exploring Graph.
 - If creation succeeds but a later node or edge operation fails, report the committed graph and the failed operation. Do not silently delete or roll back committed data.
 - If the user cancels or asks to modify context, stop mutations and return to context collection.
 
+## Layout and Coordinate Rules
+
+Explorer Graph adopts a **Left-to-Right Horizontal Tree Layout** with **Neo-Brutalism** aesthetics:
+
+- **Left Column (Root Level, x: 80)**: Place the root `question` node (e.g. `x: 80, y: 160`).
+- **Middle Column (Level 1, x: 420)**: Place intermediate `finding` nodes (e.g. `x: 420, y: 80`, `x: 420, y: 240`).
+- **Right Column (Level 2, x: 760)**: Place evidence leaf nodes such as `code`, `issue`, `event`, `replay`, or `document` (e.g. `x: 760, y: 80`, `x: 760, y: 240`, `x: 760, y: 400`).
+- **Vertical Spacing**: Maintain at least `160px` vertical distance between sibling nodes to ensure comfortable spacing and eliminate any overlaps.
+- Explorer tools will automatically apply smart horizontal tree layout coordinates when `x` and `y` are omitted.
+
 ## Preview format
 
 ```text
@@ -32,12 +42,12 @@ Use this skill only when the user explicitly asks to create an Exploring Graph.
 - Intent：<confirmed investigation intent>
 - Evidence scope：<confirmed scope>
 
-预计创建：
+预计创建（左根右叶横向树）：
 
-Question: <question>
-  ├── Issue: <issue>
-  └── Finding: 待 Agent 调查
-        └── Code: 待定位
+Question: <question> (x: 80)
+  ├── Issue: <issue> (x: 420)
+  └── Finding: 待 Agent 调查 (x: 420)
+        └── Code: 待定位 (x: 760)
 ```
 
 Explorer tools require explicit `projectId` and `graphId` arguments. Use only the typed Explorer tools exposed by the app after the user confirms the preview.

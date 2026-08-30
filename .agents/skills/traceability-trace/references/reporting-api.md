@@ -8,20 +8,26 @@ How to use `@tracerability/monitor`'s methods when instrumenting a **user flow /
 
 The SDK is `@tracerability/monitor`; every method below exists on the root (`browser`), `/electron-main`, and `/electron-renderer` subpaths unless noted.
 
-| Method | Signature | Use at which trace position |
-|---|---|---|
-| `setTag` | `setTag(key: string, value: string)` | Flow entry - `setTag("flow", "<name>")` groups every event in this flow. |
-| `addBreadcrumb` | `addBreadcrumb({ category, message, level?, data? })` | Entry + each step - leaves a trail the next error event carries. |
-| `captureMessage` | `captureMessage(msg, opts?)` | Each step's success (`<flow>-<step>`) and failure (`<flow>-<step>-failed`), passed as the message. |
-| `captureException` | `captureException(err)` | Every real error path - reports the error with stacktrace. |
-| `setContext` | `setContext(key, obj)` | Attach structured state (e.g. the current request) to subsequent events. |
-| `MonitorErrorBoundary` | `(appName?, fallback, children, onError?)` | React only (`@tracerability/monitor/react`) - wrap a flow's root to capture render errors. |
-| `useMonitorTag` | `() => (key, value) => void` | React only (`@tracerability/monitor/react`) - a hook-wrapped `setTag`. |
+| Method                 | Signature                                             | Use at which trace position                                                                        |
+| ---------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `setTag`               | `setTag(key: string, value: string)`                  | Flow entry - `setTag("flow", "<name>")` groups every event in this flow.                           |
+| `addBreadcrumb`        | `addBreadcrumb({ category, message, level?, data? })` | Entry + each step - leaves a trail the next error event carries.                                   |
+| `captureMessage`       | `captureMessage(msg, opts?)`                          | Each step's success (`<flow>-<step>`) and failure (`<flow>-<step>-failed`), passed as the message. |
+| `captureException`     | `captureException(err)`                               | Every real error path - reports the error with stacktrace.                                         |
+| `setContext`           | `setContext(key, obj)`                                | Attach structured state (e.g. the current request) to subsequent events.                           |
+| `MonitorErrorBoundary` | `(appName?, fallback, children, onError?)`            | React only (`@tracerability/monitor/react`) - wrap a flow's root to capture render errors.         |
+| `useMonitorTag`        | `() => (key, value) => void`                          | React only (`@tracerability/monitor/react`) - a hook-wrapped `setTag`.                             |
 
 Import:
 
 ```ts
-import { addBreadcrumb, captureException, captureMessage, setTag, setContext } from "@tracerability/monitor";
+import {
+  addBreadcrumb,
+  captureException,
+  captureMessage,
+  setTag,
+  setContext,
+} from "@tracerability/monitor";
 ```
 
 > There is **no** `report` / `reportPerformance` / `setApp` / `useMonitorReport` in this SDK. Flow-step events are `captureMessage` calls; timing rides in the message's `extra`. (If the SDK later grows a `report` API, prefer it for step events — but today it does not exist.)
@@ -142,7 +148,7 @@ function LoginForm() {
 // Wrap a flow's root component to capture render errors as part of the trace:
 <MonitorErrorBoundary appName="login" fallback={<ErrorUI />}>
   <LoginForm />
-</MonitorErrorBoundary>
+</MonitorErrorBoundary>;
 ```
 
 There is no `useMonitorReport` — for a step event from a component, call `captureMessage` (imported from the root `@tracerability/monitor`) directly.
@@ -150,6 +156,7 @@ There is no `useMonitorReport` — for a step event from a component, call `capt
 ## metrics API
 
 用于**计数、度量、分布**场景（不产生 Issue，直接按时间序列聚合）。适合：
+
 - 每日/每小时事件计数（消息数、登录次数）
 - 数值指标（延迟、队列长度）
 - 统计分布（响应时间 p50/p95/p99）
@@ -162,10 +169,10 @@ import { metrics } from "@tracerability/monitor";
 
 ### 三个 API
 
-| API | 内部 type | 适用场景 |
-|---|---|---|
-| `metrics.count(name, value, options?)` | `counter` | 计数，如消息发送次数 |
-| `metrics.gauge(name, value, options?)` | `gauge` | 当前值，如在线人数、队列深度 |
+| API                                           | 内部 type      | 适用场景                            |
+| --------------------------------------------- | -------------- | ----------------------------------- |
+| `metrics.count(name, value, options?)`        | `counter`      | 计数，如消息发送次数                |
+| `metrics.gauge(name, value, options?)`        | `gauge`        | 当前值，如在线人数、队列深度        |
 | `metrics.distribution(name, value, options?)` | `distribution` | 延迟/时长分布，自动计算 p50/p95/p99 |
 
 `value` 默认为 1（`count` 时可省略）。
@@ -173,10 +180,11 @@ import { metrics } from "@tracerability/monitor";
 ### options
 
 ```ts
-metrics.count('chat.message.sent', 1, {
-  unit: 'none',                        // 可选，传给 series 查询时需要对应
-  attributes: {                        // 可选，最多 10 个，支持过滤/分组
-    sessionType: 'private',
+metrics.count("chat.message.sent", 1, {
+  unit: "none", // 可选，传给 series 查询时需要对应
+  attributes: {
+    // 可选，最多 10 个，支持过滤/分组
+    sessionType: "private",
   },
 });
 ```
@@ -210,7 +218,7 @@ metrics.count('chat.message.sent', 1, {
 
 ## Choosing `captureMessage` vs `captureException` vs `addBreadcrumb` vs `metrics`
 
-- **`addBreadcrumb`** - "what just happened" context that rides along on the *next* error. Cheap; use liberally at every step. Does not create an issue by itself.
+- **`addBreadcrumb`** - "what just happened" context that rides along on the _next_ error. Cheap; use liberally at every step. Does not create an issue by itself.
 - **`captureMessage`** - a discrete event you want to see/count in the Inbox (step reached, step failed). Creates an issue keyed by its message/fingerprint.
 - **`captureException`** - an actual error with a stacktrace. Always pair it with a `captureMessage(...-failed)` so the failure is also visible as a typed event, not only as an error issue.
 - **`metrics.count/gauge/distribution`** - time-series data, does NOT go to the Inbox. Use when the goal is "how many times did this happen" or "what is this value over time". Do not use `captureMessage` to simulate a counter — use `metrics.count` instead.

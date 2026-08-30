@@ -16,6 +16,7 @@ traceability issue show <id> --json
 `issue show` returns the **issue row** (not the raw event): `id`, `projectId`, `title`, `type`, `status`, `eventCount`, `firstSeen`, `lastSeen`. The `title` is the aggregation key — for `captureMessage` events it's the message string, for exceptions it's derived from the error. There is **no** `metadata.*` / `tags.*` block in this response.
 
 > The CLI does not currently expose event payloads. To see a concrete event's stacktrace / `extra` / breadcrumbs:
+>
 > - **Inbox UI** — open the issue; the event payloads are rendered there.
 > - **Server tRPC** — the `issues.events` procedure (`GET /api/trpc/issues.events?input=…` with the Bearer token from `~/.traceability/config.json`) returns the events with their `payload` (the original Sentry event JSON: `exception.values[].stacktrace.frames[]`, `tags`, `extra`, `breadcrumbs`). The CLI doesn't wrap it yet; if you need CLI access, add an `issue events <issueId>` command to `packages/cli/src/commands/issue.ts` (mirrors `issue show`).
 
