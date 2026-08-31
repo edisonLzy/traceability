@@ -1,5 +1,22 @@
 # @tracerability/cli Changelog
 
+## [1.5.3](https://github.com/edisonLzy/traceability/compare/@tracerability/cli@1.5.2...@tracerability/cli@1.5.3) (2026-08-31)
+
+### Features
+
+* **app:** add auto-layout for Explorer graph nodes ([8d489e4](https://github.com/edisonLzy/traceability/commit/8d489e49143c0de70081484fbda97897f706ef7f))
+* **app:** add custom animation system for Explorer graph nodes and edges ([4b5a43a](https://github.com/edisonLzy/traceability/commit/4b5a43ac63f863707214f313c1334de5176b05aa))
+* **app:** add GitHub release updates ([1257131](https://github.com/edisonLzy/traceability/commit/125713112b4ce49d3dc8a682db95686966ccca01))
+* **app:** add native update menu item ([d33443a](https://github.com/edisonLzy/traceability/commit/d33443a0538070a5f4fd9f4f8003ff0175658205))
+* **explorer:** add youtube node support with progress seeking and footer layout ([58fffd0](https://github.com/edisonLzy/traceability/commit/58fffd04ee3406365f4c8fb47ea1c66aaf1c90d1))
+* **explorer:** implement browser node with anchor projection and runtime pool ([b721a09](https://github.com/edisonLzy/traceability/commit/b721a09df3c14600f5673a551cb0a02a1857314d))
+* **explorer:** implement CodeNodeDetailContent with CodeMirror 6 and fix clipboard paste ([1b03ad5](https://github.com/edisonLzy/traceability/commit/1b03ad5a385b4351a46f2ab92a2e039a300dfcee))
+* **explorer:** refactor node detail preview to full dialog overlay ([280a294](https://github.com/edisonLzy/traceability/commit/280a29445a3f9bbf2e6f5faa544faf6f6bded587))
+
+### Bug Fixes
+
+* **app:** avoid GitHub API rate limit for mac updates ([0280353](https://github.com/edisonLzy/traceability/commit/02803532198d1477739df2bbcf157d258104c993))
+
 ## [1.5.2](https://github.com/edisonLzy/traceability/compare/@tracerability/cli@1.5.1...@tracerability/cli@1.5.2) (2026-08-19)
 
 ### Bug Fixes
