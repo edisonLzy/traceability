@@ -8,6 +8,7 @@ export const GRAPH_NODE_TYPES = [
   "replay",
   "code",
   "document",
+  "youtube",
 ] as const;
 
 export type GraphNodeType = (typeof GRAPH_NODE_TYPES)[number];
@@ -76,6 +77,25 @@ export interface DocumentNodeData {
   path?: string;
   excerpt?: string;
 }
+export interface YoutubeBookmark {
+  id: string;
+  time: number;
+  label: string;
+  description?: string;
+}
+export interface YoutubeNodeData {
+  kind: "youtube";
+  url: string;
+  videoId?: string;
+  title?: string;
+  authorName?: string;
+  thumbnailUrl?: string;
+  duration?: number;
+  startTime?: number;
+  endTime?: number;
+  bookmarks?: YoutubeBookmark[];
+  transcriptExcerpt?: string;
+}
 
 export type GraphNodeData =
   | QuestionNodeData
@@ -84,7 +104,8 @@ export type GraphNodeData =
   | EventNodeData
   | ReplayNodeData
   | CodeNodeData
-  | DocumentNodeData;
+  | DocumentNodeData
+  | YoutubeNodeData;
 
 export interface GraphEdgeData {
   relation: GraphRelationship;
@@ -327,6 +348,25 @@ const documentNodeDataSchema = z.object({
   path: z.string().optional(),
   excerpt: z.string().optional(),
 });
+const youtubeBookmarkSchema = z.object({
+  id: z.string().min(1),
+  time: z.number().min(0),
+  label: z.string().min(1),
+  description: z.string().optional(),
+});
+const youtubeNodeDataSchema = z.object({
+  kind: z.literal("youtube"),
+  url: z.string().min(1),
+  videoId: z.string().optional(),
+  title: z.string().optional(),
+  authorName: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
+  duration: z.number().min(0).optional(),
+  startTime: z.number().min(0).optional(),
+  endTime: z.number().min(0).optional(),
+  bookmarks: z.array(youtubeBookmarkSchema).optional(),
+  transcriptExcerpt: z.string().optional(),
+});
 
 export const nodeDataSchema = z.discriminatedUnion("kind", [
   questionNodeDataSchema,
@@ -336,6 +376,7 @@ export const nodeDataSchema = z.discriminatedUnion("kind", [
   replayNodeDataSchema,
   codeNodeDataSchema,
   documentNodeDataSchema,
+  youtubeNodeDataSchema,
 ]);
 
 const createNodeSchema = z.object({

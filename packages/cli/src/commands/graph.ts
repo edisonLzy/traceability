@@ -70,6 +70,14 @@ interface NodeAddOptions {
   // document (--doc-title avoids collision with graph --title)
   docTitle?: string;
   excerpt?: string;
+  // youtube
+  url?: string;
+  videoTitle?: string;
+  videoId?: string;
+  duration?: string;
+  startTime?: string;
+  endTime?: string;
+  transcript?: string;
   json?: boolean;
 }
 
@@ -128,6 +136,12 @@ function nodeLabel(type: string, data: Record<string, unknown>): string {
       return typeof data.eventId === "string" ? data.eventId : "";
     case "replay":
       return typeof data.replayId === "string" ? data.replayId : "";
+    case "youtube":
+      return typeof data.title === "string"
+        ? data.title
+        : typeof data.url === "string"
+          ? data.url
+          : "";
     default:
       return "";
   }
@@ -194,9 +208,25 @@ function buildNodeData(opts: NodeAddOptions): Record<string, unknown> {
         ...(opts.excerpt ? { excerpt: opts.excerpt } : {}),
       };
     }
+    case "youtube": {
+      if (!opts.url) throw new Error("--url is required for --type youtube");
+      const duration = opts.duration !== undefined ? Number(opts.duration) : undefined;
+      const startTime = opts.startTime !== undefined ? Number(opts.startTime) : undefined;
+      const endTime = opts.endTime !== undefined ? Number(opts.endTime) : undefined;
+      return {
+        kind: "youtube",
+        url: opts.url,
+        ...(opts.videoTitle ? { title: opts.videoTitle } : {}),
+        ...(opts.videoId ? { videoId: opts.videoId } : {}),
+        ...(duration !== undefined ? { duration } : {}),
+        ...(startTime !== undefined ? { startTime } : {}),
+        ...(endTime !== undefined ? { endTime } : {}),
+        ...(opts.transcript ? { transcriptExcerpt: opts.transcript } : {}),
+      };
+    }
     default:
       throw new Error(
-        `Unknown --type "${opts.type}". Must be one of: question, finding, issue, event, replay, code, document`,
+        `Unknown --type "${opts.type}". Must be one of: question, finding, issue, event, replay, code, document, youtube`,
       );
   }
 }
@@ -370,9 +400,14 @@ export function graphCommand(program: Command): void {
 
   nodeCmd
     .command("add <graphId>")
-    .description("add a node to a graph (--type question|finding|issue|event|replay|code|document)")
+    .description(
+      "add a node to a graph (--type question|finding|issue|event|replay|code|document|youtube)",
+    )
     .requiredOption("--project-id <id>", "project ID")
-    .requiredOption("--type <kind>", "node type: question|finding|issue|event|replay|code|document")
+    .requiredOption(
+      "--type <kind>",
+      "node type: question|finding|issue|event|replay|code|document|youtube",
+    )
     // question
     .option("--prompt <text>", "(question) question prompt")
     .option("--intent <text>", "(question) investigation intent")
@@ -393,6 +428,14 @@ export function graphCommand(program: Command): void {
     // document
     .option("--doc-title <text>", "(document) document title")
     .option("--excerpt <text>", "(document) document excerpt")
+    // youtube
+    .option("--url <url>", "(youtube) video URL")
+    .option("--video-title <text>", "(youtube) video title")
+    .option("--video-id <id>", "(youtube) video ID")
+    .option("--duration <seconds>", "(youtube) total duration in seconds")
+    .option("--start-time <seconds>", "(youtube) initial start playback time")
+    .option("--end-time <seconds>", "(youtube) clip end time")
+    .option("--transcript <text>", "(youtube) transcript excerpt")
     .option("--json", "output JSON")
     .action(async (graphId: string, opts: NodeAddOptions) => {
       const data = buildNodeData(opts);

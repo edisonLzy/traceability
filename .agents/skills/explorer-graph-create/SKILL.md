@@ -29,7 +29,7 @@ Explorer Graph adopts a **Left-to-Right Horizontal Tree Layout** with **Neo-Brut
 
 - **Left Column (Root Level, x: 80)**: Place the root `question` node (e.g. `x: 80, y: 160`).
 - **Middle Column (Level 1, x: 420)**: Place intermediate `finding` nodes (e.g. `x: 420, y: 80`, `x: 420, y: 240`).
-- **Right Column (Level 2, x: 760)**: Place evidence leaf nodes such as `code`, `issue`, `event`, `replay`, or `document` (e.g. `x: 760, y: 80`, `x: 760, y: 240`, `x: 760, y: 400`).
+- **Right Column (Level 2, x: 760)**: Place evidence leaf nodes such as `code`, `issue`, `event`, `replay`, `youtube`, or `document` (e.g. `x: 760, y: 80`, `x: 760, y: 240`, `x: 760, y: 400`).
 - **Vertical Spacing**: Maintain at least `160px` vertical distance between sibling nodes to ensure comfortable spacing and eliminate any overlaps.
 - Explorer tools will automatically apply smart horizontal tree layout coordinates when `x` and `y` are omitted.
 

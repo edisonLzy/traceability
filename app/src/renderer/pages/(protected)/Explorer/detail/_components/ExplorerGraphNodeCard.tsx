@@ -7,6 +7,12 @@ export function ExplorerGraphNodeCard({ data, type, selected }: NodeProps<Explor
   const title = getNodeTitle(data);
   const description = getNodeDescription(data);
   const meta = getNodeMeta(data);
+  const isYoutube = data?.kind === "youtube";
+  const youtubeVideoId = isYoutube ? data.videoId || extractYoutubeId(data.url) : null;
+  const thumbnailUrl = isYoutube
+    ? data.thumbnailUrl ||
+      (youtubeVideoId ? `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg` : null)
+    : null;
 
   return (
     <div className={cn("explorer-node", selected && "selected")} data-node-type={type}>
@@ -26,12 +32,51 @@ export function ExplorerGraphNodeCard({ data, type, selected }: NodeProps<Explor
             {type}
           </span>
         </div>
-        <div
-          className="explorer-node__description mt-2.5 min-h-[52px] rounded-[4px] border border-ink/30 bg-muted/40 p-2 text-[10px] leading-[1.45] font-sans"
-          title={description}
-        >
-          <p className="line-clamp-3 font-medium text-ink">{description}</p>
-        </div>
+
+        {isYoutube && thumbnailUrl ? (
+          <div className="mt-2.5 overflow-hidden rounded-[4px] border border-ink/30 bg-black relative">
+            <img
+              alt={title}
+              className="h-20 w-full object-cover opacity-85 hover:opacity-100 transition-opacity"
+              src={thumbnailUrl}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-between p-1.5 pointer-events-none">
+              <span className="text-[8.5px] font-mono text-white bg-black/70 px-1 py-0.5 rounded border border-white/20">
+                {data.duration ? formatDuration(data.duration) : "Video"}
+              </span>
+              <span className="size-5 rounded-full bg-signal-red text-white grid place-items-center text-[8px] font-bold border border-white shadow">
+                ▶
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="explorer-node__description mt-2.5 min-h-[52px] rounded-[4px] border border-ink/30 bg-muted/40 p-2 text-[10px] leading-[1.45] font-sans"
+            title={description}
+          >
+            <p className="line-clamp-3 font-medium text-ink">{description}</p>
+          </div>
+        )}
+
+        {isYoutube && data.bookmarks && data.bookmarks.length > 0 ? (
+          <div className="mt-2 flex items-center gap-1 overflow-hidden font-mono text-[8.5px]">
+            {data.bookmarks.slice(0, 2).map((bm) => (
+              <span
+                key={bm.id}
+                className="shrink-0 rounded border border-signal-red/50 bg-signal-red/10 px-1 py-0.5 text-signal-red font-semibold truncate max-w-[90px]"
+                title={`${formatDuration(bm.time)} - ${bm.label}`}
+              >
+                📍 {formatDuration(bm.time)}
+              </span>
+            ))}
+            {data.bookmarks.length > 2 ? (
+              <span className="shrink-0 rounded border border-ink/20 bg-muted/30 px-1 py-0.5 text-[8px] text-muted-foreground">
+                +{data.bookmarks.length - 2}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="mt-2.5 flex items-center justify-between border-t border-ink/15 pt-1.5 font-mono text-[9px] text-muted-foreground">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="explorer-node__status size-2 rounded-full border border-ink/40" />
@@ -73,6 +118,8 @@ export function getNodeTitle(data?: ExplorerNodeData) {
       return data.symbolName ? `${data.symbolName}` : (data.path ?? "Code");
     case "document":
       return data.title ?? "Document";
+    case "youtube":
+      return data.title ?? (data.videoId ? `YouTube (${data.videoId})` : "YouTube Video");
     default:
       return "Node";
   }
@@ -95,6 +142,8 @@ export function getNodeDescription(data?: ExplorerNodeData) {
       return data.snippet || `${data.path ?? ""}${data.startLine ? `:${data.startLine}` : ""}`;
     case "document":
       return data.excerpt || data.path || data.title || "Document reference";
+    case "youtube":
+      return data.transcriptExcerpt || data.url || "YouTube video recording";
     default:
       return "";
   }
@@ -109,6 +158,10 @@ export function getNodeMeta(data?: ExplorerNodeData) {
     if (data.language) return data.language;
   }
   if (data.kind === "finding" && data.status) return data.status;
+  if (data.kind === "youtube") {
+    if (data.duration) return formatDuration(data.duration);
+    return "Video";
+  }
   return "Ready";
 }
 
@@ -125,5 +178,21 @@ export function nodeIcon(type?: ExplorerFlowNode["type"]) {
             ? "{}"
             : type === "document"
               ? "▤"
-              : "◌";
+              : type === "youtube"
+                ? "▶"
+                : "◌";
+}
+
+function extractYoutubeId(url?: string): string | null {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  const id = match ? match[2] : undefined;
+  return id && id.length === 11 ? id : null;
+}
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }

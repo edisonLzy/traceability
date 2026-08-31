@@ -15,6 +15,7 @@ import {
   EXPLORER_CREATE_ISSUE_TOOL,
   EXPLORER_CREATE_QUESTION_TOOL,
   EXPLORER_CREATE_REPLAY_TOOL,
+  EXPLORER_CREATE_YOUTUBE_TOOL,
   EXPLORER_DELETE_EDGE_TOOL,
   EXPLORER_DELETE_NODE_TOOL,
   EXPLORER_GET_NODE_TOOL,
@@ -32,7 +33,7 @@ export default defineMainExtension({
   setup(ctx) {
     ctx.systemPrompt.register({
       id: "explorer.prompt",
-      content: `Explorer Graph tools are explicit-context tools. Only use them after the user confirms the Project, target, intent, and evidence scope for /explorer-graph-create. Always pass projectId and graphId explicitly; never infer them from the current route or desktop context. Create the graph first, then create nodes and connect them. The first four steps are context gathering, AskUserQuestion confirmation, read-only preview, and final creation confirmation. Do not write graph data before final confirmation. Use ${EXPLORER_LIST_GRAPHS_TOOL}, ${EXPLORER_LIST_NODES_TOOL}, and ${EXPLORER_GET_NODE_TOOL} to discover existing graphs and node IDs before creating duplicates or connecting nodes — reuse existing nodes instead of recreating them. Available tools: ${EXPLORER_CREATE_GRAPH_TOOL}, ${EXPLORER_CREATE_QUESTION_TOOL}, ${EXPLORER_CREATE_FINDING_TOOL}, ${EXPLORER_CREATE_ISSUE_TOOL}, ${EXPLORER_CREATE_EVENT_TOOL}, ${EXPLORER_CREATE_REPLAY_TOOL}, ${EXPLORER_CREATE_CODE_TOOL}, ${EXPLORER_CREATE_DOCUMENT_TOOL}, ${EXPLORER_CONNECT_NODES_TOOL}, ${EXPLORER_DELETE_NODE_TOOL}, ${EXPLORER_DELETE_EDGE_TOOL}, ${EXPLORER_LIST_GRAPHS_TOOL}, ${EXPLORER_LIST_NODES_TOOL}, ${EXPLORER_GET_NODE_TOOL}.`,
+      content: `Explorer Graph tools are explicit-context tools. Only use them after the user confirms the Project, target, intent, and evidence scope for /explorer-graph-create. Always pass projectId and graphId explicitly; never infer them from the current route or desktop context. Create the graph first, then create nodes and connect them. The first four steps are context gathering, AskUserQuestion confirmation, read-only preview, and final creation confirmation. Do not write graph data before final confirmation. Use ${EXPLORER_LIST_GRAPHS_TOOL}, ${EXPLORER_LIST_NODES_TOOL}, and ${EXPLORER_GET_NODE_TOOL} to discover existing graphs and node IDs before creating duplicates or connecting nodes — reuse existing nodes instead of recreating them. Available tools: ${EXPLORER_CREATE_GRAPH_TOOL}, ${EXPLORER_CREATE_QUESTION_TOOL}, ${EXPLORER_CREATE_FINDING_TOOL}, ${EXPLORER_CREATE_ISSUE_TOOL}, ${EXPLORER_CREATE_EVENT_TOOL}, ${EXPLORER_CREATE_REPLAY_TOOL}, ${EXPLORER_CREATE_CODE_TOOL}, ${EXPLORER_CREATE_DOCUMENT_TOOL}, ${EXPLORER_CREATE_YOUTUBE_TOOL}, ${EXPLORER_CONNECT_NODES_TOOL}, ${EXPLORER_DELETE_NODE_TOOL}, ${EXPLORER_DELETE_EDGE_TOOL}, ${EXPLORER_LIST_GRAPHS_TOOL}, ${EXPLORER_LIST_NODES_TOOL}, ${EXPLORER_GET_NODE_TOOL}.`,
     });
 
     ctx.tools.register({
@@ -219,6 +220,40 @@ export default defineMainExtension({
           title: args.title,
           ...(args.path ? { path: args.path } : {}),
           ...(args.excerpt ? { excerpt: args.excerpt } : {}),
+        }),
+        ctx,
+      ),
+    );
+    ctx.tools.register(
+      createNodeTool(
+        EXPLORER_CREATE_YOUTUBE_TOOL,
+        "Create YouTube Video Node",
+        Type.Object({
+          projectId: Type.String(),
+          graphId: Type.String(),
+          url: Type.String({ description: "YouTube video URL or embed URL" }),
+          title: Type.Optional(Type.String({ description: "Video title or repro label" })),
+          videoId: Type.Optional(Type.String({ description: "YouTube video ID (11 chars)" })),
+          duration: Type.Optional(Type.Number({ description: "Video duration in seconds" })),
+          startTime: Type.Optional(
+            Type.Number({ description: "Initial seek/start timestamp in seconds" }),
+          ),
+          endTime: Type.Optional(Type.Number({ description: "Clip end timestamp in seconds" })),
+          transcriptExcerpt: Type.Optional(
+            Type.String({ description: "Transcript text excerpt with [mm:ss] timestamp tokens" }),
+          ),
+          x: Type.Optional(Type.Number()),
+          y: Type.Optional(Type.Number()),
+        }),
+        (args) => ({
+          kind: "youtube",
+          url: args.url,
+          ...(args.title ? { title: args.title } : {}),
+          ...(args.videoId ? { videoId: args.videoId } : {}),
+          ...(args.duration !== undefined ? { duration: args.duration } : {}),
+          ...(args.startTime !== undefined ? { startTime: args.startTime } : {}),
+          ...(args.endTime !== undefined ? { endTime: args.endTime } : {}),
+          ...(args.transcriptExcerpt ? { transcriptExcerpt: args.transcriptExcerpt } : {}),
         }),
         ctx,
       ),

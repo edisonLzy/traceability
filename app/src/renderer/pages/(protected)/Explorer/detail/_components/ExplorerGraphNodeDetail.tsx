@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import type { ExplorerFlowEdge, ExplorerFlowNode, ExplorerNodeData } from "../../types";
 import { getNodeDescription, getNodeTitle, nodeIcon } from "./ExplorerGraphNodeCard";
 import { CodeNodeDetailContent } from "./NodeDetailContent/CodeNodeDetailContent";
+import { YoutubeNodeDetailContent } from "./NodeDetailContent/YoutubeNodeDetailContent";
 
 export interface ExplorerGraphNodeDetailProps {
   graphId: string;
@@ -139,156 +140,125 @@ export function ExplorerGraphNodeDetail({
           </button>
         </div>
 
-        {/* Modal Body: Left Detail Area + Right Inspector Sidebar */}
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          {/* Main Detail Area */}
-          <div
-            className={cn(
-              "flex flex-1 flex-col min-w-0 border-r-2 border-ink bg-card select-text",
-              nodeType === "code" ? "overflow-hidden p-0" : "overflow-y-auto p-5 select-text",
-            )}
-          >
-            <NodeDetailContent data={selectedNode.data} nodeType={nodeType} />
+        {/* Modal Body: Full-Width Main Detail Area */}
+        <div
+          className={cn(
+            "flex flex-1 flex-col min-h-0 min-w-0 bg-card select-text",
+            nodeType === "code" || nodeType === "youtube"
+              ? "overflow-hidden p-0"
+              : "overflow-y-auto p-5 select-text",
+          )}
+        >
+          <NodeDetailContent
+            data={selectedNode.data}
+            graphId={graphId}
+            nodeId={selectedNode.id}
+            nodeType={nodeType}
+          />
+        </div>
+
+        {/* Modal Bottom Footer: [Node Meta][Continue in Agent] ----------- [Graph Relationships] */}
+        <footer className="h-16 shrink-0 border-t-2 border-ink bg-muted/25 px-4 sm:px-5 flex items-center justify-between gap-4 font-mono text-xs">
+          {/* Left: Node Meta + Continue in Agent CTA */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 rounded border border-ink/30 bg-card px-2.5 py-1 text-[11px] shadow-[1px_1px_0_var(--ink)]">
+              <span className="text-muted-foreground">ID:</span>
+              <span className="truncate max-w-[120px] font-bold text-ink" title={selectedNode.id}>
+                {selectedNode.id}
+              </span>
+              <button
+                aria-label="Copy Node ID"
+                className="hover:text-primary transition-colors text-muted-foreground shrink-0"
+                onClick={copyNodeId}
+                title="Copy Node ID"
+                type="button"
+              >
+                {copiedId ? <Check className="size-3 text-success" /> : <Copy className="size-3" />}
+              </button>
+              <span className="text-muted-foreground/40">|</span>
+              <span className="text-muted-foreground">Pos:</span>
+              <span className="font-bold text-ink">
+                ({Math.round(selectedNode.position.x)}, {Math.round(selectedNode.position.y)})
+              </span>
+            </div>
+
+            <Button
+              className="h-7.5 border border-ink bg-ink text-card shadow-[1.5px_1.5px_0_var(--ink)] font-bold text-[11px] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all"
+              onClick={continueFromNode}
+              size="sm"
+              type="button"
+            >
+              <Sparkles className="size-3.5 mr-1 text-signal-yellow" />
+              <span>Continue in Agent</span>
+            </Button>
           </div>
 
-          {/* Right Inspector Sidebar */}
-          <aside className="flex w-[320px] shrink-0 flex-col justify-between overflow-y-auto bg-muted/20 p-4 font-mono text-xs space-y-4">
-            <div className="space-y-4">
-              {/* Node Metadata Card */}
-              <div>
-                <div className="mb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-tertiary">
-                  Node Metadata
-                </div>
-                <dl className="space-y-2 rounded-[4px] border border-ink/30 bg-card p-3 font-mono text-[10.5px]">
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-muted-foreground">Node ID</dt>
-                    <dd className="flex items-center gap-1.5 truncate font-bold text-ink">
-                      <span className="truncate max-w-[150px]" title={selectedNode.id}>
-                        {selectedNode.id}
-                      </span>
-                      <button
-                        aria-label="Copy Node ID"
-                        className="hover:text-primary transition-colors shrink-0"
-                        onClick={copyNodeId}
-                        title="Copy Node ID"
-                        type="button"
-                      >
-                        {copiedId ? (
-                          <Check className="size-3 text-success" />
-                        ) : (
-                          <Copy className="size-3" />
-                        )}
-                      </button>
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-muted-foreground">Type</dt>
-                    <dd className="font-bold uppercase text-ink">{nodeType}</dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <dt className="text-muted-foreground">Position</dt>
-                    <dd className="font-bold text-ink">
-                      X: {Math.round(selectedNode.position.x)}, Y:{" "}
-                      {Math.round(selectedNode.position.y)}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
+          {/* Right: Graph Relationships (Inbound & Outbound Horizontal Pills) */}
+          <div className="flex items-center gap-2 overflow-x-auto py-1 min-w-0">
+            {inboundRelations.length === 0 && outboundRelations.length === 0 ? (
+              <span className="text-[10.5px] text-muted-foreground italic">
+                No connected graph relationships
+              </span>
+            ) : (
+              <>
+                {inboundRelations.map(({ edge, sourceNode }) => (
+                  <button
+                    key={`in-${edge.id}`}
+                    className="flex items-center gap-1.5 rounded border border-ink/30 bg-card px-2 py-1 text-left font-mono text-[10px] hover:border-ink hover:bg-muted transition-all shrink-0 shadow-[1px_1px_0_var(--ink)]"
+                    onClick={() => onSelectNode?.(sourceNode.id)}
+                    title={`Upstream ${sourceNode.type}: ${getNodeTitle(sourceNode.data)}`}
+                    type="button"
+                  >
+                    <ArrowDownRight className="size-3 text-primary shrink-0" />
+                    <span className="truncate max-w-[120px] font-semibold text-ink">
+                      {getNodeTitle(sourceNode.data)}
+                    </span>
+                    <span className="shrink-0 rounded bg-primary/10 px-1 py-0.2 text-[8px] font-bold uppercase text-primary border border-primary/20">
+                      {edge.data?.relation?.replaceAll("_", " ") || "RELATES"}
+                    </span>
+                    <span className="text-[8px] text-muted-foreground">↳ IN</span>
+                  </button>
+                ))}
 
-              {/* Evidence Chain / Topology */}
-              <div>
-                <div className="mb-2 font-mono text-[10px] font-bold uppercase tracking-wider text-tertiary">
-                  Graph Relationships
-                </div>
-                <div className="space-y-2.5 rounded-[4px] border border-ink/30 bg-card p-3">
-                  {/* Inbound Relations */}
-                  <div>
-                    <div className="flex items-center gap-1 font-mono text-[9.5px] font-bold uppercase text-tertiary mb-1.5">
-                      <ArrowDownRight className="size-3 text-primary" />
-                      <span>Inbound (Upstream):</span>
-                    </div>
-                    {inboundRelations.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {inboundRelations.map(({ edge, sourceNode }) => (
-                          <button
-                            key={edge.id}
-                            className="flex w-full items-center justify-between gap-2 rounded-[3px] border border-ink/20 bg-muted/40 p-1.5 text-left font-mono text-[10px] hover:border-ink hover:bg-muted transition-all"
-                            onClick={() => onSelectNode?.(sourceNode.id)}
-                            title={`Jump to ${sourceNode.type}: ${getNodeTitle(sourceNode.data)}`}
-                            type="button"
-                          >
-                            <span className="truncate font-semibold text-ink">
-                              {getNodeTitle(sourceNode.data)}
-                            </span>
-                            <span className="shrink-0 rounded bg-card px-1 py-0.5 text-[8.5px] font-bold uppercase text-primary border border-ink/20">
-                              {edge.data?.relation?.replaceAll("_", " ") || "RELATES"}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="font-mono text-[10px] text-tertiary italic">
-                        No upstream incoming edges (Root evidence)
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Outbound Relations */}
-                  <div className="pt-2 border-t border-ink/15">
-                    <div className="flex items-center gap-1 font-mono text-[9.5px] font-bold uppercase text-tertiary mb-1.5">
-                      <ArrowUpRight className="size-3 text-success" />
-                      <span>Outbound (Downstream):</span>
-                    </div>
-                    {outboundRelations.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {outboundRelations.map(({ edge, targetNode }) => (
-                          <button
-                            key={edge.id}
-                            className="flex w-full items-center justify-between gap-2 rounded-[3px] border border-ink/20 bg-muted/40 p-1.5 text-left font-mono text-[10px] hover:border-ink hover:bg-muted transition-all"
-                            onClick={() => onSelectNode?.(targetNode.id)}
-                            title={`Jump to ${targetNode.type}: ${getNodeTitle(targetNode.data)}`}
-                            type="button"
-                          >
-                            <span className="truncate font-semibold text-ink">
-                              {getNodeTitle(targetNode.data)}
-                            </span>
-                            <span className="shrink-0 rounded bg-card px-1 py-0.5 text-[8.5px] font-bold uppercase text-success border border-ink/20">
-                              {edge.data?.relation?.replaceAll("_", " ") || "LEADS TO"}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="font-mono text-[10px] text-tertiary italic">
-                        No downstream outgoing edges (Leaf evidence)
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Action */}
-            <div className="pt-2 border-t border-ink/20">
-              <Button
-                className="w-full border-2 border-ink shadow-[2px_2px_0_var(--ink)] font-bold text-[11px] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all"
-                onClick={continueFromNode}
-                type="button"
-                variant="default"
-              >
-                <Sparkles className="size-3.5" />
-                <span>Continue in Agent</span>
-              </Button>
-            </div>
-          </aside>
-        </div>
+                {outboundRelations.map(({ edge, targetNode }) => (
+                  <button
+                    key={`out-${edge.id}`}
+                    className="flex items-center gap-1.5 rounded border border-ink/30 bg-card px-2 py-1 text-left font-mono text-[10px] hover:border-ink hover:bg-muted transition-all shrink-0 shadow-[1px_1px_0_var(--ink)]"
+                    onClick={() => onSelectNode?.(targetNode.id)}
+                    title={`Downstream ${targetNode.type}: ${getNodeTitle(targetNode.data)}`}
+                    type="button"
+                  >
+                    <ArrowUpRight className="size-3 text-success shrink-0" />
+                    <span className="truncate max-w-[120px] font-semibold text-ink">
+                      {getNodeTitle(targetNode.data)}
+                    </span>
+                    <span className="shrink-0 rounded bg-success/10 px-1 py-0.2 text-[8px] font-bold uppercase text-success border border-success/20">
+                      {edge.data?.relation?.replaceAll("_", " ") || "LEADS TO"}
+                    </span>
+                    <span className="text-[8px] text-muted-foreground">OUT ⇁</span>
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+        </footer>
       </DialogContent>
     </Dialog>
   );
 }
 
 /** Component to render type-specific node detail representation */
-function NodeDetailContent({ data, nodeType }: { data?: ExplorerNodeData; nodeType: string }) {
+function NodeDetailContent({
+  data,
+  nodeType,
+  nodeId,
+  graphId,
+}: {
+  data?: ExplorerNodeData;
+  nodeType: string;
+  nodeId?: string;
+  graphId?: string;
+}) {
   if (!data) {
     return (
       <div className="grid place-items-center h-full text-muted-foreground font-mono text-xs">
@@ -298,6 +268,10 @@ function NodeDetailContent({ data, nodeType }: { data?: ExplorerNodeData; nodeTy
   }
 
   switch (data.kind) {
+    case "youtube": {
+      return <YoutubeNodeDetailContent data={data} graphId={graphId} nodeId={nodeId} />;
+    }
+
     case "code": {
       return <CodeNodeDetailContent data={data} />;
     }
@@ -464,6 +438,8 @@ function getNodeAccentColor(type?: string) {
       return "var(--signal-purple)";
     case "document":
       return "var(--signal-yellow)";
+    case "youtube":
+      return "var(--signal-red, #ef4444)";
     default:
       return "var(--primary)";
   }
