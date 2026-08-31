@@ -9,6 +9,7 @@ export const GRAPH_NODE_TYPES = [
   "code",
   "document",
   "youtube",
+  "browser",
 ] as const;
 
 export type GraphNodeType = (typeof GRAPH_NODE_TYPES)[number];
@@ -97,6 +98,94 @@ export interface YoutubeNodeData {
   transcriptExcerpt?: string;
 }
 
+export type BrowserProvider = "generic-web" | "feishu-doc" | "confluence";
+
+export type BrowserLocator =
+  | { type: "feishu-block"; documentId: string; blockId: string }
+  | { type: "confluence-content"; pageId: string; localId?: string }
+  | { type: "provider-element"; provider: BrowserProvider; role: string }
+  | { type: "text-quote"; exact: string; prefix?: string; suffix?: string }
+  | { type: "heading-path"; headings: string[]; occurrence?: number }
+  | { type: "text-position"; start: number; end: number; contentHash?: string }
+  | { type: "dom-path"; xpath: string; startOffset?: number; endOffset?: number }
+  | { type: "css-selector"; selector: string };
+
+export interface BrowserResolution {
+  state: "resolved" | "unresolved" | "stale";
+  locatorType?: string;
+  checkedAt?: string;
+  reason?: string;
+}
+
+export interface BrowserAnchor {
+  id: string;
+  label: string;
+  quote?: string;
+  locators?: BrowserLocator[];
+  createdBy?: "user" | "agent";
+  createdAt?: string;
+  updatedAt?: string;
+  lastResolution?: BrowserResolution;
+}
+
+export interface ProjectionRule {
+  id: string;
+  operation?: "hide" | "collapse" | "focus";
+  name?: string;
+  target?: {
+    locators?: BrowserLocator[];
+    selector?: string;
+    xpath?: string;
+    elementRole?: string;
+  };
+  enabled?: boolean;
+  origin?: "user" | "agent" | "provider-preset";
+  createdAt?: string;
+  updatedAt?: string;
+  lastResolution?: BrowserResolution;
+}
+
+export interface BrowserProjection {
+  providerPresetVersion?: string;
+  rules?: ProjectionRule[];
+}
+
+export interface BrowserViewState {
+  focusedAnchorId?: string;
+  scrollAnchorId?: string;
+  scrollTop?: number;
+  lastOpenedAt?: string;
+}
+
+export interface BrowserSource {
+  provider: BrowserProvider;
+  url: string;
+  canonicalUrl?: string;
+  title?: string;
+  siteName?: string;
+  documentId?: string;
+  profileId?: string;
+}
+
+export interface BrowserPreview {
+  title?: string;
+  excerpt?: string;
+  faviconUrl?: string;
+  capturedAt?: string;
+  contentHash?: string;
+  snapshotObjectKey?: string;
+}
+
+export interface BrowserNodeData {
+  kind: "browser";
+  schemaVersion?: number;
+  source: BrowserSource;
+  preview?: BrowserPreview;
+  anchors?: BrowserAnchor[];
+  projection?: BrowserProjection;
+  viewState?: BrowserViewState;
+}
+
 export type GraphNodeData =
   | QuestionNodeData
   | FindingNodeData
@@ -105,10 +194,13 @@ export type GraphNodeData =
   | ReplayNodeData
   | CodeNodeData
   | DocumentNodeData
-  | YoutubeNodeData;
+  | YoutubeNodeData
+  | BrowserNodeData;
 
 export interface GraphEdgeData {
   relation: GraphRelationship;
+  sourceAnchorId?: string;
+  targetAnchorId?: string;
 }
 
 /** Wire shape — structurally compatible with React Flow `Node`/`Edge`. */
@@ -180,8 +272,16 @@ export type GraphOperation =
       sourceHandle?: string | null;
       targetHandle?: string | null;
       relation: GraphRelationship;
+      sourceAnchorId?: string;
+      targetAnchorId?: string;
     }
-  | { op: "updateEdge"; id: string; relation?: GraphRelationship }
+  | {
+      op: "updateEdge";
+      id: string;
+      relation?: GraphRelationship;
+      sourceAnchorId?: string;
+      targetAnchorId?: string;
+    }
   | { op: "deleteEdge"; id: string };
 
 export interface ApplyGraphOperationsInput {
@@ -244,6 +344,7 @@ export interface GraphEdgeRecord {
   sourceHandle: string | null;
   targetHandle: string | null;
   relation: string;
+  data?: GraphEdgeData;
 }
 
 /** Concrete mutation plan assembled by the service and executed by the repository. */
@@ -268,10 +369,14 @@ export interface CommitEdgeInsert {
   sourceHandle: string | null;
   targetHandle: string | null;
   relation: GraphRelationship;
+  sourceAnchorId?: string;
+  targetAnchorId?: string;
 }
 export interface CommitEdgeUpdate {
   id: string;
   relation?: GraphRelationship;
+  sourceAnchorId?: string;
+  targetAnchorId?: string;
 }
 export interface CommitEdgeDelete {
   id: string;
@@ -368,6 +473,122 @@ const youtubeNodeDataSchema = z.object({
   transcriptExcerpt: z.string().optional(),
 });
 
+const browserLocatorSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("feishu-block"), documentId: z.string(), blockId: z.string() }),
+  z.object({
+    type: z.literal("confluence-content"),
+    pageId: z.string(),
+    localId: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("provider-element"),
+    provider: z.enum(["generic-web", "feishu-doc", "confluence"]),
+    role: z.string(),
+  }),
+  z.object({
+    type: z.literal("text-quote"),
+    exact: z.string(),
+    prefix: z.string().optional(),
+    suffix: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("heading-path"),
+    headings: z.array(z.string()),
+    occurrence: z.number().int().optional(),
+  }),
+  z.object({
+    type: z.literal("text-position"),
+    start: z.number().int(),
+    end: z.number().int(),
+    contentHash: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("dom-path"),
+    xpath: z.string(),
+    startOffset: z.number().int().optional(),
+    endOffset: z.number().int().optional(),
+  }),
+  z.object({ type: z.literal("css-selector"), selector: z.string() }),
+]);
+
+const browserResolutionSchema = z.object({
+  state: z.enum(["resolved", "unresolved", "stale"]),
+  locatorType: z.string().optional(),
+  checkedAt: z.string().optional(),
+  reason: z.string().optional(),
+});
+
+const browserAnchorSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  quote: z.string().optional(),
+  locators: z.array(browserLocatorSchema).optional(),
+  createdBy: z.enum(["user", "agent"]).optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  lastResolution: browserResolutionSchema.optional(),
+});
+
+const projectionRuleSchema = z.object({
+  id: z.string().min(1),
+  operation: z.enum(["hide", "collapse", "focus"]).optional(),
+  name: z.string().optional(),
+  target: z
+    .object({
+      locators: z.array(browserLocatorSchema).optional(),
+      selector: z.string().optional(),
+      xpath: z.string().optional(),
+      elementRole: z.string().optional(),
+    })
+    .optional(),
+  enabled: z.boolean().optional(),
+  origin: z.enum(["user", "agent", "provider-preset"]).optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  lastResolution: browserResolutionSchema.optional(),
+});
+
+const browserProjectionSchema = z.object({
+  providerPresetVersion: z.string().optional(),
+  rules: z.array(projectionRuleSchema).optional(),
+});
+
+const browserViewStateSchema = z.object({
+  focusedAnchorId: z.string().optional(),
+  scrollAnchorId: z.string().optional(),
+  scrollTop: z.number().optional(),
+  lastOpenedAt: z.string().optional(),
+});
+
+const browserSourceSchema = z.object({
+  provider: z.enum(["generic-web", "feishu-doc", "confluence"]),
+  url: z.string().min(1),
+  canonicalUrl: z.string().optional(),
+  title: z.string().optional(),
+  siteName: z.string().optional(),
+  documentId: z.string().optional(),
+  profileId: z.string().optional(),
+});
+
+const browserPreviewSchema = z.object({
+  title: z.string().optional(),
+  excerpt: z.string().optional(),
+  faviconUrl: z.string().optional(),
+  capturedAt: z.string().optional(),
+  contentHash: z.string().optional(),
+  snapshotObjectKey: z.string().optional(),
+});
+
+const browserNodeDataSchema = z.object({
+  kind: z.literal("browser"),
+  schemaVersion: z.number().int().optional(),
+  source: browserSourceSchema,
+  preview: browserPreviewSchema.optional(),
+  anchors: z.array(browserAnchorSchema).optional(),
+  projection: browserProjectionSchema.optional(),
+  viewState: browserViewStateSchema.optional(),
+});
+
 export const nodeDataSchema = z.discriminatedUnion("kind", [
   questionNodeDataSchema,
   findingNodeDataSchema,
@@ -377,6 +598,7 @@ export const nodeDataSchema = z.discriminatedUnion("kind", [
   codeNodeDataSchema,
   documentNodeDataSchema,
   youtubeNodeDataSchema,
+  browserNodeDataSchema,
 ]);
 
 const createNodeSchema = z.object({
@@ -405,11 +627,15 @@ const createEdgeSchema = z.object({
   sourceHandle: z.string().nullable().optional(),
   targetHandle: z.string().nullable().optional(),
   relation: z.enum(GRAPH_RELATIONSHIPS),
+  sourceAnchorId: z.string().optional(),
+  targetAnchorId: z.string().optional(),
 });
 const updateEdgeSchema = z.object({
   op: z.literal("updateEdge"),
   id: z.string().min(1),
   relation: z.enum(GRAPH_RELATIONSHIPS).optional(),
+  sourceAnchorId: z.string().optional(),
+  targetAnchorId: z.string().optional(),
 });
 const deleteEdgeSchema = z.object({ op: z.literal("deleteEdge"), id: z.string().min(1) });
 

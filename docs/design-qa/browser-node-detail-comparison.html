@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Browser Node Detail · Visual QA Comparison</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #111827; color: #e5e7eb; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+      header { padding: 16px 20px; border-bottom: 1px solid #334155; }
+      h1 { margin: 0; font-size: 15px; }
+      p { margin: 5px 0 0; color: #94a3b8; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
+      figure { min-width: 0; margin: 0; border: 1px solid #334155; background: #0f172a; }
+      figcaption { padding: 8px 10px; border-bottom: 1px solid #334155; font-weight: 700; }
+      img { display: block; width: 100%; height: auto; }
+      .focus { padding: 0 12px 12px; }
+      .focus h2 { margin: 8px 0; font-size: 12px; }
+      .crop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .crop { position: relative; height: 210px; overflow: hidden; border: 1px solid #334155; background: #0f172a; }
+      .crop img { position: absolute; width: 1498px; max-width: none; }
+      .crop.header img { left: -30px; top: -30px; }
+      .crop.inspector { height: 500px; }
+      .crop.inspector img { right: -12px; top: -42px; left: auto; }
+      .crop-label { position: absolute; z-index: 2; right: 8px; bottom: 8px; padding: 4px 6px; background: rgba(15,23,42,.86); border: 1px solid #475569; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Browser Node Detail · Visual QA</h1>
+      <p>Same 1498 × 1018 viewport. Existing Code Node is the style truth; Browser Node intentionally changes only content-specific controls.</p>
+    </header>
+    <section class="grid">
+      <figure><figcaption>Reference · existing Code Node Detail</figcaption><img src="assets/browser-node-reference-code-node-detail.png" alt="Existing Code Node Detail" /></figure>
+      <figure><figcaption>Implementation · Browser Node Detail</figcaption><img src="assets/browser-node-detail-implementation.png" alt="Browser Node Detail prototype" /></figure>
+    </section>
+    <section class="focus">
+      <h2>Focused comparison · modal header and content toolbar</h2>
+      <div class="crop-grid">
+        <div class="crop header"><img src="assets/browser-node-reference-code-node-detail.png" alt="Reference header crop" /><span class="crop-label">REFERENCE</span></div>
+        <div class="crop header"><img src="assets/browser-node-detail-implementation.png" alt="Implementation header crop" /><span class="crop-label">IMPLEMENTATION</span></div>
+      </div>
+      <h2>Focused comparison · 320px inspector and persistent primary action</h2>
+      <div class="crop-grid">
+        <div class="crop inspector"><img src="assets/browser-node-reference-code-node-detail.png" alt="Reference inspector crop" /><span class="crop-label">REFERENCE</span></div>
+        <div class="crop inspector"><img src="assets/browser-node-detail-implementation.png" alt="Implementation inspector crop" /><span class="crop-label">IMPLEMENTATION</span></div>
+      </div>
+    </section>
+  </body>
+</html>

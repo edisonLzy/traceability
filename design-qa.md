@@ -44,6 +44,51 @@ final result: passed
 
 ---
 
+# Design QA: Browser Node Detail interactive prototype
+
+## Sources
+
+- Visual truth: `/Users/zhiyu/Desktop/coding/Traceability/docs/design-qa/assets/browser-node-reference-code-node-detail.png`
+- Implementation: `/Users/zhiyu/Desktop/coding/Traceability/docs/design-qa/assets/browser-node-detail-implementation.png`
+- Full and focused comparison: `/Users/zhiyu/Desktop/coding/Traceability/docs/design-qa/assets/browser-node-detail-comparison.png`
+- Comparison surface: `/Users/zhiyu/Desktop/coding/Traceability/docs/design-qa/browser-node-detail-comparison.html`
+- Prototype: `/Users/zhiyu/Desktop/coding/Traceability/docs/prototype/browser-node-detail.html`
+
+## Capture setup
+
+- Source and implementation were compared at 1498 × 1018 CSS px in the light, default-reading state.
+- Device scale factor: 1.
+- The supplied Code Node Detail screenshot is the visual source of truth. Current renderer code was used to confirm geometry and tokens; older files under `docs/prototype` were not treated as authoritative.
+- The full-view comparison checks modal geometry, title bar, toolbar, content/inspector split, status bar, and Agent action. Focused crops check the title bar and inspector hierarchy.
+
+## Comparison findings
+
+- The prototype preserves the current 96vw × 92vh detail shell, compact mono typography, hard navy dividers, shallow radius, four-pixel cyan type accent, 320 px inspector, status bar, and persistent `Continue in Agent` action.
+- Browser-specific content intentionally replaces the code editor: a non-navigable remote document surface, Anchor and Zap tools, projection state, runtime status, and Browser metadata.
+- No actionable P0, P1, or P2 visual differences remain.
+- [P3, accepted] The floating `Prototype` state controller can overlap the product status bar at short viewport heights. It is a review-only affordance and is excluded from the product implementation.
+
+## Interaction validation
+
+- Entered Anchor mode, exposed the in-page selection toolbar, created a third Anchor, and verified count/status updates.
+- Focused existing Anchor cards and verified the bound page highlight and graph relationship Anchor references.
+- Entered Zap mode, revealed the projected sidebar and comments, selected comments, and verified both regions were hidden again.
+- Switched Projection rules, temporarily revealed hidden content, reset the current node, and exercised the provider preset control.
+- Entered stale-rule and loading states and verified status labels, recovery affordances, and inspector state.
+- Switched between Anchors, Projection, and Node inspector tabs.
+- Switched to dark mode and verified readable active-state, Anchor, and rule-label contrast.
+- Verified that all Lucide placeholders rendered and that a clean page load produced zero console entries.
+
+## Comparison history
+
+1. First pass exposed an unresolved `cloud-check` icon and insufficient contrast for active state buttons and rule labels in dark mode.
+2. Replaced the missing icon, added dark-theme token overrides, reloaded in a fresh tab, and verified zero unresolved icon placeholders and zero console entries.
+3. Repeated the combined full-view and focused comparison at the matched viewport; the current Code Node Detail visual language remained intact across all Browser-specific states.
+
+final result: passed
+
+---
+
 # Design QA: Split-panel separator and corner-shadow follow-up
 
 ## Sources

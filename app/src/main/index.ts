@@ -5,6 +5,7 @@ import type { MenuItemConstructorOptions } from "electron";
 
 import { AgentPool } from "./agent-pool.js";
 import { AuthSession } from "./auth/auth-session.js";
+import { BrowserRuntimeController } from "./browser/index.js";
 import { initMonitor } from "./monitor.js";
 import { SessionPersistence } from "./sessions/index.js";
 import { applyPersistedThemeSource, ThemeController } from "./theme.js";
@@ -29,6 +30,7 @@ void app
     const themeController = new ThemeController(browserWindow);
     const windowController = new WindowController(browserWindow);
     const appUpdateService = new AppUpdateService(browserWindow);
+    const browserRuntimeController = new BrowserRuntimeController(() => browserWindow);
     createApplicationMenu(appUpdateService);
     appUpdateService.start();
 
@@ -41,6 +43,7 @@ void app
         themeController.updateBrowserWindow(browserWindow);
         windowController.updateBrowserWindow(browserWindow);
         appUpdateService.updateBrowserWindow(browserWindow);
+        browserRuntimeController.updateBrowserWindow(browserWindow);
       }
     });
 
@@ -51,6 +54,7 @@ void app
       themeController.destroyAll();
       windowController.destroyAll();
       appUpdateService.destroyAll();
+      browserRuntimeController.destroyAll();
     });
   })
   .catch((error: unknown) => {

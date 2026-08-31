@@ -4,15 +4,16 @@ import type { Database } from "../../infrastructure/database/client.js";
 import { graphEdges, graphEventOutbox, graphs, graphNodes, graphOperations } from "./schema.js";
 import type {
   CommitPlan,
+  GraphCommittedEvent,
+  GraphEdgeData,
   GraphEdgeRecord,
+  GraphNodeRecord,
+  GraphNodeType,
+  GraphOperationRecord,
+  GraphRelationship,
   GraphSnapshot,
   GraphStatus,
   GraphSummary,
-  GraphNodeRecord,
-  GraphNodeType,
-  GraphRelationship,
-  GraphCommittedEvent,
-  GraphOperationRecord,
 } from "./types.js";
 
 /** Lease for claimed outbox rows; mirrors the ingest dispatcher's safety margin. */
@@ -130,6 +131,7 @@ export class GraphRepository {
       sourceHandle: e.sourceHandle,
       targetHandle: e.targetHandle,
       relation: e.relation,
+      data: e.data,
     }));
   }
 
@@ -156,7 +158,7 @@ export class GraphRepository {
         target: e.targetNodeId,
         sourceHandle: e.sourceHandle,
         targetHandle: e.targetHandle,
-        data: { relation: e.relation as GraphRelationship },
+        data: e.data ?? { relation: e.relation as GraphRelationship },
       })),
       updatedAt: graph.updatedAt.toISOString(),
     };
@@ -241,17 +243,36 @@ export class GraphRepository {
           sourceHandle: edge.sourceHandle,
           targetHandle: edge.targetHandle,
           relation: edge.relation,
-          data: { relation: edge.relation },
+          data: {
+            relation: edge.relation,
+            ...(edge.sourceAnchorId !== undefined ? { sourceAnchorId: edge.sourceAnchorId } : {}),
+            ...(edge.targetAnchorId !== undefined ? { targetAnchorId: edge.targetAnchorId } : {}),
+          },
         });
       }
 
       for (const edge of plan.updateEdges) {
-        if (edge.relation === undefined) continue;
+        const existingEdges = await transaction
+          .select()
+          .from(graphEdges)
+          .where(eq(graphEdges.id, edge.id))
+          .limit(1);
+        const existing = existingEdges[0];
+        const prevData = existing?.data ?? {
+          relation: (existing?.relation as GraphRelationship) ?? "related_to",
+        };
+        const relation = edge.relation ?? prevData.relation;
+        const data: GraphEdgeData = {
+          ...prevData,
+          relation,
+          ...(edge.sourceAnchorId !== undefined ? { sourceAnchorId: edge.sourceAnchorId } : {}),
+          ...(edge.targetAnchorId !== undefined ? { targetAnchorId: edge.targetAnchorId } : {}),
+        };
         await transaction
           .update(graphEdges)
           .set({
-            relation: edge.relation,
-            data: { relation: edge.relation },
+            ...(edge.relation !== undefined ? { relation: edge.relation } : {}),
+            data,
             updatedAt: new Date(),
           })
           .where(eq(graphEdges.id, edge.id));

@@ -7,6 +7,7 @@ import { defineMainExtension, type MainExtensionContext } from "../../../core/ma
 import { EXPLORER_EXTENSION } from "../common/extension.js";
 import {
   EXPLORER_CONNECT_NODES_TOOL,
+  EXPLORER_CREATE_BROWSER_TOOL,
   EXPLORER_CREATE_CODE_TOOL,
   EXPLORER_CREATE_DOCUMENT_TOOL,
   EXPLORER_CREATE_EVENT_TOOL,
@@ -33,7 +34,7 @@ export default defineMainExtension({
   setup(ctx) {
     ctx.systemPrompt.register({
       id: "explorer.prompt",
-      content: `Explorer Graph tools are explicit-context tools. Only use them after the user confirms the Project, target, intent, and evidence scope for /explorer-graph-create. Always pass projectId and graphId explicitly; never infer them from the current route or desktop context. Create the graph first, then create nodes and connect them. The first four steps are context gathering, AskUserQuestion confirmation, read-only preview, and final creation confirmation. Do not write graph data before final confirmation. Use ${EXPLORER_LIST_GRAPHS_TOOL}, ${EXPLORER_LIST_NODES_TOOL}, and ${EXPLORER_GET_NODE_TOOL} to discover existing graphs and node IDs before creating duplicates or connecting nodes — reuse existing nodes instead of recreating them. Available tools: ${EXPLORER_CREATE_GRAPH_TOOL}, ${EXPLORER_CREATE_QUESTION_TOOL}, ${EXPLORER_CREATE_FINDING_TOOL}, ${EXPLORER_CREATE_ISSUE_TOOL}, ${EXPLORER_CREATE_EVENT_TOOL}, ${EXPLORER_CREATE_REPLAY_TOOL}, ${EXPLORER_CREATE_CODE_TOOL}, ${EXPLORER_CREATE_DOCUMENT_TOOL}, ${EXPLORER_CREATE_YOUTUBE_TOOL}, ${EXPLORER_CONNECT_NODES_TOOL}, ${EXPLORER_DELETE_NODE_TOOL}, ${EXPLORER_DELETE_EDGE_TOOL}, ${EXPLORER_LIST_GRAPHS_TOOL}, ${EXPLORER_LIST_NODES_TOOL}, ${EXPLORER_GET_NODE_TOOL}.`,
+      content: `Explorer Graph tools are explicit-context tools. Only use them after the user confirms the Project, target, intent, and evidence scope for /explorer-graph-create. Always pass projectId and graphId explicitly; never infer them from the current route or desktop context. Create the graph first, then create nodes and connect them. The first four steps are context gathering, AskUserQuestion confirmation, read-only preview, and final creation confirmation. Do not write graph data before final confirmation. Use ${EXPLORER_LIST_GRAPHS_TOOL}, ${EXPLORER_LIST_NODES_TOOL}, and ${EXPLORER_GET_NODE_TOOL} to discover existing graphs and node IDs before creating duplicates or connecting nodes — reuse existing nodes instead of recreating them. Available tools: ${EXPLORER_CREATE_GRAPH_TOOL}, ${EXPLORER_CREATE_QUESTION_TOOL}, ${EXPLORER_CREATE_FINDING_TOOL}, ${EXPLORER_CREATE_ISSUE_TOOL}, ${EXPLORER_CREATE_EVENT_TOOL}, ${EXPLORER_CREATE_REPLAY_TOOL}, ${EXPLORER_CREATE_CODE_TOOL}, ${EXPLORER_CREATE_DOCUMENT_TOOL}, ${EXPLORER_CREATE_YOUTUBE_TOOL}, ${EXPLORER_CREATE_BROWSER_TOOL}, ${EXPLORER_CONNECT_NODES_TOOL}, ${EXPLORER_DELETE_NODE_TOOL}, ${EXPLORER_DELETE_EDGE_TOOL}, ${EXPLORER_LIST_GRAPHS_TOOL}, ${EXPLORER_LIST_NODES_TOOL}, ${EXPLORER_GET_NODE_TOOL}.`,
     });
 
     ctx.tools.register({
@@ -258,6 +259,60 @@ export default defineMainExtension({
         ctx,
       ),
     );
+    ctx.tools.register(
+      createNodeTool(
+        EXPLORER_CREATE_BROWSER_TOOL,
+        "Create Browser Node",
+        Type.Object({
+          projectId: Type.String(),
+          graphId: Type.String(),
+          url: Type.String({ description: "Web page, Feishu doc, or Confluence URL" }),
+          title: Type.Optional(Type.String({ description: "Page or document title" })),
+          provider: Type.Optional(
+            Type.Union([
+              Type.Literal("generic-web"),
+              Type.Literal("feishu-doc"),
+              Type.Literal("confluence"),
+            ]),
+          ),
+          excerpt: Type.Optional(Type.String({ description: "Preview summary or excerpt" })),
+          x: Type.Optional(Type.Number()),
+          y: Type.Optional(Type.Number()),
+        }),
+        (args) => {
+          const urlStr = String(args.url || "");
+          const provider =
+            args.provider ||
+            (urlStr.includes("feishu.cn") || urlStr.includes("larksuite.com")
+              ? "feishu-doc"
+              : urlStr.includes("atlassian.net") || urlStr.includes("wiki")
+                ? "confluence"
+                : "generic-web");
+          return {
+            kind: "browser",
+            schemaVersion: 1,
+            source: {
+              provider,
+              url: args.url,
+              canonicalUrl: args.url,
+              ...(args.title ? { title: args.title } : {}),
+              profileId: "default",
+            },
+            ...(args.title || args.excerpt
+              ? {
+                  preview: {
+                    ...(args.title ? { title: args.title } : {}),
+                    ...(args.excerpt ? { excerpt: args.excerpt } : {}),
+                  },
+                }
+              : {}),
+            anchors: [],
+            projection: { rules: [] },
+          };
+        },
+        ctx,
+      ),
+    );
 
     ctx.tools.register({
       name: EXPLORER_CONNECT_NODES_TOOL,
@@ -272,6 +327,8 @@ export default defineMainExtension({
         relation: Type.String(),
         sourceHandle: Type.Optional(Type.String()),
         targetHandle: Type.Optional(Type.String()),
+        sourceAnchorId: Type.Optional(Type.String()),
+        targetAnchorId: Type.Optional(Type.String()),
       }),
       async execute(_toolCallId, args) {
         const result = await apply(ctx, {
@@ -284,6 +341,8 @@ export default defineMainExtension({
           relation: args.relation as never,
           sourceHandle: args.sourceHandle ?? null,
           targetHandle: args.targetHandle ?? null,
+          ...(args.sourceAnchorId !== undefined ? { sourceAnchorId: args.sourceAnchorId } : {}),
+          ...(args.targetAnchorId !== undefined ? { targetAnchorId: args.targetAnchorId } : {}),
         });
         return resultText("Connected nodes", result);
       },
@@ -401,6 +460,8 @@ export default defineMainExtension({
             Type.Literal("replay"),
             Type.Literal("code"),
             Type.Literal("document"),
+            Type.Literal("youtube"),
+            Type.Literal("browser"),
           ]),
         ),
         search: Type.Optional(
@@ -611,6 +672,22 @@ function nodeLabel(type: string, data: Record<string, unknown>): string {
       return typeof data.eventId === "string" ? data.eventId : "";
     case "replay":
       return typeof data.replayId === "string" ? data.replayId : "";
+    case "youtube":
+      return typeof data.title === "string"
+        ? data.title
+        : typeof data.url === "string"
+          ? data.url
+          : "";
+    case "browser": {
+      const source = data.source as Record<string, unknown> | undefined;
+      const preview = data.preview as Record<string, unknown> | undefined;
+      return (
+        (typeof source?.title === "string" ? source.title : undefined) ||
+        (typeof preview?.title === "string" ? preview.title : undefined) ||
+        (typeof source?.url === "string" ? source.url : "") ||
+        "Browser"
+      );
+    }
     default:
       return "";
   }

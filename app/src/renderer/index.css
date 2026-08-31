@@ -61,6 +61,8 @@
   --color-signal-green: var(--signal-green);
   --color-signal-purple: var(--signal-purple);
   --color-signal-red: var(--signal-red);
+  --color-browser: var(--browser);
+  --color-browser-soft: var(--browser-soft);
 
   /* High-contrast source/stacktrace code blocks, legible in both themes. */
   --color-code-bg: var(--code-bg);
@@ -123,6 +125,8 @@
   --signal-green: #a8df72;
   --signal-purple: #bbb0e6;
   --signal-red: #ef4444;
+  --browser: #27ccf3;
+  --browser-soft: rgba(39, 204, 243, 0.15);
   --surface-glass: rgba(249, 252, 255, 0.62);
   --surface-glass-elevated: rgba(255, 255, 255, 0.88);
   --overlay: rgba(70, 105, 168, 0.055);
@@ -196,6 +200,8 @@
   --signal-green: #91c866;
   --signal-purple: #9f92d0;
   --signal-red: #f87171;
+  --browser: #31b6d6;
+  --browser-soft: rgba(49, 182, 214, 0.2);
   --surface-glass: rgba(13, 21, 36, 0.68);
   --surface-glass-elevated: rgba(23, 34, 56, 0.9);
   --overlay: rgba(177, 198, 239, 0.05);
@@ -767,6 +773,11 @@
   .explorer-node[data-node-type="youtube"] {
     --node-accent: var(--signal-red);
     --node-fg: #ffffff;
+  }
+
+  .explorer-node[data-node-type="browser"] {
+    --node-accent: var(--browser, #27ccf3);
+    --node-fg: #102047;
   }
 
   .explorer-node__description {

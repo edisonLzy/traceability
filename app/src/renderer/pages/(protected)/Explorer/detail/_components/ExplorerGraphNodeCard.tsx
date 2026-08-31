@@ -77,6 +77,25 @@ export function ExplorerGraphNodeCard({ data, type, selected }: NodeProps<Explor
           </div>
         ) : null}
 
+        {data?.kind === "browser" && data.anchors && data.anchors.length > 0 ? (
+          <div className="mt-2 flex items-center gap-1 overflow-hidden font-mono text-[8.5px]">
+            {data.anchors.slice(0, 2).map((anchor) => (
+              <span
+                key={anchor.id}
+                className="shrink-0 rounded border border-primary/40 bg-primary/10 px-1 py-0.5 text-ink font-semibold truncate max-w-[100px]"
+                title={anchor.label}
+              >
+                ⚓ {anchor.label}
+              </span>
+            ))}
+            {data.anchors.length > 2 ? (
+              <span className="shrink-0 rounded border border-ink/20 bg-muted/30 px-1 py-0.5 text-[8px] text-muted-foreground">
+                +{data.anchors.length - 2}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="mt-2.5 flex items-center justify-between border-t border-ink/15 pt-1.5 font-mono text-[9px] text-muted-foreground">
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="explorer-node__status size-2 rounded-full border border-ink/40" />
@@ -120,6 +139,12 @@ export function getNodeTitle(data?: ExplorerNodeData) {
       return data.title ?? "Document";
     case "youtube":
       return data.title ?? (data.videoId ? `YouTube (${data.videoId})` : "YouTube Video");
+    case "browser":
+      return (
+        data.source?.title ||
+        data.preview?.title ||
+        (data.source?.url ? getHostname(data.source.url) : "Browser Page")
+      );
     default:
       return "Node";
   }
@@ -144,6 +169,8 @@ export function getNodeDescription(data?: ExplorerNodeData) {
       return data.excerpt || data.path || data.title || "Document reference";
     case "youtube":
       return data.transcriptExcerpt || data.url || "YouTube video recording";
+    case "browser":
+      return data.preview?.excerpt || data.source?.url || "Browser document reference";
     default:
       return "";
   }
@@ -161,6 +188,13 @@ export function getNodeMeta(data?: ExplorerNodeData) {
   if (data.kind === "youtube") {
     if (data.duration) return formatDuration(data.duration);
     return "Video";
+  }
+  if (data.kind === "browser") {
+    const provider = data.source?.provider || "web";
+    const anchorCount = data.anchors?.length ?? 0;
+    return anchorCount > 0
+      ? `${provider} · ${anchorCount} anchor${anchorCount > 1 ? "s" : ""}`
+      : provider;
   }
   return "Ready";
 }
@@ -180,7 +214,17 @@ export function nodeIcon(type?: ExplorerFlowNode["type"]) {
               ? "▤"
               : type === "youtube"
                 ? "▶"
-                : "◌";
+                : type === "browser"
+                  ? "🌐"
+                  : "◌";
+}
+
+function getHostname(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
 }
 
 function extractYoutubeId(url?: string): string | null {

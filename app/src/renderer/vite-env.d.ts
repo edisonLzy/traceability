@@ -15,8 +15,20 @@ interface ElectronAPI {
   ): () => void;
 }
 
+interface BrowserRuntimeAPI {
+  attach(input: unknown): Promise<{ success: boolean }>;
+  updateBounds(input: unknown): Promise<{ success: boolean }>;
+  detach(input: unknown): Promise<{ success: boolean }>;
+  setMode(input: unknown): Promise<{ success: boolean }>;
+  applyProjection(input: unknown): Promise<{ success: boolean }>;
+  focusAnchor(input: unknown): Promise<{ success: boolean }>;
+  reload(nodeId: string): Promise<{ success: boolean }>;
+  on(event: string, callback: (...args: unknown[]) => void): () => void;
+}
+
 interface Window {
   electronAPI: ElectronAPI;
+  browserRuntimeAPI?: BrowserRuntimeAPI;
 }
 
 interface ImportMetaEnv {

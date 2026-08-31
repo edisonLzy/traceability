@@ -216,6 +216,8 @@ export class GraphService {
             sourceHandle: op.sourceHandle ?? null,
             targetHandle: op.targetHandle ?? null,
             relation: op.relation,
+            ...(op.sourceAnchorId !== undefined ? { sourceAnchorId: op.sourceAnchorId } : {}),
+            ...(op.targetAnchorId !== undefined ? { targetAnchorId: op.targetAnchorId } : {}),
           });
           applied.push({ op: "createEdge", id: op.id, edgeId: realId });
           break;
@@ -228,6 +230,8 @@ export class GraphService {
           plan.updateEdges.push({
             id: op.id,
             ...(op.relation !== undefined ? { relation: op.relation } : {}),
+            ...(op.sourceAnchorId !== undefined ? { sourceAnchorId: op.sourceAnchorId } : {}),
+            ...(op.targetAnchorId !== undefined ? { targetAnchorId: op.targetAnchorId } : {}),
           });
           applied.push({ op: "updateEdge", id: op.id, edgeId: op.id });
           break;

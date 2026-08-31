@@ -44,3 +44,38 @@ contextBridge.exposeInMainWorld("electronAPI", {
     };
   },
 });
+
+contextBridge.exposeInMainWorld("browserRuntimeAPI", {
+  attach: (input: unknown) => ipcRenderer.invoke("browser-runtime:attach", input),
+  updateBounds: (input: unknown) => ipcRenderer.invoke("browser-runtime:updateBounds", input),
+  detach: (input: unknown) => ipcRenderer.invoke("browser-runtime:detach", input),
+  setMode: (input: unknown) => ipcRenderer.invoke("browser-runtime:setMode", input),
+  applyProjection: (input: unknown) => ipcRenderer.invoke("browser-runtime:applyProjection", input),
+  focusAnchor: (input: unknown) => ipcRenderer.invoke("browser-runtime:focusAnchor", input),
+  reload: (nodeId: string) => ipcRenderer.invoke("browser-runtime:reload", nodeId),
+  on: (event: string, callback: (...args: unknown[]) => void) => {
+    const subscription = (_e: Electron.IpcRendererEvent, ...args: unknown[]) => {
+      callback(...args);
+    };
+    ipcRenderer.on(event, subscription);
+    return () => {
+      ipcRenderer.removeListener(event, subscription);
+    };
+  },
+});
+
+contextBridge.exposeInMainWorld("extensionsAPI", {
+  invoke: (extensionId: string, method: string, args: unknown[]) => {
+    return ipcRenderer.invoke(`extension:${extensionId}:${method}`, ...args);
+  },
+  on: (extensionId: string, event: string, listener: (...args: unknown[]) => void) => {
+    const channel = `extension:${extensionId}:${event}`;
+    const subscription = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => {
+      listener(...args);
+    };
+    ipcRenderer.on(channel, subscription);
+    return () => {
+      ipcRenderer.removeListener(channel, subscription);
+    };
+  },
+});

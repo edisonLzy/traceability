@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import type { ExplorerFlowEdge, ExplorerFlowNode, ExplorerNodeData } from "../../types";
 import { getNodeDescription, getNodeTitle, nodeIcon } from "./ExplorerGraphNodeCard";
+import { BrowserNodeDetailContent } from "./NodeDetailContent/BrowserNodeDetailContent";
 import { CodeNodeDetailContent } from "./NodeDetailContent/CodeNodeDetailContent";
 import { YoutubeNodeDetailContent } from "./NodeDetailContent/YoutubeNodeDetailContent";
 
@@ -144,16 +145,19 @@ export function ExplorerGraphNodeDetail({
         <div
           className={cn(
             "flex flex-1 flex-col min-h-0 min-w-0 bg-card select-text",
-            nodeType === "code" || nodeType === "youtube"
+            nodeType === "code" || nodeType === "youtube" || nodeType === "browser"
               ? "overflow-hidden p-0"
               : "overflow-y-auto p-5 select-text",
           )}
         >
           <NodeDetailContent
             data={selectedNode.data}
+            edges={edges}
             graphId={graphId}
             nodeId={selectedNode.id}
+            nodes={nodes}
             nodeType={nodeType}
+            onSelectNode={onSelectNode}
           />
         </div>
 
@@ -250,14 +254,20 @@ export function ExplorerGraphNodeDetail({
 /** Component to render type-specific node detail representation */
 function NodeDetailContent({
   data,
-  nodeType,
+  nodeType: _nodeType,
   nodeId,
   graphId,
+  nodes,
+  edges,
+  onSelectNode,
 }: {
   data?: ExplorerNodeData;
   nodeType: string;
   nodeId?: string;
   graphId?: string;
+  nodes?: ExplorerFlowNode[];
+  edges?: ExplorerFlowEdge[];
+  onSelectNode?: (nodeId: string) => void;
 }) {
   if (!data) {
     return (
@@ -268,6 +278,19 @@ function NodeDetailContent({
   }
 
   switch (data.kind) {
+    case "browser": {
+      return (
+        <BrowserNodeDetailContent
+          data={data}
+          edges={edges}
+          graphId={graphId}
+          nodeId={nodeId}
+          nodes={nodes}
+          onSelectNode={onSelectNode}
+        />
+      );
+    }
+
     case "youtube": {
       return <YoutubeNodeDetailContent data={data} graphId={graphId} nodeId={nodeId} />;
     }
@@ -440,6 +463,8 @@ function getNodeAccentColor(type?: string) {
       return "var(--signal-yellow)";
     case "youtube":
       return "var(--signal-red, #ef4444)";
+    case "browser":
+      return "var(--browser, #27ccf3)";
     default:
       return "var(--primary)";
   }
