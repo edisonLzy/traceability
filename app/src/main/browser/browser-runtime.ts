@@ -127,15 +127,40 @@ export class BrowserRuntime {
       }
     };
 
+    const onConsoleMessage = (_event: Electron.Event, _level: number, message: string) => {
+      if (message && message.startsWith("__TR_GUEST_EVENT__:")) {
+        try {
+          const jsonStr = message.slice("__TR_GUEST_EVENT__:".length);
+          const parsed = JSON.parse(jsonStr) as {
+            channel: string;
+            data: { quote?: string; locators?: BrowserLocator[]; suggestedName?: string };
+          };
+          if (
+            parsed.channel === "__tr_selection__" &&
+            parsed.data?.quote &&
+            parsed.data?.locators
+          ) {
+            this.callbacks.onAnchorSelected?.(parsed.data.quote, parsed.data.locators);
+          } else if (parsed.channel === "__tr_zap_element__" && parsed.data?.locators) {
+            this.callbacks.onElementZapped?.(parsed.data.locators, parsed.data.suggestedName);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
     webContents.on("did-finish-load", onDidFinishLoad);
     webContents.on("did-fail-load", onDidFailLoad);
     webContents.on("ipc-message", onIpcMessage);
+    webContents.on("console-message", onConsoleMessage);
 
     this.cleanupGuestListeners = () => {
       if (!webContents.isDestroyed()) {
         webContents.removeListener("did-finish-load", onDidFinishLoad);
         webContents.removeListener("did-fail-load", onDidFailLoad);
         webContents.removeListener("ipc-message", onIpcMessage);
+        webContents.removeListener("console-message", onConsoleMessage);
       }
     };
 
@@ -229,6 +254,19 @@ export class BrowserRuntime {
   private async applyCurrentProjection(): Promise<void> {
     if (!this.webContents || this.webContents.isDestroyed()) return;
 
+    const rulesJson = JSON.stringify(this.activeProjectionRules);
+    const revealedBool = Boolean(this.projectionRevealed);
+
+    // Call guest script helper to update live DOM style element immediately
+    void this.webContents
+      .executeJavaScript(`
+        if (window.__tr_apply_projection) {
+          window.__tr_apply_projection(${JSON.stringify(rulesJson)}, ${revealedBool});
+        }
+      `)
+      .catch(() => {});
+
+    // Also insertCSS as backup
     const hideSelectors: string[] = [];
     if (!this.projectionRevealed) {
       for (const rule of this.activeProjectionRules) {
@@ -256,6 +294,7 @@ export class BrowserRuntime {
       if (this.mode) {
         this.setMode(this.mode);
       }
+      await this.applyCurrentProjection();
     } catch {
       // ignore
     }

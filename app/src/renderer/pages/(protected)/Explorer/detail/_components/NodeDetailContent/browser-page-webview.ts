@@ -28,6 +28,13 @@ export interface EnsureBrowserPageWebviewResult {
 }
 
 const REGISTRY = new Map<string, BrowserPageWebview>();
+const HANDLERS = new Map<
+  string,
+  {
+    onDomReady?: (webContentsId: number, webview: BrowserPageWebview) => void;
+    onIpcMessage?: (channel: string, payload: unknown) => void;
+  }
+>();
 
 export function getBrowserPageWebview(nodeId: string): BrowserPageWebview | null {
   return REGISTRY.get(nodeId) ?? null;
@@ -39,12 +46,18 @@ export function removeBrowserPageWebview(nodeId: string): void {
     webview.parentElement.removeChild(webview);
   }
   REGISTRY.delete(nodeId);
+  HANDLERS.delete(nodeId);
 }
 
 export function ensureBrowserPageWebview(
   container: HTMLElement,
   input: EnsureBrowserPageWebviewInput,
 ): EnsureBrowserPageWebviewResult {
+  HANDLERS.set(input.nodeId, {
+    onDomReady: input.onDomReady,
+    onIpcMessage: input.onIpcMessage,
+  });
+
   const existing = REGISTRY.get(input.nodeId);
   const stale =
     !existing ||
@@ -55,6 +68,12 @@ export function ensureBrowserPageWebview(
     if (existing.src !== input.url && input.url) {
       existing.src = input.url;
     }
+    try {
+      const webContentsId = existing.getWebContentsId();
+      if (webContentsId) {
+        input.onDomReady?.(webContentsId, existing);
+      }
+    } catch {}
     return { created: false, webview: existing };
   }
 
@@ -78,23 +97,32 @@ export function ensureBrowserPageWebview(
   webview.style.outline = "none";
   webview.style.backgroundColor = "#ffffff";
 
-  if (input.onDomReady) {
-    webview.addEventListener("dom-ready", () => {
-      try {
-        const webContentsId = webview.getWebContentsId();
-        input.onDomReady?.(webContentsId, webview);
-      } catch (err) {
-        console.warn("Failed to getWebContentsId from webview dom-ready:", err);
-      }
-    });
-  }
+  webview.addEventListener("dom-ready", () => {
+    try {
+      const webContentsId = webview.getWebContentsId();
+      HANDLERS.get(input.nodeId)?.onDomReady?.(webContentsId, webview);
+    } catch (err) {
+      console.warn("Failed to getWebContentsId from webview dom-ready:", err);
+    }
+  });
 
-  if (input.onIpcMessage) {
-    webview.addEventListener("ipc-message", (event: unknown) => {
-      const e = event as { channel: string; args: unknown[] };
-      input.onIpcMessage?.(e.channel, e.args?.[0]);
-    });
-  }
+  webview.addEventListener("ipc-message", (event: unknown) => {
+    const e = event as { channel: string; args: unknown[] };
+    HANDLERS.get(input.nodeId)?.onIpcMessage?.(e.channel, e.args?.[0]);
+  });
+
+  webview.addEventListener("console-message", (event: unknown) => {
+    const e = event as { message: string };
+    if (e.message && e.message.startsWith("__TR_GUEST_EVENT__:")) {
+      try {
+        const jsonStr = e.message.slice("__TR_GUEST_EVENT__:".length);
+        const parsed = JSON.parse(jsonStr) as { channel: string; data: unknown };
+        HANDLERS.get(input.nodeId)?.onIpcMessage?.(parsed.channel, parsed.data);
+      } catch (err) {
+        console.warn("Failed to parse guest console-message:", err);
+      }
+    }
+  });
 
   container.appendChild(webview);
   webview.src = input.url;

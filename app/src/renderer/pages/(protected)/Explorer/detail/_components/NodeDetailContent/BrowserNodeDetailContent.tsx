@@ -9,17 +9,14 @@ import {
   FileText,
   Globe2,
   LayoutPanelLeft,
-  Link2,
   LocateFixed,
   MessageSquareOff,
   MousePointer2,
   PanelLeftClose,
-  Quote,
   RotateCcw,
   TextSelect,
   Trash2,
   TriangleAlert,
-  X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -34,7 +31,11 @@ import type {
   ExplorerFlowNode,
   ProjectionRule,
 } from "../../../types";
+import { getNodeTitle } from "../ExplorerGraphNodeCard";
+import { AnchorSelectionToolbar } from "./AnchorSelectionToolbar";
+import type { ScreenPoint } from "./annotation-floating";
 import { ensureBrowserPageWebview, removeBrowserPageWebview } from "./browser-page-webview";
+import { ZapHoverMask, type ZapHoverRect } from "./ZapHoverMask";
 
 export interface BrowserNodeDetailContentProps {
   data: BrowserNodeData;
@@ -49,11 +50,14 @@ export function BrowserNodeDetailContent({
   data,
   nodeId = "browser-node",
   graphId,
+  nodes = [],
+  edges = [],
+  onSelectNode,
 }: BrowserNodeDetailContentProps) {
   const surfaceContainerRef = useRef<HTMLDivElement>(null);
 
   const [mode, setMode] = useState<BrowserMode>("read");
-  const [activeTab, setActiveTab] = useState<"anchors" | "projection">("anchors");
+  const [activeTab, setActiveTab] = useState<"anchors" | "projection" | "node">("anchors");
   const [revealed, setRevealed] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
@@ -83,9 +87,13 @@ export function BrowserNodeDetailContent({
   const [focusedAnchorId, setFocusedAnchorId] = useState<string | null>(
     data.viewState?.focusedAnchorId || null,
   );
+
+  // React Overlays state (driven by events from <webview> guest preload)
+  const [hoverRect, setHoverRect] = useState<ZapHoverRect | null>(null);
+  const [hoverLabel, setHoverLabel] = useState<string>("");
+  const [selectionPoint, setSelectionPoint] = useState<ScreenPoint | null>(null);
   const [selectedText, setSelectedText] = useState<string>("");
   const [selectedLocators, setSelectedLocators] = useState<BrowserLocator[]>([]);
-  const [selectionBox, setSelectionBox] = useState<{ top: number; left: number } | null>(null);
 
   // Compute hidden and stale counts
   const hiddenRulesCount = useMemo(() => {
@@ -97,7 +105,7 @@ export function BrowserNodeDetailContent({
     return projectionRules.filter((r) => r.lastResolution?.state === "stale").length;
   }, [projectionRules]);
 
-  // Mount <webview> using imperative factory
+  // Mount <webview> using imperative factory and subscribe to preload events
   useEffect(() => {
     const container = surfaceContainerRef.current;
     if (!container) return;
@@ -123,23 +131,14 @@ export function BrowserNodeDetailContent({
         }
       },
       onIpcMessage: (channel, payload) => {
-        if (channel === "__tr_selection__") {
-          const data = payload as {
-            text?: string;
-            locators?: BrowserLocator[];
-            rectViewport?: { top: number; left: number; width: number; height: number };
-          };
-          if (data?.text && data.rectViewport) {
-            setSelectedText(data.text);
-            setSelectedLocators(data.locators || [{ type: "text-quote", exact: data.text }]);
-            setSelectionBox({
-              top: Math.max(10, data.rectViewport.top - 46),
-              left: Math.max(100, data.rectViewport.left + data.rectViewport.width / 2),
-            });
-          }
-        } else if (channel === "__tr_selection_cleared__") {
-          setSelectionBox(null);
-        } else if (channel === "__tr_zap_element__") {
+        // 1. Zap Hover
+        if (channel === "browser-guest:hover" || channel === "__tr_hover__") {
+          const data = payload as { rect: ZapHoverRect | null; label?: string };
+          setHoverRect(data?.rect || null);
+          setHoverLabel(data?.label || "");
+        }
+        // 2. Zap Element Clicked / Picked
+        else if (channel === "browser-guest:element-picked" || channel === "__tr_zap_element__") {
           const data = payload as {
             locators?: BrowserLocator[];
             suggestedName?: string;
@@ -164,13 +163,41 @@ export function BrowserNodeDetailContent({
             };
 
             setProjectionRules((prev) => [...prev, newRule]);
+            setHoverRect(null);
+            setMode("read");
             setActiveTab("projection");
             setRevealed(false);
             toast.success(`已隐藏: ${ruleName}`);
           }
-        } else if (channel === "__tr_escape__") {
+        }
+        // 3. Anchor Text Selection
+        else if (channel === "browser-guest:selection" || channel === "__tr_selection__") {
+          const data = payload as {
+            text?: string;
+            locators?: BrowserLocator[];
+            rectViewport?: { top: number; left: number; width: number; height: number };
+          };
+          if (data?.text && data.rectViewport) {
+            setSelectedText(data.text);
+            setSelectedLocators(data.locators || [{ type: "text-quote", exact: data.text }]);
+            setSelectionPoint({
+              x: data.rectViewport.left + data.rectViewport.width / 2,
+              y: data.rectViewport.top,
+            });
+          }
+        }
+        // 4. Selection Cleared
+        else if (
+          channel === "browser-guest:selection-cleared" ||
+          channel === "__tr_selection_cleared__"
+        ) {
+          setSelectionPoint(null);
+        }
+        // 5. Escape pressed in guest
+        else if (channel === "browser-guest:escape" || channel === "__tr_escape__") {
           setMode("read");
-          setSelectionBox(null);
+          setHoverRect(null);
+          setSelectionPoint(null);
         }
       },
     });
@@ -190,6 +217,9 @@ export function BrowserNodeDetailContent({
   useEffect(() => {
     if (typeof window !== "undefined" && window.browserRuntimeAPI) {
       void window.browserRuntimeAPI.setMode({ nodeId, mode });
+    }
+    if (mode !== "zap") {
+      setHoverRect(null);
     }
   }, [mode, nodeId]);
 
@@ -240,7 +270,7 @@ export function BrowserNodeDetailContent({
 
     setAnchors((prev) => [...prev, newAnchor]);
     setFocusedAnchorId(newId);
-    setSelectionBox(null);
+    setSelectionPoint(null);
     setSelectedText("");
     setSelectedLocators([]);
     setMode("read");
@@ -296,12 +326,44 @@ export function BrowserNodeDetailContent({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setMode("read");
-        setSelectionBox(null);
+        setHoverRect(null);
+        setSelectionPoint(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // Connected relations matching anchors
+  const anchorRelations = useMemo(() => {
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const list: Array<{
+      edge: ExplorerFlowEdge;
+      direction: "in" | "out";
+      otherNode?: ExplorerFlowNode;
+      anchorId?: string;
+    }> = [];
+
+    edges.forEach((edge) => {
+      if (edge.target === nodeId) {
+        list.push({
+          edge,
+          direction: "in",
+          otherNode: nodeMap.get(edge.source),
+          anchorId: edge.data?.targetAnchorId,
+        });
+      } else if (edge.source === nodeId) {
+        list.push({
+          edge,
+          direction: "out",
+          otherNode: nodeMap.get(edge.target),
+          anchorId: edge.data?.sourceAnchorId,
+        });
+      }
+    });
+
+    return list;
+  }, [edges, nodeId, nodes]);
 
   const displayTitle = data.source?.title || data.preview?.title || "Browser Evidence";
   const displayUrl = data.source?.canonicalUrl || data.source?.url || "https://example.com";
@@ -340,7 +402,7 @@ export function BrowserNodeDetailContent({
           </span>
 
           <button
-            className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground hover:text-ink truncate max-w-[260px] transition-colors cursor-pointer"
+            className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground hover:text-ink truncate max-w-[260px] transition-colors"
             onClick={copyUrl}
             title={`Click to copy: ${displayUrl}`}
             type="button"
@@ -359,10 +421,10 @@ export function BrowserNodeDetailContent({
           {/* Anchor Mode Button */}
           <Button
             className={cn(
-              "h-7 px-2.5 border border-ink/40 font-mono text-[10.5px] font-bold transition-all cursor-pointer",
+              "h-7 px-2.5 border border-ink/40 font-mono text-[10.5px] font-bold transition-all",
               mode === "anchor"
-                ? "!bg-ink !text-white border-ink shadow-[1.5px_1.5px_0_var(--browser)]"
-                : "!bg-card !text-ink hover:!bg-muted",
+                ? "bg-ink text-card border-ink shadow-[1.5px_1.5px_0_var(--browser)]"
+                : "bg-card text-ink hover:bg-muted",
             )}
             onClick={() => {
               setMode(mode === "anchor" ? "read" : "anchor");
@@ -372,16 +434,16 @@ export function BrowserNodeDetailContent({
             type="button"
           >
             <TextSelect className="size-3.5 mr-1" />
-            <span className={cn(mode === "anchor" ? "!text-white" : "!text-ink")}>Anchor</span>
+            <span>Anchor</span>
           </Button>
 
           {/* Zap Mode Button */}
           <Button
             className={cn(
-              "h-7 px-2.5 border border-ink/40 font-mono text-[10.5px] font-bold transition-all cursor-pointer",
+              "h-7 px-2.5 border border-ink/40 font-mono text-[10.5px] font-bold transition-all",
               mode === "zap"
-                ? "!bg-ink !text-white border-ink shadow-[1.5px_1.5px_0_var(--browser)]"
-                : "!bg-card !text-ink hover:!bg-muted",
+                ? "bg-ink text-card border-ink shadow-[1.5px_1.5px_0_var(--browser)]"
+                : "bg-card text-ink hover:bg-muted",
             )}
             onClick={() => {
               setMode(mode === "zap" ? "read" : "zap");
@@ -391,35 +453,33 @@ export function BrowserNodeDetailContent({
             type="button"
           >
             <MousePointer2 className="size-3.5 mr-1" />
-            <span className={cn(mode === "zap" ? "!text-white" : "!text-ink")}>Zap</span>
+            <span>Zap</span>
           </Button>
 
           {/* Reveal Toggle Button */}
           <Button
             className={cn(
-              "h-7 px-2 border border-ink/40 font-mono text-[10.5px] font-bold !bg-card !text-ink hover:!bg-muted cursor-pointer",
-              revealed && "!bg-signal-yellow/20 border-warning !text-ink",
+              "h-7 px-2 border border-ink/40 font-mono text-[10.5px] font-bold bg-card text-ink hover:bg-muted",
+              revealed && "bg-signal-yellow/20 border-warning text-ink",
             )}
             onClick={() => setRevealed(!revealed)}
             size="sm"
             title="Temporarily reveal hidden content"
             type="button"
           >
-            <Eye className="size-3.5 mr-1 text-ink" />
-            <span className="!text-ink">
-              {revealed ? "revealed" : `${hiddenRulesCount} hidden`}
-            </span>
+            <Eye className="size-3.5 mr-1" />
+            <span>{revealed ? "revealed" : `${hiddenRulesCount} hidden`}</span>
           </Button>
 
           {/* External Link */}
           <Button
-            className="h-7 size-7 p-0 border border-ink/40 !bg-card !text-ink hover:!bg-muted font-mono cursor-pointer"
+            className="h-7 size-7 p-0 border border-ink/40 bg-card text-ink hover:bg-muted font-mono"
             onClick={() => window.open(source.url, "_blank")}
             size="sm"
             title="Open in system browser"
             type="button"
           >
-            <ExternalLink className="size-3.5 text-ink" />
+            <ExternalLink className="size-3.5" />
           </Button>
         </div>
       </div>
@@ -431,7 +491,7 @@ export function BrowserNodeDetailContent({
           ref={surfaceContainerRef}
           className="relative flex flex-1 flex-col min-h-0 min-w-0 bg-[#eef2f8] dark:bg-[#101827] overflow-hidden"
         >
-          {/* Mode Floating Hint Banners */}
+          {/* Mode Floating Hint Banners (Pure React UI) */}
           {mode === "anchor" && (
             <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded border border-ink bg-card px-3 py-1 font-mono text-[11px] font-bold text-ink shadow-[2px_2px_0_var(--ink)] animate-in fade-in slide-in-from-top-1 backdrop-blur-xs pointer-events-none">
               <TextSelect className="size-3.5 text-primary" />
@@ -446,44 +506,23 @@ export function BrowserNodeDetailContent({
             </div>
           )}
 
-          {/* Selection Toolbar Floating Popup */}
-          {selectionBox && (
-            <div
-              className="absolute z-40 flex items-center gap-1.5 rounded-[6px] border-2 border-ink bg-ink text-card p-1 shadow-[3px_3px_0_var(--browser)] animate-in zoom-in-95 -translate-x-1/2"
-              style={{ top: `${selectionBox.top}px`, left: `${selectionBox.left}px` }}
-            >
-              <button
-                className="flex items-center gap-1 rounded px-2 py-1 font-mono text-[10px] font-bold hover:bg-white/15 transition-colors"
-                onClick={handleCreateAnchor}
-                type="button"
-              >
-                <Quote className="size-3" />
-                <span>证据片段</span>
-              </button>
-              <button
-                className="flex items-center gap-1 rounded bg-signal-cyan text-ink px-2 py-1 font-mono text-[10px] font-bold hover:opacity-90 transition-opacity"
-                onClick={handleCreateAnchor}
-                type="button"
-              >
-                <Link2 className="size-3" />
-                <span>创建 Anchor</span>
-              </button>
-              <button
-                aria-label="Cancel"
-                className="grid size-5 place-items-center rounded hover:bg-white/20 text-muted-foreground hover:text-white"
-                onClick={() => setSelectionBox(null)}
-                type="button"
-              >
-                <X className="size-3" />
-              </button>
-            </div>
-          )}
+          {/* 100% Pure React Hover Mask for Zap Picker */}
+          <ZapHoverMask label={hoverLabel} rect={mode === "zap" ? hoverRect : null} />
+
+          {/* 100% Pure React Selection Toolbar Floating Popup */}
+          <AnchorSelectionToolbar
+            anchor={selectionPoint}
+            boundary={surfaceContainerRef.current}
+            onCancel={() => setSelectionPoint(null)}
+            onCreateAnchor={handleCreateAnchor}
+            selectedText={selectedText}
+          />
         </div>
 
-        {/* Right: Streamlined Browser Inspector (300px) */}
-        <aside className="w-[300px] shrink-0 bg-card flex flex-col min-h-0 overflow-hidden">
-          {/* Tab Navigation: 2 Tabs only (Anchors & Rules) */}
-          <div className="flex h-10 shrink-0 border-b border-ink/20 bg-muted/30 px-2">
+        {/* Right: Browser Inspector (320px) */}
+        <aside className="w-[320px] shrink-0 bg-card flex flex-col min-h-0 overflow-hidden">
+          {/* Tab Navigation */}
+          <div className="flex h-11 shrink-0 border-b border-ink/20 bg-muted/30 px-3">
             <button
               className={cn(
                 "flex-1 py-2 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer",
@@ -506,18 +545,39 @@ export function BrowserNodeDetailContent({
               onClick={() => setActiveTab("projection")}
               type="button"
             >
-              Rules ({projectionRules.length})
+              Projection
+            </button>
+            <button
+              className={cn(
+                "flex-1 py-2 font-mono text-[11px] font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer",
+                activeTab === "node"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-ink",
+              )}
+              onClick={() => setActiveTab("node")}
+              type="button"
+            >
+              Node
             </button>
           </div>
 
           {/* Inspector Content Scroll Area */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             {/* Anchors Tab */}
             {activeTab === "anchors" && (
-              <div className="space-y-2.5">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10.5px] font-bold uppercase text-tertiary">
+                    Browser Anchors
+                  </span>
+                  <span className="rounded bg-primary/10 px-1.5 py-0.2 font-mono text-[9px] font-bold text-primary">
+                    {anchors.length}
+                  </span>
+                </div>
+
                 {/* Anchor Cards List */}
                 {anchors.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {anchors.map((anchor, idx) => {
                       const isFocused = focusedAnchorId === anchor.id;
                       const isResolved = anchor.lastResolution?.state !== "stale";
@@ -525,22 +585,22 @@ export function BrowserNodeDetailContent({
                         <div
                           key={anchor.id}
                           className={cn(
-                            "p-2.5 rounded-[5px] border transition-all cursor-pointer font-mono",
+                            "p-3 rounded-[5px] border transition-all cursor-pointer",
                             isFocused
                               ? "border-2 border-primary bg-primary/5 shadow-[2px_2px_0_var(--primary)]"
                               : "border-ink/25 bg-muted/20 hover:border-ink hover:bg-muted/40",
                           )}
                           onClick={() => focusAnchor(anchor.id)}
                         >
-                          <div className="flex items-center justify-between gap-1.5">
-                            <div className="flex items-center gap-1.5 min-w-0 font-bold text-xs text-ink truncate">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0 font-mono text-xs font-bold text-ink truncate">
                               <LocateFixed className="size-3.5 text-signal-cyan shrink-0" />
                               <span className="truncate">{anchor.label}</span>
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <span
                                 className={cn(
-                                  "flex items-center gap-0.5 text-[8.5px] font-bold uppercase px-1 py-0.2 rounded border",
+                                  "flex items-center gap-0.5 font-mono text-[8.5px] font-bold uppercase px-1 py-0.2 rounded border",
                                   isResolved
                                     ? "bg-success/10 text-success border-success/20"
                                     : "bg-destructive/10 text-destructive border-destructive/20",
@@ -569,13 +629,13 @@ export function BrowserNodeDetailContent({
                           </div>
 
                           {anchor.quote && (
-                            <p className="text-[10.5px] italic text-muted-foreground mt-1.5 line-clamp-2 leading-snug">
+                            <p className="text-[11px] italic text-muted-foreground mt-2 line-clamp-2 leading-snug">
                               “{anchor.quote}”
                             </p>
                           )}
 
-                          <div className="flex items-center justify-between text-[8px] text-tertiary mt-2 pt-1 border-t border-ink/10">
-                            <span className="truncate max-w-[190px]">
+                          <div className="flex items-center justify-between text-[8.5px] font-mono text-tertiary mt-2.5 pt-1.5 border-t border-ink/10">
+                            <span className="truncate max-w-[200px]">
                               {anchor.locators?.map((l) => l.type).join(" → ") || "text-quote"}
                             </span>
                             <span className="font-bold">A-{String(idx + 1).padStart(2, "0")}</span>
@@ -591,30 +651,113 @@ export function BrowserNodeDetailContent({
                     </p>
                   </div>
                 )}
+
+                {/* Add Anchor CTA */}
+                <Button
+                  className="w-full h-8 border border-ink/40 bg-card font-mono text-[11px] font-bold text-ink hover:bg-muted cursor-pointer"
+                  onClick={() => setMode("anchor")}
+                  size="sm"
+                  type="button"
+                >
+                  <TextSelect className="size-3.5 mr-1.5" />
+                  <span>Select text to create anchor</span>
+                </Button>
+
+                {/* Connected Graph Relationships */}
+                <div className="space-y-2 pt-2 border-t border-ink/15">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10.5px] font-bold uppercase text-tertiary">
+                      Connected Relationships
+                    </span>
+                    <span className="font-mono text-[9px] text-muted-foreground">
+                      {anchorRelations.length}
+                    </span>
+                  </div>
+
+                  {anchorRelations.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {anchorRelations.map(({ edge, direction, otherNode, anchorId }) => (
+                        <div
+                          key={edge.id}
+                          className={cn(
+                            "flex items-center justify-between p-2 rounded border border-ink/20 bg-muted/20 text-xs font-mono transition-all",
+                            otherNode && "cursor-pointer hover:border-ink hover:bg-muted/40",
+                          )}
+                          onClick={() => otherNode && onSelectNode?.(otherNode.id)}
+                        >
+                          <div className="min-w-0">
+                            <span className="text-[9px] text-muted-foreground uppercase font-bold block">
+                              {direction === "in" ? "↳ INBOUND" : "OUTBOUND ⇁"}{" "}
+                              {anchorId ? `· ${anchorId}` : ""}
+                            </span>
+                            <span
+                              className="font-semibold text-ink truncate block max-w-[180px]"
+                              title={otherNode ? getNodeTitle(otherNode.data) : edge.target}
+                            >
+                              {otherNode ? getNodeTitle(otherNode.data) : edge.target}
+                            </span>
+                          </div>
+                          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[8.5px] font-bold uppercase text-primary border border-primary/20 shrink-0">
+                            {edge.data?.relation?.replaceAll("_", " ") || "RELATES"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] font-mono text-muted-foreground italic">
+                      No connected graph relations
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Projection / Rules Tab */}
+            {/* Projection Tab */}
             {activeTab === "projection" && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {staleRulesCount > 0 && (
-                  <div className="flex items-start gap-1.5 p-2 rounded border border-destructive/40 bg-destructive/10 text-destructive text-[10.5px] font-mono leading-tight">
-                    <TriangleAlert className="size-3.5 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2 p-2.5 rounded border border-destructive/40 bg-destructive/10 text-destructive text-[11px] font-mono leading-tight">
+                    <TriangleAlert className="size-4 shrink-0 mt-0.5" />
                     <span>{staleRulesCount} rule(s) failed locator resolution on current DOM.</span>
                   </div>
                 )}
 
+                {/* Projection Summary Grid */}
+                <div className="grid grid-cols-2 gap-2 font-mono text-xs">
+                  <div className="p-2.5 rounded border border-ink/20 bg-muted/30">
+                    <span className="text-[9.5px] uppercase text-muted-foreground font-bold block">
+                      Hidden
+                    </span>
+                    <span className="text-sm font-bold text-ink mt-0.5 block">
+                      {hiddenRulesCount}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded border border-ink/20 bg-muted/30">
+                    <span className="text-[9.5px] uppercase text-muted-foreground font-bold block">
+                      Stale
+                    </span>
+                    <span className="text-sm font-bold text-ink mt-0.5 block">
+                      {staleRulesCount}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Rules List */}
-                {projectionRules.length > 0 ? (
-                  <div className="space-y-2">
-                    {projectionRules.map((rule) => {
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between font-mono text-[10.5px] font-bold uppercase text-tertiary">
+                    <span>Projection Rules</span>
+                    <span>{projectionRules.length}</span>
+                  </div>
+
+                  {projectionRules.length > 0 ? (
+                    projectionRules.map((rule) => {
                       const isEnabled = rule.enabled !== false;
                       return (
                         <div
                           key={rule.id}
                           className="flex items-start justify-between gap-2 p-2.5 rounded border border-ink/25 bg-muted/20 font-mono"
                         >
-                          <div className="min-w-0 space-y-0.5">
+                          <div className="min-w-0 space-y-1">
                             <div className="flex items-center gap-1.5 font-bold text-xs text-ink truncate">
                               {rule.id.includes("sidebar") ? (
                                 <PanelLeftClose className="size-3.5 text-primary shrink-0" />
@@ -623,19 +766,19 @@ export function BrowserNodeDetailContent({
                               )}
                               <span className="truncate">{rule.name || rule.id}</span>
                             </div>
-                            <div className="text-[8.5px] text-muted-foreground truncate">
+                            <div className="text-[9px] text-muted-foreground truncate">
                               {rule.target?.elementRole ||
                                 rule.target?.selector ||
                                 "provider-element"}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
+                          <div className="flex items-center gap-2 shrink-0 pt-0.5">
                             <button
                               aria-checked={isEnabled}
                               aria-label={`Toggle rule ${rule.name}`}
                               className={cn(
-                                "relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
+                                "relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out",
                                 isEnabled ? "bg-primary" : "bg-muted-foreground/30",
                               )}
                               onClick={() => toggleRule(rule.id)}
@@ -644,14 +787,14 @@ export function BrowserNodeDetailContent({
                             >
                               <span
                                 className={cn(
-                                  "pointer-events-none inline-block size-3 rounded-full bg-white shadow transform transition duration-200 ease-in-out",
-                                  isEnabled ? "translate-x-3" : "translate-x-0",
+                                  "pointer-events-none inline-block size-3.5 rounded-full bg-white shadow transform transition duration-200 ease-in-out",
+                                  isEnabled ? "translate-x-3.5" : "translate-x-0",
                                 )}
                               />
                             </button>
                             <button
                               aria-label="Delete rule"
-                              className="hover:text-destructive text-muted-foreground p-0.5 rounded transition-colors"
+                              className="hover:text-destructive text-muted-foreground p-0.5 rounded transition-colors cursor-pointer"
                               onClick={() => deleteRule(rule.id)}
                               type="button"
                             >
@@ -660,44 +803,106 @@ export function BrowserNodeDetailContent({
                           </div>
                         </div>
                       );
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded border border-dashed border-ink/30 p-4 text-center">
-                    <p className="text-xs font-mono text-muted-foreground">
-                      点击顶部 Zap 按钮即可拾取网页元素隐藏
-                    </p>
-                  </div>
-                )}
+                    })
+                  ) : (
+                    <div className="rounded border border-dashed border-ink/30 p-4 text-center">
+                      <p className="text-xs font-mono text-muted-foreground">
+                        点击顶部 Zap 按钮即可拾取网页元素隐藏
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 {/* Projection Action Buttons */}
-                <div className="space-y-1.5 pt-2 border-t border-ink/15 font-mono">
+                <div className="space-y-2 pt-2 border-t border-ink/15 font-mono">
                   <Button
-                    className="w-full h-7 border border-ink/40 !bg-card !text-ink font-bold text-[10px] hover:!bg-muted cursor-pointer shadow-[1px_1px_0_var(--ink)]"
+                    className="w-full h-7.5 border border-ink/40 bg-card text-ink font-bold text-[10.5px] hover:bg-muted cursor-pointer"
                     onClick={() => setRevealed(!revealed)}
                     size="sm"
                     type="button"
                   >
-                    <Eye className="size-3 mr-1 text-ink" />
-                    <span className="!text-ink">
-                      {revealed ? "Restore hidden elements" : "Reveal all hidden"}
+                    <Eye className="size-3.5 mr-1" />
+                    <span>
+                      {revealed ? "Restore hidden projection" : "Temporarily reveal hidden"}
                     </span>
                   </Button>
 
                   <Button
-                    className="w-full h-7 border border-destructive/40 !bg-card !text-destructive font-bold text-[10px] hover:!bg-destructive/10 cursor-pointer shadow-[1px_1px_0_var(--destructive)]"
+                    className="w-full h-7.5 border border-destructive/40 bg-card text-destructive font-bold text-[10.5px] hover:bg-destructive/10 cursor-pointer"
                     onClick={handleResetProjection}
                     size="sm"
                     type="button"
                   >
-                    <RotateCcw className="size-3 mr-1 text-destructive" />
-                    <span className="!text-destructive">Reset projection rules</span>
+                    <RotateCcw className="size-3.5 mr-1" />
+                    <span>Reset node projection</span>
                   </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Node Metadata Tab */}
+            {activeTab === "node" && (
+              <div className="space-y-4 font-mono text-xs">
+                <div className="font-bold uppercase text-tertiary text-[10.5px]">Node Metadata</div>
+                <div className="rounded border border-ink/20 bg-muted/20 p-3 space-y-2 text-[10.5px]">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Node ID:</span>
+                    <span className="font-bold text-ink">{nodeId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Type:</span>
+                    <span className="font-bold uppercase text-signal-cyan">BROWSER</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Provider:</span>
+                    <span className="font-bold uppercase text-ink">{source.provider}</span>
+                  </div>
+                  {source.documentId && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Document ID:</span>
+                      <span className="font-bold text-ink truncate max-w-[140px]">
+                        {source.documentId}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Profile:</span>
+                    <span className="font-bold text-ink">{source.profileId || "default"}</span>
+                  </div>
+                </div>
+
+                <div className="font-bold uppercase text-tertiary text-[10.5px]">
+                  Runtime Architecture
+                </div>
+                <div className="rounded border border-ink/20 bg-muted/20 p-3 space-y-1.5 text-[10px] text-muted-foreground">
+                  <p>• Host: &lt;webview&gt; embedded inside React DOM</p>
+                  <p>• Overlays: 100% Pure React Overlays (Floating UI + Tailwind)</p>
+                  <p>• Guest: Isolated preload event sensor (no injected UI)</p>
+                  <p>• Control: Main process registerGuest (webContents.fromId)</p>
+                  <p>• Security: sandboxed, permissions denied, popups blocked</p>
                 </div>
               </div>
             )}
           </div>
         </aside>
+      </div>
+
+      {/* Bottom Content Status Bar */}
+      <div className="flex h-7 shrink-0 items-center justify-between border-t border-ink/20 bg-muted/30 px-4 sm:px-5 font-mono text-[10px] text-tertiary">
+        <div className="flex items-center gap-3">
+          <span className="uppercase font-bold text-ink">
+            {source.provider.replaceAll("-", " ")}
+          </span>
+          <span>PROFILE · {source.profileId ? source.profileId.toUpperCase() : "DEFAULT"}</span>
+          <span className="text-success font-bold">● ACTIVE</span>
+        </div>
+        <div className="flex items-center gap-3 font-semibold">
+          <span>{anchors.length} ANCHORS</span>
+          <span>{projectionRules.length} RULES</span>
+          <span className={cn(staleRulesCount > 0 ? "text-danger font-bold" : "text-success")}>
+            {staleRulesCount > 0 ? `${staleRulesCount} STALE` : "ALL RESOLVED"}
+          </span>
+        </div>
       </div>
     </div>
   );

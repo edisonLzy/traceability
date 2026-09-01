@@ -8,6 +8,7 @@ import type { SessionPersistenceIPC } from "./session-persistence-ipc";
 import type { AgentSkillsIPC } from "./skills-ipc";
 import type { NativeThemeUpdatedEvent, ThemeIPC } from "./theme-ipc";
 import type { AppUpdateIPC, AppUpdateState } from "./update-ipc";
+import type { VideoTranscriptIPC } from "./video-transcript-ipc";
 import type { WindowIPC, WindowState } from "./window-ipc";
 
 export type AgentSessionScope = "main" | "side-chat";
@@ -57,9 +58,11 @@ export type AgentRuntimeIPC = AgentModelsIPC &
   AuthIPC &
   ThemeIPC &
   AppUpdateIPC &
-  WindowIPC;
+  WindowIPC &
+  VideoTranscriptIPC;
 
 export const ALLOWED_RENDER_INVOKE_EVENTS: (keyof AgentRuntimeIPC)[] = [
+  "fetchVideoTranscript",
   "setModel",
   "getAvailableModels",
   "getModelConfig",

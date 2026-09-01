@@ -1,4 +1,6 @@
-import { webContents } from "electron";
+import { join } from "path";
+
+import { session, webContents } from "electron";
 import type { BrowserWindow } from "electron";
 
 import { BrowserRuntime } from "./browser-runtime.js";
@@ -30,9 +32,29 @@ export class BrowserRuntimeManager {
     this.registry.register(new FeishuDocAdapter());
     this.registry.register(new ConfluenceAdapter());
     this.registry.register(new GenericWebAdapter());
+    this.configureSession("default");
+  }
+
+  configureSession(profileId?: string): void {
+    const partition = `persist:traceability-browser-${profileId || "default"}`;
+    const sess = session.fromPartition(partition);
+    const guestPreloadPath = join(__dirname, "../preload/browserGuest.cjs");
+    if (sess.registerPreloadScript) {
+      try {
+        sess.registerPreloadScript({
+          filePath: guestPreloadPath,
+          id: "traceability-browser-guest-preload",
+          type: "frame",
+        });
+      } catch {
+        // already registered or unsupported
+      }
+    }
   }
 
   async registerGuest(input: BrowserRuntimeRegisterGuestInput): Promise<BrowserRuntime> {
+    this.configureSession(input.source.profileId);
+
     const guestContents = webContents.fromId(input.webContentsId);
     if (!guestContents) {
       throw new Error(`WebContents with id ${input.webContentsId} not found.`);
@@ -81,6 +103,8 @@ export class BrowserRuntimeManager {
   }
 
   async acquire(input: BrowserRuntimeAttachInput): Promise<BrowserRuntime> {
+    this.configureSession(input.source.profileId);
+
     let runtime = this.allRuntimes.get(input.nodeId);
     if (!runtime || runtime.getState() === "destroyed") {
       const adapter = this.registry.resolve(input.source.url);

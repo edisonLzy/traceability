@@ -1,6 +1,7 @@
 /**
  * Helper scripts injected into guest <webview> pages to provide
- * Anchor selection, Zap element picker, and Anchor focus scrolling.
+ * Anchor selection, Zap element picker, Projection CSS application,
+ * and Anchor focus scrolling.
  */
 export function getGuestBridgeScript(): string {
   return `
@@ -13,18 +14,21 @@ export function getGuestBridgeScript(): string {
   var hoveredElement = null;
 
   function sendToHost(channel, data) {
+    var payloadStr = JSON.stringify({ channel: channel, data: data });
+
+    // 1. Output console-message for host <webview> and main process to capture
     try {
-      if (window.require) {
-        var electron = window.require('electron');
-        if (electron && electron.ipcRenderer) {
-          electron.ipcRenderer.sendToHost(channel, data);
-          return;
-        }
-      }
+      console.debug('__TR_GUEST_EVENT__:' + payloadStr);
     } catch(e) {}
 
+    // 2. Try electron ipcRenderer if available (e.g. in preload)
     try {
-      window.postMessage({ type: '__tr_guest_message__', channel: channel, data: data }, '*');
+      if (typeof require !== 'undefined') {
+        var electron = require('electron');
+        if (electron && electron.ipcRenderer) {
+          electron.ipcRenderer.sendToHost(channel, data);
+        }
+      }
     } catch(e) {}
   }
 
@@ -36,13 +40,17 @@ export function getGuestBridgeScript(): string {
     var role = el.getAttribute('role');
     if (role) {
       var roleSelector = el.tagName.toLowerCase() + '[role="' + CSS.escape(role) + '"]';
-      if (document.querySelectorAll(roleSelector).length === 1) return roleSelector;
+      try {
+        if (document.querySelectorAll(roleSelector).length === 1) return roleSelector;
+      } catch(e) {}
     }
 
     var ariaLabel = el.getAttribute('aria-label');
     if (ariaLabel) {
       var ariaSelector = el.tagName.toLowerCase() + '[aria-label="' + CSS.escape(ariaLabel) + '"]';
-      if (document.querySelectorAll(ariaSelector).length === 1) return ariaSelector;
+      try {
+        if (document.querySelectorAll(ariaSelector).length === 1) return ariaSelector;
+      } catch(e) {}
     }
 
     if (el.className && typeof el.className === 'string') {
@@ -116,10 +124,10 @@ export function getGuestBridgeScript(): string {
     badge.style.borderRadius = '3px';
     badge.style.whiteSpace = 'nowrap';
     badge.style.pointerEvents = 'none';
-    badge.textContent = '点击隐藏此区域';
+    badge.textContent = '点击隐藏此区域 (Esc 退出)';
     hoverOverlay.appendChild(badge);
 
-    document.body.appendChild(hoverOverlay);
+    (document.body || document.documentElement).appendChild(hoverOverlay);
     return hoverOverlay;
   }
 
@@ -168,6 +176,10 @@ export function getGuestBridgeScript(): string {
     var locators = [];
     if (selector) locators.push({ type: 'css-selector', selector: selector });
     if (xpath) locators.push({ type: 'dom-path', xpath: xpath });
+
+    if (hoverOverlay) hoverOverlay.style.display = 'none';
+    currentMode = 'read';
+    document.body.style.cursor = '';
 
     sendToHost('__tr_zap_element__', {
       locators: locators,
@@ -229,7 +241,12 @@ export function getGuestBridgeScript(): string {
 
   function handleKeyDown(e) {
     if (e.key === 'Escape') {
-      sendToHost('__tr_escape__', {});
+      if (currentMode !== 'read') {
+        currentMode = 'read';
+        if (hoverOverlay) hoverOverlay.style.display = 'none';
+        document.body.style.cursor = '';
+        sendToHost('__tr_escape__', {});
+      }
     }
   }
 
@@ -250,6 +267,30 @@ export function getGuestBridgeScript(): string {
     } else {
       if (hoverOverlay) hoverOverlay.style.display = 'none';
       document.body.style.cursor = '';
+    }
+  };
+
+  window.__tr_apply_projection = function(rulesJson, revealed) {
+    try {
+      var rules = typeof rulesJson === 'string' ? JSON.parse(rulesJson) : rulesJson;
+      var hideSelectors = [];
+      if (!revealed && Array.isArray(rules)) {
+        for (var i = 0; i < rules.length; i++) {
+          var r = rules[i];
+          if (r.enabled !== false && r.target && r.target.selector) {
+            hideSelectors.push(r.target.selector);
+          }
+        }
+      }
+      var styleEl = document.getElementById('__tr_projection_styles__');
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = '__tr_projection_styles__';
+        (document.head || document.documentElement).appendChild(styleEl);
+      }
+      styleEl.textContent = hideSelectors.length > 0 ? hideSelectors.join(', ') + ' { display: none !important; }' : '';
+    } catch(e) {
+      console.error('Error applying projection styles in guest:', e);
     }
   };
 
