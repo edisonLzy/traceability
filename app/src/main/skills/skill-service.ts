@@ -162,16 +162,39 @@ export class SkillService implements SystemPromptBuilder {
     return this.skillsCache;
   }
 
+  private getBuiltinSkillsDir(): string {
+    if (typeof process !== "undefined" && process.resourcesPath) {
+      const packagedSkillsDir = join(process.resourcesPath, "skills");
+      if (existsSync(packagedSkillsDir)) {
+        return packagedSkillsDir;
+      }
+    }
+
+    const devResourcesDir = resolve(import.meta.dirname, "../../../resources/skills");
+    if (existsSync(devResourcesDir)) {
+      return devResourcesDir;
+    }
+
+    const rootAgentsDir = resolve(import.meta.dirname, "../../../../../.agents/skills");
+    if (existsSync(rootAgentsDir)) {
+      return rootAgentsDir;
+    }
+
+    return devResourcesDir;
+  }
+
   private getSkillLocations(): SkillLocation[] {
     const homeDir = homedir();
     const cwd = resolve(this.cwd);
     const projectDirs = collectProjectSkillLocations(cwd);
+    const builtinDir = this.getBuiltinSkillsDir();
 
     return [
       ...projectDirs,
       { dir: join(homeDir, ".pi", "agent", "skills"), mode: "pi", scope: "user", source: "pi" },
       { dir: join(homeDir, ".agents", "skills"), mode: "agents", scope: "user", source: "agents" },
       { dir: join(homeDir, ".codex", "skills"), mode: "agents", scope: "user", source: "codex" },
+      { dir: builtinDir, mode: "agents", scope: "system", source: "builtin" },
     ];
   }
 
@@ -281,7 +304,7 @@ function loadSkillFromFile(filePath: string, location: SkillLocation): Discovere
     }
 
     const baseDir = dirname(filePath);
-    const isSystemSkill = filePath.split(sep).includes(".system");
+    const isSystemSkill = filePath.split(sep).includes(".system") || location.scope === "system";
     const scope = isSystemSkill ? "system" : location.scope;
     const name = frontmatter.name?.trim() || basename(baseDir);
 

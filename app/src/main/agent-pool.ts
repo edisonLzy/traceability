@@ -8,12 +8,10 @@ import { AllowedMainExposeEvents } from "../shared/events-ipc.js";
 import { AgentModelsIPC } from "../shared/models-ipc.js";
 import { AgentSessionIPC } from "../shared/session-ipc.js";
 import { AgentSkillsIPC } from "../shared/skills-ipc.js";
-import { VideoTranscriptIPC } from "../shared/video-transcript-ipc.js";
 import { AbstractAgentIPCHandler } from "./agent-ipc.js";
 import { AgentRuntime } from "./agent-runtime.js";
 import { ExtensionService, ExtensionRuntimeService } from "./extensions/index.js";
 import { ModelRegistry } from "./models/index.js";
-import { VideoTranscriptService } from "./services/video-transcript-service.js";
 import { SkillService } from "./skills/index.js";
 
 /**
@@ -22,10 +20,8 @@ import { SkillService } from "./skills/index.js";
  * All methods accept an explicit sessionId - no internal "current session" state.
  */
 export class AgentPool
-  extends AbstractAgentIPCHandler<
-    AgentSessionIPC & AgentModelsIPC & AgentSkillsIPC & VideoTranscriptIPC
-  >
-  implements AgentSessionIPC, AgentModelsIPC, AgentSkillsIPC, VideoTranscriptIPC
+  extends AbstractAgentIPCHandler<AgentSessionIPC & AgentModelsIPC & AgentSkillsIPC>
+  implements AgentSessionIPC, AgentModelsIPC, AgentSkillsIPC
 {
   // Internal Emittery (composition, since we already extend AbstractAgentIPCHandler
   // and TS class can only single-inherit). All event traffic goes through `this.events`.

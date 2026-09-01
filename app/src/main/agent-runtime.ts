@@ -19,11 +19,11 @@ import type { ExtensionService } from "./extensions/index.js";
 import { AskUserQuestionService } from "./human-in-the-loop/ask-user-question-service.js";
 import { ModelRegistry } from "./models/index.js";
 import { SystemPromptService } from "./prompt/index.js";
+import { SkillService } from "./skills/index.js";
 import {
   createAskUserQuestionTool,
   fsReadTextFileTool,
   terminalCreateTool,
-  videoTranscriptTool,
 } from "./tools/index.js";
 
 // ── Derived runtime delegate type ──────────────────────────────────────────
@@ -116,11 +116,11 @@ export class AgentRuntime extends Emittery<AgentRuntimeEvents> implements AgentR
     // tool are available. The terminal tool rejects write/exec commands
     // internally (see `evaluateReadonlyCommand`), so no permission gating is
     // needed for this phase.
+    const excludedToolNames = new Set(this.options.extensionTools?.excludeToolNames ?? []);
     const builtinTools = [
       ...(this.options.includeAgentTodo === false ? [] : [agentTodoTool]),
       fsReadTextFileTool,
       terminalCreateTool,
-      videoTranscriptTool,
       createAskUserQuestionTool((input) => this.askUserQuestion(input)),
     ].filter((tool) => !excludedToolNames.has(tool.name));
 
