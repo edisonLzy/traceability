@@ -49,6 +49,8 @@ const nodeTypes = {
   replay: ExplorerGraphNodeCard,
   code: ExplorerGraphNodeCard,
   document: ExplorerGraphNodeCard,
+  youtube: ExplorerGraphNodeCard,
+  browser: ExplorerGraphNodeCard,
 };
 
 const edgeTypes = {

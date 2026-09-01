@@ -94,7 +94,7 @@ export function ExplorerGraphNodeDetail({
     >
       <DialogContent
         backdropClassName="bg-black/45 backdrop-blur-[6px]"
-        className="w-[96vw] max-w-[1440px] h-[92vh] max-h-[960px] p-0 gap-0 border-2 border-ink bg-card shadow-[8px_8px_0_var(--ink)] rounded-[8px] !flex !flex-col overflow-hidden"
+        className="w-[85vw] max-w-[1120px] h-[80vh] max-h-[740px] p-0 gap-0 border-2 border-ink bg-card shadow-[6px_6px_0_var(--ink)] rounded-[8px] !flex !flex-col overflow-hidden"
         showCloseButton={false}
       >
         {/* Top Accent Strip */}
@@ -162,7 +162,7 @@ export function ExplorerGraphNodeDetail({
         </div>
 
         {/* Modal Bottom Footer: [Node Meta][Continue in Agent] ----------- [Graph Relationships] */}
-        <footer className="h-16 shrink-0 border-t-2 border-ink bg-muted/25 px-4 sm:px-5 flex items-center justify-between gap-4 font-mono text-xs">
+        <footer className="h-14 shrink-0 border-t-2 border-ink bg-muted/25 px-4 sm:px-5 flex items-center justify-between gap-4 font-mono text-xs">
           {/* Left: Node Meta + Continue in Agent CTA */}
           <div className="flex items-center gap-3 shrink-0">
             <div className="flex items-center gap-2 rounded border border-ink/30 bg-card px-2.5 py-1 text-[11px] shadow-[1px_1px_0_var(--ink)]">
