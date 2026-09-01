@@ -15,6 +15,7 @@ import { WindowController } from "./window-controller.js";
 const developmentIconPath = join(__dirname, "../../resources/icon-fingerprint.png");
 
 void initMonitor();
+app.enableSandbox();
 
 void app
   .whenReady()
@@ -172,6 +173,7 @@ function createWindow() {
       preload: join(__dirname, "../preload/index.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
+      webviewTag: true,
     },
   });
 

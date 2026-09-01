@@ -46,6 +46,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 });
 
 contextBridge.exposeInMainWorld("browserRuntimeAPI", {
+  registerGuest: (input: unknown) => ipcRenderer.invoke("browser-runtime:registerGuest", input),
+  detachGuest: (input: unknown) => ipcRenderer.invoke("browser-runtime:detachGuest", input),
   attach: (input: unknown) => ipcRenderer.invoke("browser-runtime:attach", input),
   updateBounds: (input: unknown) => ipcRenderer.invoke("browser-runtime:updateBounds", input),
   detach: (input: unknown) => ipcRenderer.invoke("browser-runtime:detach", input),

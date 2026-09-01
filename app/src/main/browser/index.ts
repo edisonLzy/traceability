@@ -5,8 +5,10 @@ import { BrowserRuntimeManager } from "./browser-runtime-manager.js";
 import type {
   BrowserRuntimeApplyProjectionInput,
   BrowserRuntimeAttachInput,
+  BrowserRuntimeDetachGuestInput,
   BrowserRuntimeDetachInput,
   BrowserRuntimeFocusAnchorInput,
+  BrowserRuntimeRegisterGuestInput,
   BrowserRuntimeSetModeInput,
   BrowserRuntimeUpdateBoundsInput,
 } from "./types.js";
@@ -15,6 +17,7 @@ export * from "./types.js";
 export * from "./browser-runtime.js";
 export * from "./browser-runtime-manager.js";
 export * from "./providers/provider-registry.js";
+export * from "./guest-bridge-script.js";
 
 export class BrowserRuntimeController {
   readonly manager: BrowserRuntimeManager;
@@ -34,6 +37,22 @@ export class BrowserRuntimeController {
   }
 
   private registerIpcHandlers(): void {
+    ipcMain.handle(
+      "browser-runtime:registerGuest",
+      async (_event, input: BrowserRuntimeRegisterGuestInput) => {
+        await this.manager.registerGuest(input);
+        return { success: true };
+      },
+    );
+
+    ipcMain.handle(
+      "browser-runtime:detachGuest",
+      (_event, input: BrowserRuntimeDetachGuestInput) => {
+        this.manager.detach(input.nodeId, input.viewState);
+        return { success: true };
+      },
+    );
+
     ipcMain.handle("browser-runtime:attach", async (_event, input: BrowserRuntimeAttachInput) => {
       await this.manager.acquire(input);
       return { success: true };
@@ -80,6 +99,8 @@ export class BrowserRuntimeController {
   }
 
   private removeIpcHandlers(): void {
+    ipcMain.removeHandler("browser-runtime:registerGuest");
+    ipcMain.removeHandler("browser-runtime:detachGuest");
     ipcMain.removeHandler("browser-runtime:attach");
     ipcMain.removeHandler("browser-runtime:updateBounds");
     ipcMain.removeHandler("browser-runtime:detach");

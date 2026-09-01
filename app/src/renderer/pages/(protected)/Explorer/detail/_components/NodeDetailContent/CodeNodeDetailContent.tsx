@@ -359,19 +359,23 @@ export function CodeNodeDetailContent({ data, className }: CodeNodeDetailContent
 
           {/* Copy File Path */}
           <Button
-            className="h-7 border border-ink/40 bg-card px-2 font-mono text-[10px] font-bold text-ink hover:bg-muted"
+            className="h-7 border border-ink/40 !bg-card px-2 font-mono text-[10px] font-bold !text-ink hover:!bg-muted cursor-pointer shadow-[1px_1px_0_var(--ink)]"
             onClick={copyPath}
             size="sm"
             title="Copy File Path"
             type="button"
           >
-            {copiedPath ? <Check className="size-3 text-success" /> : <Copy className="size-3" />}
-            <span className="hidden md:inline">Path</span>
+            {copiedPath ? (
+              <Check className="size-3 text-success" />
+            ) : (
+              <Copy className="size-3 text-ink" />
+            )}
+            <span className="hidden md:inline !text-ink">Path</span>
           </Button>
 
           {/* Copy Code Snippet */}
           <Button
-            className="h-7 border border-ink/40 bg-card px-2 font-mono text-[10px] font-bold text-ink hover:bg-muted"
+            className="h-7 border border-ink/40 !bg-card px-2 font-mono text-[10px] font-bold !text-ink hover:!bg-muted cursor-pointer shadow-[1px_1px_0_var(--ink)]"
             onClick={copySnippet}
             size="sm"
             title="Copy Code Snippet"
@@ -380,16 +384,16 @@ export function CodeNodeDetailContent({ data, className }: CodeNodeDetailContent
             {copiedSnippet ? (
               <Check className="size-3 text-success" />
             ) : (
-              <Code2 className="size-3" />
+              <Code2 className="size-3 text-ink" />
             )}
-            <span>Copy</span>
+            <span className="!text-ink">Copy</span>
           </Button>
 
           {/* Search Toggle */}
           <Button
             className={cn(
-              "h-7 size-7 p-0 border border-ink/40 bg-card font-mono text-ink hover:bg-muted",
-              isSearchOpen && "bg-primary text-primary-foreground hover:bg-primary",
+              "h-7 size-7 p-0 border border-ink/40 !bg-card font-mono !text-ink hover:!bg-muted cursor-pointer shadow-[1px_1px_0_var(--ink)]",
+              isSearchOpen && "!bg-primary !text-primary-foreground hover:!bg-primary",
             )}
             onClick={() => setIsSearchOpen((prev) => !prev)}
             size="sm"

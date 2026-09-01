@@ -33,11 +33,26 @@ export interface BrowserBounds {
   height: number;
 }
 
+export interface BrowserRuntimeRegisterGuestInput {
+  nodeId: string;
+  graphId: string;
+  source: BrowserSource;
+  webContentsId: number;
+  projection?: BrowserProjection;
+  viewState?: BrowserViewState;
+  mode?: BrowserMode;
+}
+
+export interface BrowserRuntimeDetachGuestInput {
+  nodeId: string;
+  viewState?: BrowserViewState;
+}
+
 export interface BrowserRuntimeAttachInput {
   nodeId: string;
   graphId: string;
   source: BrowserSource;
-  bounds: BrowserBounds;
+  bounds?: BrowserBounds;
   projection?: BrowserProjection;
   viewState?: BrowserViewState;
   mode?: BrowserMode;

@@ -1,6 +1,6 @@
-import { session, WebContentsView } from "electron";
-import type { BrowserWindow } from "electron";
+import type { WebContents } from "electron";
 
+import { getGuestBridgeScript } from "./guest-bridge-script.js";
 import { NavigationPolicy } from "./navigation-policy.js";
 import type { BrowserProviderAdapter } from "./providers/provider-registry.js";
 import type {
@@ -31,14 +31,14 @@ export class BrowserRuntime {
   readonly graphId: string;
   readonly source: BrowserSource;
 
-  private view: WebContentsView | null = null;
+  private webContents: WebContents | null = null;
   private state: BrowserRuntimeState = "dormant";
   private mode: BrowserMode = "read";
-  private currentBounds: BrowserBounds = { x: 0, y: 0, width: 0, height: 0 };
   private activeProjectionRules: ProjectionRule[] = [];
   private projectionRevealed = false;
   private currentAnchors: BrowserAnchor[] = [];
   private lastViewState: BrowserViewState = {};
+  private cleanupGuestListeners: (() => void) | null = null;
 
   constructor(
     nodeId: string,
@@ -56,21 +56,32 @@ export class BrowserRuntime {
     return this.state;
   }
 
-  getView(): WebContentsView | null {
-    return this.view;
+  getWebContents(): WebContents | null {
+    return this.webContents;
   }
 
   getLastViewState(): BrowserViewState {
     return this.lastViewState;
   }
 
-  async init(
-    bounds: BrowserBounds,
+  async bindGuest(
+    webContents: WebContents,
     initialProjection?: BrowserProjection,
     initialViewState?: BrowserViewState,
+    mode?: BrowserMode,
   ): Promise<void> {
-    this.currentBounds = bounds;
-    this.lastViewState = initialViewState || {};
+    if (this.cleanupGuestListeners) {
+      this.cleanupGuestListeners();
+      this.cleanupGuestListeners = null;
+    }
+
+    this.webContents = webContents;
+    if (initialViewState) {
+      this.lastViewState = { ...this.lastViewState, ...initialViewState };
+    }
+    if (mode) {
+      this.mode = mode;
+    }
     this.activeProjectionRules = [
       ...this.adapter.providerPreset(),
       ...(initialProjection?.rules || []),
@@ -78,87 +89,96 @@ export class BrowserRuntime {
 
     this.setState("loading");
 
-    const partition = `persist:traceability-browser-${this.source.profileId || "default"}`;
-    const sess = session.fromPartition(partition);
+    // Configure security & navigation
+    NavigationPolicy.configureWebContents(webContents, this.adapter, this.source.url);
 
-    this.view = new WebContentsView({
-      webPreferences: {
-        session: sess,
-        sandbox: true,
-        contextIsolation: true,
-        nodeIntegration: false,
-        webSecurity: true,
-      },
+    webContents.setWindowOpenHandler(() => {
+      return { action: "deny" };
     });
 
-    this.view.setBounds(bounds);
+    webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+      callback(false);
+    });
 
-    const wc = this.view.webContents;
-    NavigationPolicy.configureWebContents(wc, this.adapter, this.source.url);
-
-    wc.on("did-finish-load", () => {
-      this.setState("active", wc.getTitle(), wc.getURL());
+    const onDidFinishLoad = () => {
+      if (!this.webContents || this.webContents.isDestroyed()) return;
+      this.setState("active", this.webContents.getTitle(), this.webContents.getURL());
       void this.applyCurrentProjection();
       void this.injectGuestHelperScripts();
       if (this.lastViewState.focusedAnchorId) {
         this.focusAnchor(this.lastViewState.focusedAnchorId);
       }
-    });
+    };
 
-    wc.on("did-fail-load", () => {
+    const onDidFailLoad = () => {
       this.setState("active");
-    });
+    };
 
-    try {
-      await wc.loadURL(this.source.url);
-    } catch {
-      // ignore navigation abort or fail, did-fail-load handles state
+    const onIpcMessage = (_event: Electron.Event, channel: string, ...args: unknown[]) => {
+      const payload = args[0] as {
+        quote?: string;
+        locators?: BrowserLocator[];
+        suggestedName?: string;
+      };
+      if (channel === "__tr_selection__" && payload?.quote && payload?.locators) {
+        this.callbacks.onAnchorSelected?.(payload.quote, payload.locators);
+      } else if (channel === "__tr_zap_element__" && payload?.locators) {
+        this.callbacks.onElementZapped?.(payload.locators, payload.suggestedName);
+      }
+    };
+
+    webContents.on("did-finish-load", onDidFinishLoad);
+    webContents.on("did-fail-load", onDidFailLoad);
+    webContents.on("ipc-message", onIpcMessage);
+
+    this.cleanupGuestListeners = () => {
+      if (!webContents.isDestroyed()) {
+        webContents.removeListener("did-finish-load", onDidFinishLoad);
+        webContents.removeListener("did-fail-load", onDidFailLoad);
+        webContents.removeListener("ipc-message", onIpcMessage);
+      }
+    };
+
+    // If already loaded
+    if (!webContents.isLoading()) {
+      onDidFinishLoad();
     }
   }
 
-  attach(browserWindow: BrowserWindow, bounds: BrowserBounds): void {
-    this.currentBounds = bounds;
-    if (!this.view) return;
+  // Backward compatible init
+  async init(
+    _bounds?: BrowserBounds,
+    initialProjection?: BrowserProjection,
+    initialViewState?: BrowserViewState,
+  ): Promise<void> {
+    this.lastViewState = initialViewState || {};
+    this.activeProjectionRules = [
+      ...this.adapter.providerPreset(),
+      ...(initialProjection?.rules || []),
+    ];
+  }
 
-    this.view.setBounds(bounds);
-    this.view.setVisible(true);
-
-    try {
-      browserWindow.contentView.addChildView(this.view);
-    } catch {
-      // view might already be attached
-    }
-
+  // Backward compatible attach/detach/updateBounds
+  attach(_browserWindow?: unknown, _bounds?: BrowserBounds): void {
     this.setState("active");
   }
 
-  updateBounds(bounds: BrowserBounds): void {
-    this.currentBounds = bounds;
-    if (this.view) {
-      this.view.setBounds(bounds);
-    }
+  updateBounds(_bounds?: BrowserBounds): void {
+    // No-op under <webview> architecture
   }
 
-  detach(browserWindow: BrowserWindow, viewState?: BrowserViewState): void {
+  detach(_browserWindow?: unknown, viewState?: BrowserViewState): void {
     if (viewState) {
       this.lastViewState = { ...this.lastViewState, ...viewState };
-    }
-    if (this.view) {
-      this.view.setVisible(false);
-      try {
-        browserWindow.contentView.removeChildView(this.view);
-      } catch {
-        // ignore
-      }
     }
     this.setState("warm");
   }
 
   setMode(mode: BrowserMode): void {
     this.mode = mode;
-    if (!this.view || this.view.webContents.isDestroyed()) return;
+    if (!this.webContents || this.webContents.isDestroyed()) return;
 
-    void this.view.webContents
+    void this.webContents
       .executeJavaScript(`
       window.__TR_BROWSER_MODE__ = ${JSON.stringify(mode)};
       if (window.__tr_update_mode) window.__tr_update_mode(${JSON.stringify(mode)});
@@ -174,10 +194,10 @@ export class BrowserRuntime {
 
   focusAnchor(anchorId: string, locators?: BrowserLocator[]): void {
     this.lastViewState.focusedAnchorId = anchorId;
-    if (!this.view || this.view.webContents.isDestroyed()) return;
+    if (!this.webContents || this.webContents.isDestroyed()) return;
 
     const locatorsJson = JSON.stringify(locators || []);
-    void this.view.webContents
+    void this.webContents
       .executeJavaScript(`
       if (window.__tr_focus_anchor) {
         window.__tr_focus_anchor(${JSON.stringify(anchorId)}, ${locatorsJson});
@@ -187,23 +207,18 @@ export class BrowserRuntime {
   }
 
   reload(): void {
-    if (this.view && !this.view.webContents.isDestroyed()) {
-      this.view.webContents.reload();
+    if (this.webContents && !this.webContents.isDestroyed()) {
+      this.webContents.reload();
     }
   }
 
   destroy(): void {
     this.setState("destroyed");
-    if (this.view) {
-      try {
-        if (!this.view.webContents.isDestroyed()) {
-          this.view.webContents.close();
-        }
-      } catch {
-        // ignore
-      }
-      this.view = null;
+    if (this.cleanupGuestListeners) {
+      this.cleanupGuestListeners();
+      this.cleanupGuestListeners = null;
     }
+    this.webContents = null;
   }
 
   private setState(state: BrowserRuntimeState, title?: string, url?: string): void {
@@ -212,7 +227,7 @@ export class BrowserRuntime {
   }
 
   private async applyCurrentProjection(): Promise<void> {
-    if (!this.view || this.view.webContents.isDestroyed()) return;
+    if (!this.webContents || this.webContents.isDestroyed()) return;
 
     const hideSelectors: string[] = [];
     if (!this.projectionRevealed) {
@@ -227,47 +242,20 @@ export class BrowserRuntime {
       hideSelectors.length > 0 ? `${hideSelectors.join(", ")} { display: none !important; }` : "";
 
     try {
-      await this.view.webContents.insertCSS(css);
+      await this.webContents.insertCSS(css);
     } catch {
       // ignore
     }
   }
 
   private async injectGuestHelperScripts(): Promise<void> {
-    if (!this.view || this.view.webContents.isDestroyed()) return;
-
-    const script = `
-      (function() {
-        if (window.__TR_INJECTED__) return;
-        window.__TR_INJECTED__ = true;
-
-        window.__tr_focus_anchor = function(anchorId, locators) {
-          if (!locators || locators.length === 0) return;
-          for (const loc of locators) {
-            if (loc.type === 'text-quote' && loc.exact) {
-              const elements = Array.from(document.querySelectorAll('p, h1, h2, h3, h4, li, span, div'));
-              for (const el of elements) {
-                if (el.textContent && el.textContent.includes(loc.exact)) {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  el.style.outline = '2px solid #27b9dc';
-                  setTimeout(() => { el.style.outline = ''; }, 3000);
-                  return;
-                }
-              }
-            } else if (loc.type === 'css-selector' && loc.selector) {
-              const el = document.querySelector(loc.selector);
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
-              }
-            }
-          }
-        };
-      })();
-    `;
+    if (!this.webContents || this.webContents.isDestroyed()) return;
 
     try {
-      await this.view.webContents.executeJavaScript(script);
+      await this.webContents.executeJavaScript(getGuestBridgeScript());
+      if (this.mode) {
+        this.setMode(this.mode);
+      }
     } catch {
       // ignore
     }

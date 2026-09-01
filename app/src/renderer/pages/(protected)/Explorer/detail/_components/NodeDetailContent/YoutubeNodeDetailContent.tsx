@@ -194,41 +194,39 @@ export function YoutubeNodeDetailContent({ data }: YoutubeNodeDetailContentProps
               <div className="flex items-center justify-between text-xs font-mono">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <Button
-                    className="h-7 px-2.5 rounded border border-ink bg-ink text-card font-bold hover:opacity-90 transition-opacity"
+                    className="h-7 px-2.5 rounded border border-ink !bg-ink !text-white font-bold hover:opacity-90 transition-opacity cursor-pointer shadow-[1px_1px_0_var(--ink)]"
                     onClick={togglePlay}
                     size="sm"
                     type="button"
                   >
                     {isPlaying ? (
-                      <Pause className="size-3.5 mr-1" />
+                      <Pause className="size-3.5 mr-1 text-white" />
                     ) : (
-                      <Play className="size-3.5 mr-1" />
+                      <Play className="size-3.5 mr-1 text-white" />
                     )}
-                    <span>{isPlaying ? "Pause" : "Play"}</span>
+                    <span className="!text-white">{isPlaying ? "Pause" : "Play"}</span>
                   </Button>
 
                   <Button
-                    className="h-7 px-2 border border-ink bg-card text-ink hover:bg-muted font-mono text-[11px]"
+                    className="h-7 px-2 border border-ink !bg-card !text-ink hover:!bg-muted font-mono text-[11px] font-bold shadow-[1px_1px_0_var(--ink)] cursor-pointer"
                     onClick={() => seekTo(currentSeconds - 5)}
                     size="sm"
                     title="Rewind 5 seconds"
                     type="button"
-                    variant="default"
                   >
-                    <Rewind className="size-3 mr-0.5" />
-                    <span>-5s</span>
+                    <Rewind className="size-3 mr-0.5 text-ink" />
+                    <span className="!text-ink">-5s</span>
                   </Button>
 
                   <Button
-                    className="h-7 px-2 border border-ink bg-card text-ink hover:bg-muted font-mono text-[11px]"
+                    className="h-7 px-2 border border-ink !bg-card !text-ink hover:!bg-muted font-mono text-[11px] font-bold shadow-[1px_1px_0_var(--ink)] cursor-pointer"
                     onClick={() => seekTo(currentSeconds + 5)}
                     size="sm"
                     title="Forward 5 seconds"
                     type="button"
-                    variant="default"
                   >
-                    <FastForward className="size-3 mr-0.5" />
-                    <span>+5s</span>
+                    <FastForward className="size-3 mr-0.5 text-ink" />
+                    <span className="!text-ink">+5s</span>
                   </Button>
 
                   <span className="font-bold text-ink ml-1 font-mono text-[11px]">
@@ -295,14 +293,15 @@ export function YoutubeNodeDetailContent({ data }: YoutubeNodeDetailContentProps
                 </span>
               </div>
               <Button
-                className="h-6 px-2 text-[10.5px] font-mono font-bold text-signal-red hover:bg-signal-red/10 border border-signal-red/30"
+                className="h-6 px-2 text-[10.5px] font-mono font-bold !text-signal-red hover:!bg-signal-red/10 border border-signal-red/30 !bg-card cursor-pointer shadow-[1px_1px_0_var(--signal-red)]"
                 onClick={() => setShowAddBookmarkDialog(!showAddBookmarkDialog)}
                 size="sm"
                 type="button"
-                variant="ghost"
               >
-                <Plus className="size-3 mr-0.5" />
-                <span>Bookmark [{formatDuration(currentSeconds)}]</span>
+                <Plus className="size-3 mr-0.5 text-signal-red" />
+                <span className="!text-signal-red">
+                  Bookmark [{formatDuration(currentSeconds)}]
+                </span>
               </Button>
             </div>
 
@@ -326,7 +325,7 @@ export function YoutubeNodeDetailContent({ data }: YoutubeNodeDetailContentProps
                 />
                 <div className="flex justify-end gap-2 pt-1">
                   <Button
-                    className="h-6 px-2 text-[10px]"
+                    className="h-6 px-2 text-[10.5px] font-mono font-bold !text-muted-foreground hover:!text-ink hover:!bg-muted cursor-pointer"
                     onClick={() => setShowAddBookmarkDialog(false)}
                     size="sm"
                     type="button"
@@ -335,12 +334,12 @@ export function YoutubeNodeDetailContent({ data }: YoutubeNodeDetailContentProps
                     Cancel
                   </Button>
                   <Button
-                    className="h-6 px-2 text-[10px] bg-signal-red text-white hover:bg-signal-red/90"
+                    className="h-6 px-2.5 text-[10.5px] font-mono font-bold !bg-signal-red !text-white hover:!bg-signal-red/90 hover:!text-white border-0 shadow-[1px_1px_0_var(--ink)] cursor-pointer"
                     onClick={handleAddBookmark}
                     size="sm"
                     type="button"
                   >
-                    Save Bookmark
+                    <span className="!text-white">Save Bookmark</span>
                   </Button>
                 </div>
               </div>

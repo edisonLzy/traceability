@@ -16,6 +16,8 @@ interface ElectronAPI {
 }
 
 interface BrowserRuntimeAPI {
+  registerGuest(input: unknown): Promise<{ success: boolean }>;
+  detachGuest(input: unknown): Promise<{ success: boolean }>;
   attach(input: unknown): Promise<{ success: boolean }>;
   updateBounds(input: unknown): Promise<{ success: boolean }>;
   detach(input: unknown): Promise<{ success: boolean }>;

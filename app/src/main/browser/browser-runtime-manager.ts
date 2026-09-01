@@ -1,3 +1,4 @@
+import { webContents } from "electron";
 import type { BrowserWindow } from "electron";
 
 import { BrowserRuntime } from "./browser-runtime.js";
@@ -11,6 +12,7 @@ import type {
   BrowserMode,
   BrowserRuntimeAttachInput,
   BrowserRuntimeEventMap,
+  BrowserRuntimeRegisterGuestInput,
   BrowserViewState,
   ProjectionRule,
 } from "./types.js";
@@ -30,10 +32,10 @@ export class BrowserRuntimeManager {
     this.registry.register(new GenericWebAdapter());
   }
 
-  async acquire(input: BrowserRuntimeAttachInput): Promise<BrowserRuntime> {
-    const browserWindow = this.getBrowserWindow();
-    if (!browserWindow) {
-      throw new Error("No active BrowserWindow available for BrowserRuntime.");
+  async registerGuest(input: BrowserRuntimeRegisterGuestInput): Promise<BrowserRuntime> {
+    const guestContents = webContents.fromId(input.webContentsId);
+    if (!guestContents) {
+      throw new Error(`WebContents with id ${input.webContentsId} not found.`);
     }
 
     // If another runtime is active and it's not the requested node, detach it to warm
@@ -69,19 +71,52 @@ export class BrowserRuntimeManager {
         },
       });
       this.allRuntimes.set(input.nodeId, runtime);
-      await runtime.init(input.bounds, input.projection, input.viewState);
     }
 
-    // If it was in warm pool, remove from warm
     this.warmRuntimes.delete(input.nodeId);
     this.activeRuntime = runtime;
 
-    runtime.attach(browserWindow, input.bounds);
+    await runtime.bindGuest(guestContents, input.projection, input.viewState, input.mode);
+    return runtime;
+  }
 
+  async acquire(input: BrowserRuntimeAttachInput): Promise<BrowserRuntime> {
+    let runtime = this.allRuntimes.get(input.nodeId);
+    if (!runtime || runtime.getState() === "destroyed") {
+      const adapter = this.registry.resolve(input.source.url);
+      runtime = new BrowserRuntime(input.nodeId, input.graphId, input.source, adapter, {
+        onStateChanged: (state, title, url) => {
+          this.emitEvent("browser-runtime:stateChanged", {
+            nodeId: input.nodeId,
+            state,
+            title,
+            url,
+          });
+        },
+        onAnchorSelected: (quote, locators) => {
+          this.emitEvent("browser-runtime:anchorSelected", {
+            nodeId: input.nodeId,
+            quote,
+            locators,
+          });
+        },
+        onElementZapped: (locators, suggestedName) => {
+          this.emitEvent("browser-runtime:elementZapped", {
+            nodeId: input.nodeId,
+            locators,
+            suggestedName,
+          });
+        },
+      });
+      this.allRuntimes.set(input.nodeId, runtime);
+      await runtime.init(input.bounds, input.projection, input.viewState);
+    }
+
+    this.warmRuntimes.delete(input.nodeId);
+    this.activeRuntime = runtime;
     if (input.mode) {
       runtime.setMode(input.mode);
     }
-
     return runtime;
   }
 
@@ -93,13 +128,10 @@ export class BrowserRuntimeManager {
   }
 
   detach(nodeId: string, viewState?: BrowserViewState): void {
-    const browserWindow = this.getBrowserWindow();
     const runtime = this.allRuntimes.get(nodeId);
     if (!runtime) return;
 
-    if (browserWindow) {
-      runtime.detach(browserWindow, viewState);
-    }
+    runtime.detach(undefined, viewState);
 
     if (this.activeRuntime?.nodeId === nodeId) {
       this.activeRuntime = null;
