@@ -124,10 +124,25 @@ export function ExplorerGraphNodeDetail({
                   {nodeType}
                 </span>
               </div>
-              <p className="font-mono text-[9.5px] text-muted-foreground truncate">
-                ID: {selectedNode.id} · ({Math.round(selectedNode.position.x)},{" "}
-                {Math.round(selectedNode.position.y)})
-              </p>
+              <div className="flex items-center gap-1.5 font-mono text-[9.5px] text-muted-foreground truncate">
+                <span>ID: {selectedNode.id}</span>
+                <button
+                  aria-label="Copy Node ID"
+                  className="hover:text-primary transition-colors text-muted-foreground shrink-0 inline-flex items-center"
+                  onClick={copyNodeId}
+                  title="Copy Node ID"
+                  type="button"
+                >
+                  {copiedId ? (
+                    <Check className="size-2.5 text-success" />
+                  ) : (
+                    <Copy className="size-2.5" />
+                  )}
+                </button>
+                <span>
+                  · ({Math.round(selectedNode.position.x)}, {Math.round(selectedNode.position.y)})
+                </span>
+              </div>
             </div>
           </div>
 
@@ -161,39 +176,18 @@ export function ExplorerGraphNodeDetail({
           />
         </div>
 
-        {/* Modal Bottom Footer: [Node Meta][Continue in Agent] ----------- [Graph Relationships] */}
+        {/* Modal Bottom Footer: [Continue in Agent] ----------- [Graph Relationships] */}
         <footer className="h-14 shrink-0 border-t-2 border-ink bg-muted/25 px-4 sm:px-5 flex items-center justify-between gap-4 font-mono text-xs">
-          {/* Left: Node Meta + Continue in Agent CTA */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center gap-2 rounded border border-ink/30 bg-card px-2.5 py-1 text-[11px] shadow-[1px_1px_0_var(--ink)]">
-              <span className="text-muted-foreground">ID:</span>
-              <span className="truncate max-w-[120px] font-bold text-ink" title={selectedNode.id}>
-                {selectedNode.id}
-              </span>
-              <button
-                aria-label="Copy Node ID"
-                className="hover:text-primary transition-colors text-muted-foreground shrink-0"
-                onClick={copyNodeId}
-                title="Copy Node ID"
-                type="button"
-              >
-                {copiedId ? <Check className="size-3 text-success" /> : <Copy className="size-3" />}
-              </button>
-              <span className="text-muted-foreground/40">|</span>
-              <span className="text-muted-foreground">Pos:</span>
-              <span className="font-bold text-ink">
-                ({Math.round(selectedNode.position.x)}, {Math.round(selectedNode.position.y)})
-              </span>
-            </div>
-
+          {/* Left: Continue in Agent CTA */}
+          <div className="flex items-center shrink-0">
             <Button
-              className="h-7.5 border border-ink bg-ink text-card shadow-[1.5px_1.5px_0_var(--ink)] font-bold text-[11px] hover:translate-x-px hover:translate-y-px hover:shadow-none transition-all"
+              className="h-7.5 border border-ink !bg-ink !text-white shadow-[1.5px_1.5px_0_var(--ink)] font-bold text-[11px] hover:translate-x-px hover:translate-y-px hover:shadow-none hover:!bg-ink/90 transition-all cursor-pointer"
               onClick={continueFromNode}
               size="sm"
               type="button"
             >
               <Sparkles className="size-3.5 mr-1 text-signal-yellow" />
-              <span>Continue in Agent</span>
+              <span className="!text-white">Continue in Agent</span>
             </Button>
           </div>
 
